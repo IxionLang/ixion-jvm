@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/IxionLang/Ixion/blob/main/assets/icon.png" width="100">
+  <img src="https://github.com/IxionLang/Ixion/blob/main/assets/icon.png" width="200">
 
 <h1>The Ixion Programming Language</h1>
 </div>
