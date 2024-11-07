@@ -11,11 +11,77 @@ Multi-paradigm compiled programming language for the jvm platform.
 * Supports all java features
 
 > [!IMPORTANT]
-> To work you need to install JDK 17+
+> Before installing the language, install jdk.
 
+Hello World in Ixion:
 
+```scala
+def main(args: String[]) {
+   println("Hello World");
+}
+```
 
-![image](https://github.com/IxionLang/Ixion/blob/main/assets/screen.png)
+> [!NOTE]
+> The language contains nullable types and non-nullable types.
+
+```scala
+def main(args: String[]) {
+   var a : String?;
+   var b : String = "Hello";
+}
+```
+
+java ArrayList example:
+
+```scala
+using java.util.ArrayList;
+
+def main(args: String[]){
+    var list = new ArrayList();
+
+    list.add("Hello");
+    list.add("World");
+
+    for(var i = 0; i < list.size(); i++){
+        println(list.get(i));
+    }
+}
+```
+
+The language supports OOP.
+
+Inheritance example:
+
+```scala
+class Human {
+   var name: String?;
+
+   constructor(name: String?) {
+      this.name = name;
+    }
+   def toString()  -> "My name is: " + name;
+
+}
+
+class Man ext Human {
+    var age : int;
+
+   constructor(age: int) :("Artyom") {
+       this.age = age;
+    }
+
+    def toString(): String {
+        const name = super.toString();
+        return name + " My age is" + age;
+    }
+
+}
+
+def main(args: String[]) {
+   var simpleMan: Human = new Man(12);
+   println(simpleMan);
+}
+```
 
 ## Contributions
 We will review and help with all reasonable pull requests as long as the guidelines below are met.
