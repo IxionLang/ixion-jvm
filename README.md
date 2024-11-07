@@ -5,10 +5,6 @@
 Multi-paradigm compiled programming language for the jvm platform.
 </div>
 
-# Adventages
-* Fast compilation
-* Cross-platform
-* Supports all java features
 
 > [!IMPORTANT]
 > Before installing the language, install jdk.
