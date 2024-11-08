@@ -55,7 +55,7 @@ class Human {
    constructor(name: String?) {
       this.name = name;
     }
-   def toString()  -> "My name is: " + name;
+   def toString()  => "My name is: " + name;
 
 }
 
