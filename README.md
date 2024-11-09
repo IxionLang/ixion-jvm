@@ -44,7 +44,8 @@ def main(args: String[]){
 }
 ```
 
-The language supports OOP.
+> [!NOTE]
+> The language supports OOP.
 
 Inheritance example:
 
