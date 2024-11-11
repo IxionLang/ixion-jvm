@@ -56,7 +56,7 @@ class Human {
    constructor(name: String?) {
       this.name = name;
     }
-   def toString()  => "My name is: " + name;
+   override def toString()  => "My name is: " + name;
 
 }
 
@@ -67,7 +67,7 @@ class Man ext Human {
        this.age = age;
     }
 
-    def toString(): String {
+    override def toString(): String {
         const name = super.toString();
         return name + " My age is" + age;
     }
