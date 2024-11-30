@@ -53,7 +53,7 @@ Inheritance example:
 class Human {
    var name: String?;
 
-   constructor(name: String?) {
+   this(name: String?) {
       this.name = name;
     }
    override def toString()  => "My name is: " + name;
