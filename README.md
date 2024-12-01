@@ -63,7 +63,7 @@ class Human {
 class Man ext Human {
     var age : int;
 
-   constructor(age: int) :("Artyom") {
+   this(age: int) :("Artyom") {
        this.age = age;
     }
 
