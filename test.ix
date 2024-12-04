@@ -1,5 +1,7 @@
 def main(args: String[]){
-    var str : String = "100";
-    println(str to int + 10);
+    var value = "test";
+    var monad = Maybe.of(value);
+    println(monad);
+    println(value == monad.get());
 
 }
