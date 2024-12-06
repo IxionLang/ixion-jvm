@@ -1,7 +1,7 @@
 def main(args: String[]){
     var value = "test";
-    var monad = Maybe.of(value);
-    println(monad);
-    println(value == monad.get());
+    var mona : Monad = Maybe.of(value);
+    println(mona);
+    println(value == mona.get());
 
 }

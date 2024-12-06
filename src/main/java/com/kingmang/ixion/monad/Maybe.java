@@ -9,8 +9,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 
-
-public final class Maybe<T> {
+public final class Maybe<T> implements Monad<T>{
 
     private static final Maybe<?> EMPTY = new Maybe<>();
 
@@ -55,6 +54,11 @@ public final class Maybe<T> {
             throw new NoSuchElementException("No value present");
         }
         return value;
+    }
+
+    @Override
+    public T getValue() {
+        return null;
     }
 
     public Throwable getError() {
@@ -204,7 +208,7 @@ public final class Maybe<T> {
         }
 
         Maybe<?> other = (Maybe<?>) obj;
-        return Objects.equals(value, other.value);
+        return Objects.equals(value, other.getValue());
     }
 
 

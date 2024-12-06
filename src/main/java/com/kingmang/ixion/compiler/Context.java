@@ -108,6 +108,7 @@ public class Context {
     private void initImports() {
 		imports.put("Appendable", "java.lang.Appendable");
 		imports.put("AutoCloseable", "java.lang.AutoCloseable");
+		imports.put("Monad", "com.kingmang.ixion.monad.Monad");
 		imports.put("Maybe", "com.kingmang.ixion.monad.Maybe");
 		imports.put("CharSequence", "java.lang.CharSequence");
 		imports.put("Cloneable", "java.lang.Cloneable");

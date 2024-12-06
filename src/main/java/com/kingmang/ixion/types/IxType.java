@@ -371,11 +371,6 @@ public class IxType {
 		return element;
 	}
 
-	public boolean needsDimensionAnnotation() {
-		return sort == Sort.ARRAY && nullableDimensions != null;
-	}
-
-
 
 	public IxType asNullable() {
 		IxType type = copy();
