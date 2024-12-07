@@ -51,31 +51,31 @@ Inheritance example:
 
 ```scala
 class Human {
-   var name: String?;
+   var name: String = "";
 
-   this(name: String?) {
+   this(name: String) {
       this.name = name;
-    }
-   override def toString()  => "My name is: " + name;
+   }
+   override def toString()  => "My name is " + name + ".";
 
 }
 
 class Man ext Human {
     var age : int;
 
-   this(age: int) :("Artyom") {
+    this(age: int) : ("Artyom") {
        this.age = age;
     }
 
     override def toString(): String {
-        const name = super.toString();
-        return name + " My age is" + age;
+        var name : String = super.toString();
+        return name + " My age is " + age + ".";
     }
 
 }
 
 def main(args: String[]) {
-   var simpleMan: Human = new Man(12);
+   var simpleMan: Human = new Man(16);
    println(simpleMan);
 }
 ```
