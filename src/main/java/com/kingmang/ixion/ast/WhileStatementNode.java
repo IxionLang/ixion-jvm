@@ -52,7 +52,11 @@ public class WhileStatementNode implements Node {
             }
         }
 
+		context.getContext().setCycleStartLabel(conditionLabel);
+		context.getContext().setCycleEndLabel(end);
 		body.visit(context);
+		context.getContext().setCycleStartLabel(null);
+		context.getContext().setCycleEndLabel(null);
 
 		methodVisitor.visitJumpInsn(Opcodes.GOTO, conditionLabel);
 

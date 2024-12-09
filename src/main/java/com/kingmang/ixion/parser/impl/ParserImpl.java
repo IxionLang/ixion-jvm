@@ -334,6 +334,17 @@ public class ParserImpl implements Parser {
 		return new WhileStatementNode(whileTok, condition, body);
 	}
 
+	private Node cycleControlStatement() throws ParserException {
+		switch (tokens.get(index).type()) {
+            case BREAK, CONTINUE -> {
+				Token tk = advance();
+				consume(TokenType.SEMI, "Expected ';' after break or continue");
+				return new CycleControlNode(tk);
+			}
+            default -> throw new ParserException(tokens.get(index), "Expected 'break' or 'continue'");
+		}
+	}
+
 	private Node forStatement() throws ParserException {
 		Token forTok = consume(TokenType.FOR, "Expected 'for'");
 
@@ -417,7 +428,8 @@ public class ParserImpl implements Parser {
 			case IF -> ifStatement();
 			case WHILE -> whileStatement();
 			case FOR -> forStatement();
-			case RETURN -> returnStatement();
+			case BREAK, CONTINUE -> cycleControlStatement();
+            case RETURN -> returnStatement();
 			case THROW -> throwStatement();
 			case TRY -> tryStatement();
 			default -> expressionStatement();
