@@ -73,6 +73,13 @@ public class Context {
 	@Setter
     private Label nullJumpLabel;
 
+	@Setter
+	@Getter
+	private Label cycleStartLabel;
+	@Setter
+	@Getter
+	private Label cycleEndLabel;
+
 	public Context() {
 		this.imports = new HashMap<>();
 		this.classWriterMap = new HashMap<>();

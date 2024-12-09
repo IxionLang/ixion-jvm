@@ -42,6 +42,7 @@ public class ForStatementNode implements Node {
 		init.visit(context);
 
 		Label conditionL = new Label();
+		Label step = new Label();
 		Label end = new Label();
 
 		MethodVisitor methodVisitor = context.getContext().getMethodVisitor();
@@ -61,8 +62,13 @@ public class ForStatementNode implements Node {
             }
         }
 
+		context.getContext().setCycleStartLabel(step);
+		context.getContext().setCycleEndLabel(end);
 		body.visit(context);
+		context.getContext().setCycleStartLabel(null);
+		context.getContext().setCycleEndLabel(null);
 
+		methodVisitor.visitLabel(step);
 		boolean varAssign = OptimizationUtil.assignmentNodeExpressionEval(iterate, context);
 
 		IxType iterateType = iterate.getReturnType(context.getContext());

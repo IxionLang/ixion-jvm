@@ -16,6 +16,8 @@ public enum TokenType {
 	ENUM,
 	TO,
 	RETURN,
+	CONTINUE,
+	BREAK,
 	FOR,
 	WHILE,
 	IF,

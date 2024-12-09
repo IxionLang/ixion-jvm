@@ -1,7 +1,9 @@
-def main(args: String[]){
-    var value = "test";
-    var mona : Monad = Maybe.of(value);
-    println(mona);
-    println(value == mona.get());
-
+def main(args: String[]) {
+    for (var i = 0; i < 20; i++) {
+        if (i < 5)
+            continue;
+        if (i > 10)
+            break;
+        println(i);
+    }
 }

@@ -208,6 +208,8 @@ public class LexerImpl implements Lexer {
 			case "enum" -> TokenType.ENUM;
 			case "to" -> TokenType.TO;
 			case "return" -> TokenType.RETURN;
+			case "continue" -> TokenType.CONTINUE;
+			case "break" -> TokenType.BREAK;
 			case "while" -> TokenType.WHILE;
 			case "for" -> TokenType.FOR;
 			case "ext" -> TokenType.EXT;
