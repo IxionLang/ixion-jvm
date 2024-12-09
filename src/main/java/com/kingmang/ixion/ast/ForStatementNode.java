@@ -62,11 +62,11 @@ public class ForStatementNode implements Node {
             }
         }
 
-		context.getContext().setCycleStartLabel(step);
-		context.getContext().setCycleEndLabel(end);
+		context.getContext().setLoopStartLabel(step);
+		context.getContext().setLoopEndLabel(end);
 		body.visit(context);
-		context.getContext().setCycleStartLabel(null);
-		context.getContext().setCycleEndLabel(null);
+		context.getContext().setLoopStartLabel(null);
+		context.getContext().setLoopEndLabel(null);
 
 		methodVisitor.visitLabel(step);
 		boolean varAssign = OptimizationUtil.assignmentNodeExpressionEval(iterate, context);

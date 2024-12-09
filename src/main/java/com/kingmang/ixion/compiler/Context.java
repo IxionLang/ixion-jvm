@@ -75,10 +75,10 @@ public class Context {
 
 	@Setter
 	@Getter
-	private Label cycleStartLabel;
+	private Label loopStartLabel;
 	@Setter
 	@Getter
-	private Label cycleEndLabel;
+	private Label loopEndLabel;
 
 	public Context() {
 		this.imports = new HashMap<>();

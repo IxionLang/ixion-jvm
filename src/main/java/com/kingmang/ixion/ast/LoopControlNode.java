@@ -8,21 +8,21 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-public class CycleControlNode implements Node {
+public class LoopControlNode implements Node {
     private final Token op;
 
-    public CycleControlNode(Token op) {
+    public LoopControlNode(Token op) {
         this.op = op;
     }
 
     @Override
     public void visit(FileContext context) throws IxException {
-        Label start = context.getContext().getCycleStartLabel();
+        Label start = context.getContext().getLoopStartLabel();
         if (start == null)
-            throw new IxException(op, "Uses of 'break' or 'continue' without cycle");
+            throw new IxException(op, "Uses of 'break' or 'continue' without loop");
         MethodVisitor mv = context.getContext().getMethodVisitor();
         switch (op.type()) {
-            case BREAK -> mv.visitJumpInsn(Opcodes.GOTO, context.getContext().getCycleEndLabel());
+            case BREAK -> mv.visitJumpInsn(Opcodes.GOTO, context.getContext().getLoopEndLabel());
             case CONTINUE -> mv.visitJumpInsn(Opcodes.GOTO, start);
             default -> throw new IxException(op, "Unsupported operation type");
         }
