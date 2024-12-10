@@ -4,7 +4,7 @@ import java.util.Properties;
 
 public class Optimizer {
 	public static Properties defOptimizations(){
-		return null;
+		return new Properties();
 	}
 
 

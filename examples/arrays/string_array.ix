@@ -1,0 +1,15 @@
+def main(){
+
+    const names = new String[] {
+		"Artyom",
+		"Alexandr",
+		"Danya"
+	};
+
+	for(var i = 0; i < names.length; i += 1) {
+	    if(i < names.length-1)
+		    print(names[i] + ", ");
+        else
+            print(names[i] + ".");
+	}
+}
