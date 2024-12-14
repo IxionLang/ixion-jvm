@@ -25,5 +25,10 @@
             <version>1.18.34</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.processing</groupId>
+            <artifactId>core</artifactId>
+            <version>3.3.6</version>
+        </dependency>
     </dependencies>
 </project>

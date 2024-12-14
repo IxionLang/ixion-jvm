@@ -7,7 +7,7 @@ import com.kingmang.ixion.compiler.Context;
 import com.kingmang.ixion.parser.tokens.Token;
 import com.kingmang.ixion.types.IxType;
 
-public record UsingNode(Token importTok, Node type, Token as) implements Node {
+public record UsingNode(Token usingTok, Node type, Token as) implements Node {
 
 	@Override
 	public void visit(FileContext context) throws IxException {
@@ -18,14 +18,14 @@ public record UsingNode(Token importTok, Node type, Token as) implements Node {
 		IxType importType = type.getReturnType(context);
 
 		if (importType.isPrimitive()) {
-			throw new IxException(importTok, "Cannot import primitive type");
+			throw new IxException(usingTok, "Cannot import primitive type");
 		}
 
 		Class<?> klass;
 		try {
 			klass = Class.forName(importType.getClassName(), false, context.getLoader());
 		} catch (ClassNotFoundException e) {
-			throw new IxException(importTok, "Could not resolve class '%s'".formatted(e.getMessage()));
+			throw new IxException(usingTok, "Could not resolve class '%s'".formatted(e.getMessage()));
 		}
 
 		String name = as == null ? klass.getSimpleName() : as.value();

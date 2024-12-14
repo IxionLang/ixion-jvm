@@ -21,8 +21,10 @@ public class Runner {
 			} catch (IOException _) {}
 		});
 		api.getFiles().add(args[0]);
+		String[] parts = args[0].split("\\.");
 		api.compile();
-		api.runClass("testixc", api.getFiles());
+		api.runClass(parts[0] + "ixc", api.getFiles());
+
 	}
 
 
