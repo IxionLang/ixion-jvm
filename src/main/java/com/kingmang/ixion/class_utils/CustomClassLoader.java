@@ -2,23 +2,36 @@ package com.kingmang.ixion.class_utils;
 
 import com.kingmang.ixion.util.Unthrow;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 public class CustomClassLoader extends URLClassLoader {
-
-	public CustomClassLoader(List<Path> classpath, java.lang.ClassLoader parent) {
-		super(classpath == null ? new URL[0] : classpath.stream().filter(p -> !Files.isDirectory(p)).map(p -> Unthrow.wrap(() -> p.toFile().toURI().toURL())).toArray(URL[]::new), parent);
+	public CustomClassLoader(List<Path> classpath, ClassLoader parent) {
+		this(classpath == null ? new URL[0] : classpath.stream().filter(p -> !Files.isDirectory(p)).map(p -> Unthrow.wrap(() -> p.toFile().toURI().toURL())).toArray(URL[]::new), parent);
 	}
 
-	public CustomClassLoader(java.lang.ClassLoader parent) {
-		super(new URL[0], parent);
+	public CustomClassLoader(ClassLoader parent) {
+		this(new URL[0], parent);
+	}
+
+	protected CustomClassLoader(URL[] urls, ClassLoader parent) {
+		super(urls, parent);
+		try {
+			File directory = new File("//home/dmn/Workspace/Projects/Ixion/test/lib/");
+			if (directory.exists() && directory.isDirectory()) {
+				for (File library : Objects.requireNonNull(directory.listFiles())) {
+					this.addURL(library.toURI().toURL());
+				}
+			}
+		} catch (MalformedURLException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public Class<?> define(String name, byte[] b) {
@@ -26,7 +39,7 @@ public class CustomClassLoader extends URLClassLoader {
 	}
 
 	public static CustomClassLoader loadClasspath(List<Path> classpath) throws IOException {
-		CustomClassLoader loader = new CustomClassLoader(classpath, java.lang.ClassLoader.getSystemClassLoader());
+		CustomClassLoader loader = new CustomClassLoader(classpath, ClassLoader.getSystemClassLoader());
 
 		if(classpath == null) return loader;
 

@@ -1,0 +1,5 @@
+using Test;
+
+def main() {
+    Test.foo();
+}
