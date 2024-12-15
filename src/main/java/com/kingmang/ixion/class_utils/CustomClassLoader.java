@@ -23,7 +23,7 @@ public class CustomClassLoader extends URLClassLoader {
 	protected CustomClassLoader(URL[] urls, ClassLoader parent) {
 		super(urls, parent);
 		try {
-			File directory = new File("//home/dmn/Workspace/Projects/Ixion/test/lib/");
+			File directory = new File("lib/");
 			if (directory.exists() && directory.isDirectory()) {
 				for (File library : Objects.requireNonNull(directory.listFiles())) {
 					this.addURL(library.toURI().toURL());
