@@ -38,6 +38,14 @@ public class Sstring {
         return count;
     }
 
+    public void removeItem(String symbol){
+        this.str = this.str.replace(symbol, "");
+    }
+
+    public void joinFont(String symbol){
+        this.str = symbol + this.str;
+    }
+
     public int getLen(){
         return str.length();
     }
