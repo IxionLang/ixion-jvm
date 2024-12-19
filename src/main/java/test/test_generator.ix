@@ -5,7 +5,7 @@ def main(args : String[]) {
     var generator = new BigFileGenerator();
     try{
         var writer = new FileWriter("big_file_test.ix", false);
-        writer.write(generator.gen(7800, 100000));
+        writer.write(generator.gen(780, 1000));
         writer.flush();
     }catch(e : Exception){
         throw new RuntimeException("File not found");
