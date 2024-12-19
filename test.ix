@@ -1,5 +1,3 @@
-using ixion.std.string;
-
-def main() {
-    println(new string("Hello").count("l"));
+def main(){
+    print("Hello");
 }
