@@ -1,18 +1,17 @@
 package ixion.std;
 
 
-public class Sstring {
+import lombok.Getter;
 
+public class string{
+
+    @Getter
     private String str;
     private int len;
 
-    public Sstring(String str){
+    public string(String str){
         this.str = str;
         this.len = this.getLen();
-    }
-
-    public String getStr() {
-        return str;
     }
 
     public void join(String str) {
