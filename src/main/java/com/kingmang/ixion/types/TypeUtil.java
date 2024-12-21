@@ -121,7 +121,7 @@ public class TypeUtil {
 	public static Class<?> classForName(String name, Context context) throws ClassNotFoundException {
 		String className = name;
 
-		if(context.getImports().get(name) != null) className = context.getImports().get(name);
+		if(context.getUsings().get(name) != null) className = context.getUsings().get(name);
 
 		return Class.forName(className, false, context.getLoader());
 	}

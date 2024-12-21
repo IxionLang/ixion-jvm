@@ -43,7 +43,7 @@ public class ParserImpl implements Parser {
 		}
 
 		while(!isAtEnd() && match(TokenType.USING)) {
-			imports.add(importStatement());
+			imports.add(usingStatement());
 		}
 
 		while(!isAtEnd()) {
@@ -62,12 +62,12 @@ public class ParserImpl implements Parser {
 		return new PackageNode(packageToken, (TypeNode) name);
 	}
 
-	private Node importStatement() throws ParserException {
+	private Node usingStatement() throws ParserException {
 		Token importTok = tokens.get(index - 1);
 		Node type = classType();
 
 		Token to = null;
-		if(match(TokenType.TO)) {
+		if(match(TokenType.COLON)) {
 			to = consume(TokenType.IDENTIFIER, "Expected import alias");
 		}
 

@@ -29,7 +29,7 @@ public record UsingNode(Token usingTok, Node type, Token as) implements Node {
 		}
 
 		String name = as == null ? klass.getSimpleName() : as.value();
-		context.getImports().put(name, importType.getClassName());
+		context.getUsings().put(name, importType.getClassName());
 	}
 
 	@Override

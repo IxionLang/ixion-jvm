@@ -191,7 +191,7 @@ public class ClassDeclarationNode implements Node {
 			className = context.getPackageName() + "/" + className;
 		}
 		if(!className.equals(baseName)) {
-			context.getImports().put(baseName, className.replace('/', '.'));
+			context.getUsings().put(baseName, className.replace('/', '.'));
 		}
 
 		context.setCurrentClass(className);
