@@ -11,7 +11,7 @@
       <option name="HAS_PARENS" value="true" />
       <option name="HAS_STRING_ESCAPES" value="true" />
     </options>
-    <keywords keywords="break;case;continue;do;else;for;if;length;println;return;throw;while" ignore_case="false" />
+    <keywords keywords="break;case;continue;do;else;for;if;length;println;print;return;throw;while" ignore_case="false" />
     <keywords2 keywords="catch;class;def;enum;ext;getter;new;override;priv;pub;setter;static;try;using" />
     <keywords3 keywords="false;null;this;to;true" />
     <keywords4 keywords="String;byte;char;const;double;float;int;long;short;var" />
