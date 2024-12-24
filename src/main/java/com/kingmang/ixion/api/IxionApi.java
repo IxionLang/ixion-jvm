@@ -41,13 +41,13 @@ public class IxionApi {
 	private final List<String> files = new ArrayList<>();
 
 
-	public void runClass(String className, List<String> files) {
+	public void runClass(String className, List<String> files, String[] args) {
 		try {
 			String[] parts = className.split("\\.");
 			for (String file : files) {
 				if (file != null) {
 					try {
-						runClass(Path.of(outputDirectory.toURI()), parts[0]);
+						runClass(Path.of(outputDirectory.toURI()), parts[0], args);
 					} catch (Exception _) {}
 				}
 			}
@@ -56,15 +56,16 @@ public class IxionApi {
 		}
 	}
 
-	public void runClass(Path outputFolder, String className) throws Exception {
+	public void runClass(Path outputFolder, String className, String[] args) throws Exception {
 		File folder = outputFolder.toFile();
 		URLClassLoader classLoader = new URLClassLoader(new URL[]{folder.toURI().toURL()});
 		Class<?> clazz = classLoader.loadClass(className);
 		Method mainMethod = clazz.getMethod("main", String[].class);
-		String[] args = {};
 		mainMethod.invoke(null, (Object) args);
+
 		classLoader.close();
 	}
+
 
 	public Node analysis(Path path) throws IOException, ParserException {
 		String source = Files.readString(path);

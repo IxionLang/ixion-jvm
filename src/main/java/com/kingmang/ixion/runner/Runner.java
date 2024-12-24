@@ -23,7 +23,7 @@ public class Runner {
 		api.getFiles().add(args[0]);
 		String[] parts = args[0].split("\\.");
 		api.compile();
-		api.runClass(parts[0] + "ixc", api.getFiles());
+		api.runClass(parts[0] + "ixc", api.getFiles(), args);
 
 	}
 

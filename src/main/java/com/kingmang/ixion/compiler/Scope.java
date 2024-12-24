@@ -1,5 +1,6 @@
 package com.kingmang.ixion.compiler;
 
+import com.kingmang.ixion.compiler.ix_function.types.TypesFunction;
 import com.kingmang.ixion.util.FileContext;
 import com.kingmang.ixion.compiler.ix_function.IxFunctionType;
 import com.kingmang.ixion.compiler.ix_function.IxFunction;
@@ -39,7 +40,7 @@ public class Scope {
 		this.context = context.getContext();
 		this.localIndex = 0;
 		this.returnType = IxType.VOID_TYPE;
-
+        addLangFunctions();
 		addPrintlnFunctions();
 		updateCurrentClassMethods(context);
 	}
@@ -48,10 +49,14 @@ public class Scope {
 		this.context = context;
 		this.functionMap = new HashMap<>();
 		this.variables = new HashMap<>();
-
+        addLangFunctions();
 		addPrintlnFunctions();
 	}
 
+    private void addLangFunctions(){
+        addFunction(TypesFunction.INT);
+        addFunction(TypesFunction.FLOAT);
+    }
 	private void addPrintlnFunctions() {
 		addFunction(PrintlnFunction.PRINTLN_VOID);
 		addFunction(PrintlnFunction.PRINTLN_DOUBLE);
@@ -61,6 +66,7 @@ public class Scope {
 		addFunction(PrintlnFunction.PRINTLN_CHAR);
 		addFunction(PrintlnFunction.PRINTLN_LONG);
 		addFunction(PrintlnFunction.PRINTLN_OBJECT);
+
 
 		addFunction(PrintFunction.PRINT_VOID);
 		addFunction(PrintFunction.PRINT_DOUBLE);
