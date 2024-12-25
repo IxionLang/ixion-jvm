@@ -1,0 +1,100 @@
+/*
+implementation of jregex : https://github.com/ArtyomKingmang/Jregex
+*/
+def main(args : String[]){
+    var pattern : String = new JRegex()
+                    .digit().times(5)
+                    .just("-")
+                    .digit().times(4).optional()
+                    .build();
+
+    println(pattern);
+}
+
+class JRegex {
+    var regex : StringBuilder?;
+
+    this(){
+        regex = new StringBuilder();
+    }
+
+    pub def digit() : JRegex{
+        regex.append("\\d");
+        return this;
+    }
+
+    pub def just(str : String ) : JRegex {
+        regex.append(str);
+        return this;
+    }
+    pub def unicode() : JRegex {
+        regex.append("\\u");
+        return this;
+    }
+    pub def times(n : int) : JRegex {
+        regex.append("{").append(n).append("}");
+        return this;
+    }
+
+    pub def beginning() : JRegex {
+        regex.insert(0, "^");
+        return this;
+    }
+
+    pub def ending() : JRegex {
+        regex.append("$");
+        return this;
+    }
+
+    pub def group(regex : JRegex) : JRegex {
+        this.regex.append("(").append(regex.build()).append(")");
+        return this;
+    }
+
+    pub def or(regex : JRegex) : JRegex {
+        this.regex.append("|").append(regex.build());
+        return this;
+    }
+
+    pub def any() : JRegex {
+        this.regex.append(".");
+        return this;
+    }
+
+    pub def word() : JRegex {
+        this.regex.append("\\w");
+        return this;
+    }
+
+    pub def notDigit() : JRegex {
+        this.regex.append("\\D");
+        return this;
+    }
+
+    pub def notWord() : JRegex {
+        this.regex.append("\\W");
+        return this;
+    }
+
+    pub def notSpace() : JRegex {
+        this.regex.append("\\S");
+        return this;
+    }
+
+    pub def optional() : JRegex {
+        regex.append("?");
+        return this;
+    }
+
+
+    pub def repeat(min : int, max : int) : JRegex  {
+        regex.append("{").append(min).append(",").append(max).append("}");
+        return this;
+    }
+
+    pub def build() : String{
+        return regex.toString();
+    }
+
+
+}
