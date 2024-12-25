@@ -101,7 +101,8 @@ public class ParserImpl implements Parser {
 		Token tok = advance();
 		return switch(tok.type()) {
 			case FUNCTION -> functionDeclaration(accessModifier, staticModifier, annotations);
-			case CLASS -> classDeclaration(accessModifier, staticModifier);
+			case CLASS -> classDeclaration(accessModifier, staticModifier, false);
+			case MODULE -> classDeclaration(accessModifier, staticModifier, true);
 			case ENUM -> enumDeclaration(accessModifier, staticModifier);
 			case THIS -> constructorDeclaration(accessModifier, staticModifier);
 			case VAR, CONST -> variableDeclaration(accessModifier, staticModifier);
@@ -181,7 +182,7 @@ public class ParserImpl implements Parser {
 	}
 
 
-	private Node classDeclaration(Token access, Token staticModifier) throws ParserException {
+	private Node classDeclaration(Token access, Token staticModifier, boolean isModule) throws ParserException {
 		if(staticModifier != null) throw new ParserException(staticModifier, "Cannot mark a class as static");
 		Token name = consume(TokenType.IDENTIFIER, "Expected class name");
 
@@ -203,7 +204,7 @@ public class ParserImpl implements Parser {
 
 		consume(TokenType.RBRACE, "Expected '}' after class body");
 
-		return new ClassDeclarationNode(name, superclass, declarations, access);
+		return new ClassDeclarationNode(name, superclass, declarations, access, isModule);
 	}
 
 

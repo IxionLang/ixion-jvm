@@ -6,6 +6,7 @@ public enum TokenType {
 	IDENTIFIER,
 	UNITTEST,
 	EXT,
+	MODULE,
 	USING,
 	OVERRIDE,
 	PACKAGE,
