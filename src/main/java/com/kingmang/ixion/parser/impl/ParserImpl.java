@@ -80,7 +80,7 @@ public class ParserImpl implements Parser {
 	private Node declaration() throws ParserException {
 		Token accessModifier = null;
 		Token staticModifier = null;
-		boolean isFinal = false;
+		boolean isFinal = false, isOverride = false;
 
 		// Это не совсем аннотации.
 		// Это модификаторы, которые компилируются как аннотации
@@ -89,6 +89,7 @@ public class ParserImpl implements Parser {
 
 		if(match(TokenType.OVERRIDE)){
 			annotations.add(tokens.get(index - 1));
+			isOverride = true;
 		}
 
 		if(match(TokenType.PUBLIC) || match(TokenType.PRIVATE)) {
@@ -839,9 +840,14 @@ public class ParserImpl implements Parser {
 	}
 
 	private List<Pair<Token, Node>> typedParameters(String name) throws ParserException {
-		consume(TokenType.LPAREN, "Expected '(' before " + name);
+		if (tokens.get(index).type() == TokenType.LPAREN) {
+			consume(TokenType.LPAREN, "Expected '(' before " + name);
+		} else {
+			return new ArrayList<>();
+		}
+
 		ArrayList<Pair<Token, Node>> parameters = new ArrayList<>();
-		if(tokens.get(index).type() != TokenType.RPAREN) {
+		if (tokens.get(index).type() != TokenType.RPAREN) {
 			do {
 				Token parameterName = consume(TokenType.IDENTIFIER, "Expected parameter name");
 
@@ -850,12 +856,14 @@ public class ParserImpl implements Parser {
 				Node type = type();
 
 				parameters.add(new Pair<>(parameterName, type));
-			} while(match(TokenType.COMMA));
+			} while (match(TokenType.COMMA));
 		}
+
 		consume(TokenType.RPAREN, "Expected ')' after " + name);
 
 		return parameters;
 	}
+
 
 	private List<Node> arguments(String name) throws ParserException {
 		consume(TokenType.LPAREN, "Expected '(' before " + name);

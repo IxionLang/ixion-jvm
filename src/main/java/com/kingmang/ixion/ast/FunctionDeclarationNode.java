@@ -11,6 +11,7 @@ import com.kingmang.ixion.parser.tokens.TokenType;
 import com.kingmang.ixion.util.Pair;
 import com.kingmang.ixion.util.Unthrow;
 import com.kingmang.ixion.types.IxType;
+import lombok.Getter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
@@ -28,6 +29,7 @@ public class FunctionDeclarationNode implements Node {
 	private final DeclarationType type;
 	private final Token name;
 	private final Node body;
+	@Getter
 	private final List<Pair<Token, Node>> parameters;
 	private final Node returnTypeNode;
 	private final List<Node> throwsList;
