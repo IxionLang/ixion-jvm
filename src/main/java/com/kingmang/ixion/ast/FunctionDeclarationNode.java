@@ -320,7 +320,7 @@ public class FunctionDeclarationNode implements Node {
 	@Override
 	public String toString() {
 		if(type == DeclarationType.EXPRESSION) {
-			return "def %s(%s) = %s;".formatted(name.value(),
+			return "def %s(%s) => %s;".formatted(name.value(),
 					parameters.stream().map(p -> p.first().value() + ": " + p.second()).collect(Collectors.joining(", ")),
 					body);
 		}

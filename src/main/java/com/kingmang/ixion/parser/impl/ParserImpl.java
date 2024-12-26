@@ -80,18 +80,23 @@ public class ParserImpl implements Parser {
 	private Node declaration() throws ParserException {
 		Token accessModifier = null;
 		Token staticModifier = null;
+		boolean isFinal = false;
 
 		// Это не совсем аннотации.
 		// Это модификаторы, которые компилируются как аннотации
 		List<Token> annotations = new ArrayList<>();
 
 
+		if(match(TokenType.OVERRIDE)){
+			annotations.add(tokens.get(index - 1));
+		}
+
 		if(match(TokenType.PUBLIC) || match(TokenType.PRIVATE)) {
 			accessModifier = tokens.get(index - 1);
 		}
 
-		if(match(TokenType.OVERRIDE)){
-			annotations.add(tokens.get(index - 1));
+		if(match(TokenType.FINAL)){
+			isFinal = true;
 		}
 
 		if(isParsingClass && match(TokenType.STATIC)) {
@@ -101,8 +106,7 @@ public class ParserImpl implements Parser {
 		Token tok = advance();
 		return switch(tok.type()) {
 			case FUNCTION -> functionDeclaration(accessModifier, staticModifier, annotations);
-			case CLASS -> classDeclaration(accessModifier, staticModifier, false);
-			case MODULE -> classDeclaration(accessModifier, staticModifier, true);
+			case CLASS -> classDeclaration(accessModifier, staticModifier, isFinal);
 			case ENUM -> enumDeclaration(accessModifier, staticModifier);
 			case THIS -> constructorDeclaration(accessModifier, staticModifier);
 			case VAR, CONST -> variableDeclaration(accessModifier, staticModifier);

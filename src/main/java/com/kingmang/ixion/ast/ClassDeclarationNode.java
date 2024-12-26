@@ -26,22 +26,22 @@ public class ClassDeclarationNode implements Node {
 	private final Node superclass;
 	private final List<Node> declarations;
 	private final List<ThisMethodDeclarationNode> constructors;
+	private final boolean isFinal;
 	private final Token access;
 	private boolean staticVariableInit;
-	private boolean isModule;
 
 	public ClassDeclarationNode(Token name,
 								Node superclass,
 								List<Node> declarations,
 								Token access,
-								boolean isModule) {
+								boolean isFinal) {
 		this.name = name;
 		this.superclass = superclass;
 		this.declarations = declarations;
 		this.constructors = new ArrayList<>();
 		this.access = access;
 		this.staticVariableInit = false;
-		this.isModule = isModule;
+		this.isFinal = isFinal;
 	}
 
 	@Override
@@ -49,7 +49,7 @@ public class ClassDeclarationNode implements Node {
 		ContextType prevType = context.getType();
 		String prevClass = context.getCurrentClass();
 
-		ClassWriter writer = initClass("java/lang/Object", context, isModule);
+		ClassWriter writer = initClass("java/lang/Object", context);
 
 		writer.visitEnd();
 
@@ -65,7 +65,7 @@ public class ClassDeclarationNode implements Node {
 		IxType prevSuperClass = context.getCurrentSuperClass();
 		context.setCurrentSuperClass(getSuperclassType(context));
 
-		ClassWriter writer = initClass(getSuperclassType(context).getInternalName(), context, isModule);
+		ClassWriter writer = initClass(getSuperclassType(context).getInternalName(), context);
 
 		MethodVisitor defaultConstructor = null;
 		if(constructors.isEmpty()) {
@@ -129,7 +129,7 @@ public class ClassDeclarationNode implements Node {
 		IxType prevSuperClass = context.getCurrentSuperClass();
 		context.setCurrentSuperClass(getSuperclassType(context));
 
-		ClassWriter writer = initClass(getSuperclassType(context).getInternalName(), context, isModule);
+		ClassWriter writer = initClass(getSuperclassType(context).getInternalName(), context);
 
 		MethodVisitor defaultConstructor = null;
 
@@ -183,7 +183,7 @@ public class ClassDeclarationNode implements Node {
 		context.setCurrentSuperClass(prevSuperClass);
 	}
 
-	private ClassWriter initClass(String superclassName, Context context, boolean isModule) {
+	private ClassWriter initClass(String superclassName, Context context) {
 		context.setType(ContextType.CLASS);
 		int accessLevel = getAccessLevel();
 
@@ -204,20 +204,21 @@ public class ClassDeclarationNode implements Node {
 
 		ClassWriter writer = new CustomClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES, context.getLoader());
 
-		if(!isModule)
+		if(!isFinal) {
 			writer.visit(
 					Opcodes.V9,
 					accessLevel | Opcodes.ACC_SUPER, className,
 					null, superclassName,
 					null
 			);
-		else
+		}else{
 			writer.visit(
 					Opcodes.V9,
 					accessLevel | Opcodes.ACC_SUPER | Opcodes.ACC_FINAL, className,
 					null, superclassName,
 					null
 			);
+		}
 
 		writer.visitSource(context.getSource(), null);
 
