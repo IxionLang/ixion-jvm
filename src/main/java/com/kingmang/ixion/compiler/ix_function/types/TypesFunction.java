@@ -17,5 +17,20 @@ public class TypesFunction {
                     IxFunctionType.STATIC,
                     "Float",
                     "ixion/lang/Types",
-                    IxType.getMethodType("(I)Ljava/lang/Float;"));
+                    IxType.getMethodType("(F)Ljava/lang/Float;"));
+
+
+    public static final IxFunction TOINT =
+            new IxFunction(
+                    IxFunctionType.STATIC,
+                    "toInt",
+                    "ixion/lang/Types",
+                    IxType.getMethodType("(Ljava/lang/Object;)I"));
+
+    public static final IxFunction TOFLOAT =
+            new IxFunction(
+                    IxFunctionType.STATIC,
+                    "toFloat",
+                    "ixion/lang/Types",
+                    IxType.getMethodType("(Ljava/lang/Object;)F"));
 }

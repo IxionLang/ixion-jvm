@@ -1,0 +1,34 @@
+using java.util.ArrayList;
+using java.util.List;
+
+def main {
+    print(tokenize("2 65 +"));
+}
+
+def tokenize(source : String) : List{
+    var tokens = source.split(" +");
+    var result = new ArrayList();
+    for(var i = 0; i < tokens.length(); i += 1){
+        var x = tokens[i];
+        if(Character.isDigit(x.charAt(0))){
+            result.add(new Token("PUSH", Integer.parseInt(x)));
+        }else{
+            result.add(new Token("OPERATION", 0));
+        }
+    }
+
+    return result;
+}
+
+
+class Token {
+    const(getter) tag : String?;
+    const(getter) value : int;
+
+    this(tag : String, value : int){
+        this.tag = tag;
+        this.value = value;
+    }
+
+    override def toString => "\ntag[::" + tag + ", value::" + value + "]\n";
+}

@@ -1,13 +1,3 @@
 def main {
-    test();
-    test("test");
-}
-
-
-def test {
-    println("function have not args");
-}
-
-def test(str : String){
-    println("function with arg: " + str);
+    print("Hello World");
 }
