@@ -1,36 +1,43 @@
 package com.kingmang.ixion.compiler.ix_function.types;
 
+import com.kingmang.ixion.api.libs_api.IxLibraryImpl;
 import com.kingmang.ixion.compiler.ix_function.IxFunction;
 import com.kingmang.ixion.compiler.ix_function.IxFunctionType;
 import com.kingmang.ixion.types.IxType;
 
 public class TypesFunction {
-    public static final IxFunction INT =
-            new IxFunction(
-                    IxFunctionType.STATIC,
-                    "Int",
-                    "ixion/lang/Types",
-                    IxType.getMethodType("(I)Ljava/lang/Integer;"));
 
-    public static final IxFunction FLOAT =
-            new IxFunction(
-                    IxFunctionType.STATIC,
+    public static final IxFunction INT_BOXED =
+            IxLibraryImpl.function(
+                    "Int",
+                    "Types",
+                    IxLibraryImpl.INT,
+                    IxLibraryImpl.INTEGER_CLASS
+            );
+
+
+    public static final IxFunction FLOAT_BOXED =
+            IxLibraryImpl.function(
                     "Float",
-                    "ixion/lang/Types",
-                    IxType.getMethodType("(F)Ljava/lang/Float;"));
+                    "Types",
+                    IxLibraryImpl.FLOAT,
+                    IxLibraryImpl.FLOAT_CLASS
+            );
 
 
     public static final IxFunction TOINT =
-            new IxFunction(
-                    IxFunctionType.STATIC,
-                    "toInt",
-                    "ixion/lang/Types",
-                    IxType.getMethodType("(Ljava/lang/Object;)I"));
+            IxLibraryImpl.function(
+              "toInt",
+              "Types",
+              IxLibraryImpl.OBJECT,
+              IxLibraryImpl.INT
+            );
 
     public static final IxFunction TOFLOAT =
-            new IxFunction(
-                    IxFunctionType.STATIC,
+            IxLibraryImpl.function(
                     "toFloat",
-                    "ixion/lang/Types",
-                    IxType.getMethodType("(Ljava/lang/Object;)F"));
+                    "Types",
+                    IxLibraryImpl.OBJECT,
+                    IxLibraryImpl.FLOAT
+            );
 }

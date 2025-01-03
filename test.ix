@@ -1,3 +1,5 @@
 def main {
-    print("Hello World");
+    var x : Object = Int(10);
+    var y = toInt(x) + 10;
+    println(y);
 }
