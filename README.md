@@ -60,7 +60,7 @@ class Human {
    this(name: String) {
       this.name = name;
    }
-   override def toString()  => "My name is " + name + ".";
+   override def toString => "My name is " + name + ".";
 
 }
 
@@ -71,14 +71,14 @@ class Man ext Human {
        this.age = age;
     }
 
-    override def toString(): String {
+    override def toString: String {
         var name : String = super.toString();
         return name + " My age is " + age + ".";
     }
 
 }
 
-def main(args: String[]) {
+def main {
    var simpleMan: Human = new Man(16);
    println(simpleMan);
 }
