@@ -11,10 +11,9 @@ public class IxException extends Exception {
 	private final Token location;
 	private final String message;
 	private final String IxionPattern = """
-			┌──────────────Ixion Exception───────────────
-			│[%s:%s] in file "%s" {'%s'}:
-			│%s
-			╰────────────────────────────────────────────
+			[Ixion Exception]
+			│> [%s:%s] in file "%s" ['%s']:
+			│> %s
 			""";
 
 	public IxException(Token location, String message) {

@@ -14,10 +14,9 @@ public class ParserException extends Exception {
 
 	public String defaultError(String filename) {
         String parserPattern = """
-                ┌──────────────────────Parser Exception────────────────────
-                │[%s:%s] Unexpected token in file "%s" {'%s'}:
-                │%s
-                ╰──────────────────────────────────────────────────────────
+                [Parser Exception]
+                │> [%s:%s] Unexpected token in file "%s" ['%s']:
+                │> %s
                 """;
         return parserPattern.formatted(location.line(), location.column(), filename, location.value(), message);
 	}
