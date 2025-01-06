@@ -80,28 +80,24 @@ public class ParserImpl implements Parser {
 	private Node declaration() throws ParserException {
 		Token accessModifier = null;
 		Token staticModifier = null;
-		boolean isFinal = false, isOverride = false;
+		boolean isFinal = false;
 
 		// Это не совсем аннотации.
 		// Это модификаторы, которые компилируются как аннотации
 		List<Token> annotations = new ArrayList<>();
 
-
-		if(match(TokenType.OVERRIDE)){
-			annotations.add(tokens.get(index - 1));
-			isOverride = true;
-		}
-
-		if(match(TokenType.PUBLIC) || match(TokenType.PRIVATE)) {
-			accessModifier = tokens.get(index - 1);
-		}
-
-		if(match(TokenType.FINAL)){
-			isFinal = true;
-		}
-
-		if(isParsingClass && match(TokenType.STATIC)) {
-			staticModifier = tokens.get(index - 1);
+		while (true) {
+			if (match(TokenType.OVERRIDE)) {
+				annotations.add(tokens.get(index - 1));
+			} else if (match(TokenType.PUBLIC) || match(TokenType.PRIVATE)) {
+				accessModifier = tokens.get(index - 1);
+			} else if (match(TokenType.FINAL)) {
+				isFinal = true;
+			} else if (isParsingClass && match(TokenType.STATIC)) {
+				staticModifier = tokens.get(index - 1);
+			} else {
+				break;
+			}
 		}
 
 		Token tok = advance();
@@ -114,6 +110,7 @@ public class ParserImpl implements Parser {
 			default -> throw new ParserException(tok, "Expected declaration");
 		};
 	}
+
 
 	private Node functionDeclaration(Token access, Token staticModifier, List<Token> annotations) throws ParserException {
 		Token name = consume(TokenType.IDENTIFIER, "Expected function name");
