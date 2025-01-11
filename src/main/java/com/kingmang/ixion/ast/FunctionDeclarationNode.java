@@ -35,7 +35,7 @@ public class FunctionDeclarationNode implements Node {
 	private final List<Node> throwsList;
 	private final Token access;
 	private final Token staticModifier;
-	private final List<Token> annotations;
+	private final List<Token> functionModifiers;
 	private IxType returnType;
 	private String descriptor;
 
@@ -48,7 +48,7 @@ public class FunctionDeclarationNode implements Node {
 			List<Node> throwsList,
 			Token access,
 			Token staticModifier,
-			List<Token> annotations) {
+			List<Token> functionModifiers) {
 
 		this.type = type;
 		this.name = name;
@@ -58,7 +58,7 @@ public class FunctionDeclarationNode implements Node {
 		this.throwsList = throwsList;
 		this.access = access;
 		this.staticModifier = staticModifier;
-		this.annotations = annotations;
+		this.functionModifiers = functionModifiers;
 	}
 
 	@Override
@@ -146,7 +146,7 @@ public class FunctionDeclarationNode implements Node {
 		createMainMethod(context.getContext());
 		mv.visitCode();
 
-		for(Token token : annotations) {
+		for(Token token : functionModifiers) {
 			if(token.type() == TokenType.OVERRIDE)
 				mv.visitAnnotation("Override", true);
 		}

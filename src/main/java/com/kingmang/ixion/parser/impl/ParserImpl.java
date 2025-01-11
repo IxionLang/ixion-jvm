@@ -1,6 +1,7 @@
 package com.kingmang.ixion.parser.impl;
 
 
+import com.kingmang.ixion.exceptions.IxException;
 import com.kingmang.ixion.exceptions.ParserException;
 import com.kingmang.ixion.parser.Node;
 import com.kingmang.ixion.parser.Parser;
@@ -81,15 +82,12 @@ public class ParserImpl implements Parser {
 		Token accessModifier = null;
 		Token staticModifier = null;
 		boolean isFinal = false;
-
-		// Это не совсем аннотации.
-		// Это модификаторы, которые компилируются как аннотации
-		List<Token> annotations = new ArrayList<>();
+		List<Token> functionModifiers = new ArrayList<>();
 
 		while (true) {
-			if (match(TokenType.OVERRIDE)) {
-				annotations.add(tokens.get(index - 1));
-			} else if (match(TokenType.PUBLIC) || match(TokenType.PRIVATE)) {
+			if (match(TokenType.OVERRIDE) && tokens.get(index-1) == null) {
+				functionModifiers.add(tokens.get(index - 1));
+			} else if ((match(TokenType.PUBLIC) || match(TokenType.PRIVATE)) && tokens.get(index-1) == null) {
 				accessModifier = tokens.get(index - 1);
 			} else if (match(TokenType.FINAL)) {
 				isFinal = true;
@@ -101,14 +99,47 @@ public class ParserImpl implements Parser {
 		}
 
 		Token tok = advance();
+		switch (tok.type()){
+			case FUNCTION: {
+				if(isFinal)
+					throw new ParserException(tok, "The final modifier only applies to classes");
+				return functionDeclaration(accessModifier, staticModifier, functionModifiers);
+			}
+			case CLASS:{
+				if(!functionModifiers.isEmpty())
+					throw new ParserException(tok, "Cannot apply function modifier to class");
+				return classDeclaration(accessModifier, staticModifier, isFinal);
+			}
+			case ENUM: {
+				if(!functionModifiers.isEmpty() || isFinal)
+					throw new ParserException(tok, "Unable to apply modifier to enum");
+				return enumDeclaration(accessModifier, staticModifier);
+			}
+			case THIS: {
+				if(!functionModifiers.isEmpty() || isFinal)
+					throw new ParserException(tok, "Unable to apply modifier to constructor");
+				return constructorDeclaration(accessModifier, staticModifier);
+			}
+			case VAR, CONST: {
+				if(!functionModifiers.isEmpty() || isFinal)
+					throw new ParserException(tok, "Unable to apply modifier to variable");
+				return variableDeclaration(accessModifier, staticModifier);
+			}
+			default: {
+				throw new ParserException(tok, "Expected declaration");
+			}
+		}
+		/*
 		return switch(tok.type()) {
-			case FUNCTION -> functionDeclaration(accessModifier, staticModifier, annotations);
+
+			case FUNCTION -> functionDeclaration(accessModifier, staticModifier, functionModifiers);
 			case CLASS -> classDeclaration(accessModifier, staticModifier, isFinal);
 			case ENUM -> enumDeclaration(accessModifier, staticModifier);
 			case THIS -> constructorDeclaration(accessModifier, staticModifier);
 			case VAR, CONST -> variableDeclaration(accessModifier, staticModifier);
 			default -> throw new ParserException(tok, "Expected declaration");
 		};
+		 */
 	}
 
 
@@ -767,11 +798,10 @@ public class ParserImpl implements Parser {
 
 		if(tokens.get(index).type() == TokenType.LPAREN) {
 			List<Node> args = arguments("function arguments");
-
 			return new FunctionCallNode(name, args);
 		}
-		return new VariableAccessNode(name);
-	}
+        return new VariableAccessNode(name);
+    }
 
 	private Node superCall() throws ParserException {
 		Token superTok = tokens.get(index - 1);
@@ -880,8 +910,19 @@ public class ParserImpl implements Parser {
 
 	private boolean matchAssignment() {
 		switch (tokens.get(index).type()) {
-			case EQUALS, IN_PLUS, IN_MINUS, IN_MUL, IN_DIV, IN_MOD,
-					IN_BITWISE_AND, IN_BITWISE_OR, IN_BITWISE_XOR, IN_BITWISE_SHL, IN_BITWISE_SHR, IN_BITWISE_USHR -> {
+			case EQUALS,
+				 IN_PLUS,
+				 IN_MINUS,
+				 IN_MUL,
+				 IN_DIV,
+				 IN_MOD,
+				 IN_BITWISE_AND,
+				 IN_BITWISE_OR,
+				 IN_BITWISE_XOR,
+				 IN_BITWISE_SHL,
+				 IN_BITWISE_SHR,
+				 IN_BITWISE_USHR
+					-> {
 				advance();
 				return true;
 			}

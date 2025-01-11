@@ -146,7 +146,7 @@ public class VariableDeclarationNode implements Node {
 	private void visitSetter(Context context, IxType fieldType, boolean isStatic, String descriptor, String beanName, int staticMod, int methodFinalMod) throws IxException {
 		int setOpcode = isStatic ? Opcodes.PUTSTATIC : Opcodes.PUTFIELD;
 		if(verifyAccess() && !isConst) {
-			String fName = "set" + (name.value().matches("^is[\\p{Lu}].*") ? beanName.substring(2) : beanName);
+			String fName = "set" + (name.value().matches("^is\\p{Lu}.*") ? beanName.substring(2) : beanName);
 			MethodVisitor visitor = context.getCurrentClassWriter().visitMethod(Opcodes.ACC_PUBLIC | staticMod | methodFinalMod, fName, "("  + descriptor + ")V", null, null);
 			visitor.visitCode();
 
@@ -162,7 +162,7 @@ public class VariableDeclarationNode implements Node {
 	private void visitGetter(Context context, IxType fieldType, boolean isStatic, String descriptor, String beanName, int staticMod, int methodFinalMod) throws IxException {
 		int getOpcode = isStatic ? Opcodes.GETSTATIC : Opcodes.GETFIELD;
 		if(verifyAccess()) {
-			String fName = name.value().matches("^is[\\p{Lu}].*") ? name.value() : "get" + beanName;
+			String fName = name.value().matches("^is\\p{Lu}.*") ? name.value() : "get" + beanName;
 			MethodVisitor visitor = context.getCurrentClassWriter().visitMethod(Opcodes.ACC_PUBLIC | staticMod | methodFinalMod, fName, "()" + descriptor, null, null);
 			visitor.visitCode();
 
