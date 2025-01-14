@@ -12,6 +12,7 @@ import com.kingmang.ixion.ast.*;
 import com.kingmang.ixion.util.Pair;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -795,13 +796,18 @@ public class ParserImpl implements Parser {
 
 	private Node variable() throws ParserException {
 		Token name = tokens.get(index - 1);
-
-		if(tokens.get(index).type() == TokenType.LPAREN) {
-			List<Node> args = arguments("function arguments");
+		List<Node> args = new ArrayList<>();
+		if (tokens.get(index).type() == TokenType.LPAREN) {
+			args = arguments("function arguments");
 			return new FunctionCallNode(name, args);
 		}
-        return new VariableAccessNode(name);
-    }
+		if(args.isEmpty())
+			return new FunctionCallNode(name, Collections.emptyList());
+
+
+		return new VariableAccessNode(name);
+	}
+
 
 	private Node superCall() throws ParserException {
 		Token superTok = tokens.get(index - 1);
