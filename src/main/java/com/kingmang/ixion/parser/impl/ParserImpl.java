@@ -111,6 +111,11 @@ public class ParserImpl implements Parser {
 					throw new ParserException(tok, "Cannot apply function modifier to class");
 				return classDeclaration(accessModifier, staticModifier, isFinal);
 			}
+			case INTERFACE: {
+				if(!functionModifiers.isEmpty())
+					throw new ParserException(tok, "Cannot apply function modifier to interface");
+				return interfaceDeclaration(accessModifier, staticModifier);
+			}
 			case ENUM: {
 				if(!functionModifiers.isEmpty() || isFinal)
 					throw new ParserException(tok, "Unable to apply modifier to enum");
@@ -239,6 +244,18 @@ public class ParserImpl implements Parser {
 		consume(TokenType.RBRACE, "Expected '}' after class body");
 
 		return new ClassDeclarationNode(name, superclass, declarations, access, isModule);
+	}
+
+
+	private Node interfaceDeclaration(Token access, Token staticModifier) throws ParserException {
+		if(staticModifier != null) throw new ParserException(staticModifier, "Cannot mark an interface as static");
+		Token name = consume(TokenType.IDENTIFIER, "Expected interface name");
+
+		consume(TokenType.LBRACE, "Expected '{' before interface body");
+
+		consume(TokenType.RBRACE, "Expected '}' after interface body");
+
+		return new InterfaceNode(name, new ArrayList<>(), access);
 	}
 
 
@@ -801,9 +818,6 @@ public class ParserImpl implements Parser {
 			args = arguments("function arguments");
 			return new FunctionCallNode(name, args);
 		}
-		if(args.isEmpty())
-			return new FunctionCallNode(name, Collections.emptyList());
-
 
 		return new VariableAccessNode(name);
 	}

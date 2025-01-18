@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Getter
 public class FunctionDeclarationNode implements Node {
 
 	public enum DeclarationType {
@@ -29,7 +30,6 @@ public class FunctionDeclarationNode implements Node {
 	private final DeclarationType type;
 	private final Token name;
 	private final Node body;
-	@Getter
 	private final List<Pair<Token, Node>> parameters;
 	private final Node returnTypeNode;
 	private final List<Node> throwsList;

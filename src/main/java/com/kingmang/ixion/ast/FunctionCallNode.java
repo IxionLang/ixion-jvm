@@ -8,12 +8,14 @@ import com.kingmang.ixion.parser.tokens.Token;
 import com.kingmang.ixion.parser.Node;
 import com.kingmang.ixion.types.IxType;
 import com.kingmang.ixion.compiler.ix_function.IxFunctionType;
+import lombok.Getter;
 import org.objectweb.asm.Opcodes;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Getter
 public class FunctionCallNode implements Node {
 
 	private final Token name;

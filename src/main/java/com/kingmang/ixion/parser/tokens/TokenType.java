@@ -4,6 +4,7 @@ package com.kingmang.ixion.parser.tokens;
 public enum TokenType {
 
 	IDENTIFIER,
+	INTERFACE,
 	UNITTEST,
 	EXT,
 	FINAL,
