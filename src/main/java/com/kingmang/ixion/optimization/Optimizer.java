@@ -4,7 +4,9 @@ import java.util.Properties;
 
 public class Optimizer {
 	public static Properties defOptimizations(){
-		return new Properties();
+		Properties properties = new Properties();
+		properties.put("constant.string.concat", true);
+		return properties;
 	}
 
 

@@ -77,11 +77,11 @@ public class FunctionDeclarationNode implements Node {
 			if (
 					context.getScope().exactLookupFunction(name.value(),
 							parameters.stream().map(n -> Unthrow.wrap(() ->
-							n.second().getReturnType(context)))
-							.toArray(IxType[]::new)) != null
+											n.second().getReturnType(context)))
+									.toArray(IxType[]::new)) != null
 			)
 				throw new IxException(name,
-					"Redefinition of function '%s' in global scope.".formatted(name.value()));
+						"Redefinition of function '%s' in global scope.".formatted(name.value()));
 
 			computeReturnType(context, true);
 
@@ -316,8 +316,8 @@ public class FunctionDeclarationNode implements Node {
 
 	private boolean isStatic(Context context) {
 		if(staticModifier != null) return true;
-        return context.getType() == ContextType.GLOBAL;
-    }
+		return context.getType() == ContextType.GLOBAL;
+	}
 
 	@Override
 	public String toString() {
