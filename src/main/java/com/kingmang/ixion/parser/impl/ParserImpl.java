@@ -352,6 +352,12 @@ public class ParserImpl implements Parser {
 		return new ReturnNode(returnTok, expression);
 	}
 
+	private Node matchStatement() throws ParserException {
+		Node node = null;
+		return node;
+	}
+
+
 	private Node ifStatement() throws ParserException {
 		Token ifTok = consume(TokenType.IF, "Expected 'if'");
 
@@ -478,6 +484,7 @@ public class ParserImpl implements Parser {
 		return switch (tokens.get(index).type()) {
 			case LBRACE -> { advance(); yield blockStatement(); }
 			case IF -> ifStatement();
+			case MATCH -> matchStatement();
 			case WHILE -> whileStatement();
 			case FOR -> forStatement();
 			case BREAK, CONTINUE -> loopControlStatement();

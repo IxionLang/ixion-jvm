@@ -6,6 +6,8 @@ public enum TokenType {
 	IDENTIFIER,
 	INTERFACE,
 	UNITTEST,
+	MATCH,
+	CASE,
 	EXT,
 	FINAL,
 	USING,

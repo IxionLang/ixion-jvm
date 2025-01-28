@@ -5,9 +5,9 @@ using java.net.URLConnection;
 using java.io.IOException;
 
 def main {
-    var fileName = "string_array.ix";
+    var fileName = "math_parser.ix";
     var saveDir = fileName;
-    var fileUrl = "https://raw.githubusercontent.com/IxionLang/Ixion/main/examples/arrays/" + fileName;
+    var fileUrl = "https://raw.githubusercontent.com/IxionLang/Ixion/main/examples/algorithms/" + fileName;
     try {
         downloadFile(fileUrl, saveDir);
     }catch(e : Exception){
