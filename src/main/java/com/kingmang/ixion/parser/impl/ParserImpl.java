@@ -352,11 +352,7 @@ public class ParserImpl implements Parser {
 		return new ReturnNode(returnTok, expression);
 	}
 
-	private Node matchStatement() throws ParserException {
-		Node node = null;
-		return node;
-	}
-
+	
 
 	private Node ifStatement() throws ParserException {
 		Token ifTok = consume(TokenType.IF, "Expected 'if'");
@@ -441,6 +437,10 @@ public class ParserImpl implements Parser {
 	}
 
 
+	private Node matchStatement() throws ParserException{
+		return null;
+	}
+
 	private Node tryStatement() throws ParserException {
 		Token tryTok = consume(TokenType.TRY, "Expected 'try'");
 
@@ -500,7 +500,7 @@ public class ParserImpl implements Parser {
 	}
 
 	private Node assignExpr() throws ParserException {
-		Node left = logicalNullExpr();
+		Node left = ternaryExpr();
 
 		while(matchAssignment()) {
 			Token op = tokens.get(index - 1);
@@ -510,6 +510,21 @@ public class ParserImpl implements Parser {
 			left = new AssignmentNode(left, op, right);
 		}
 
+		return left;
+	}
+
+	private Node ternaryExpr() throws ParserException {
+		Node left = logicalAndExpr();
+		if(match(TokenType.QUESTION)) {
+
+			Node trueExpr = expression();
+
+			consume(TokenType.COLON, "Expected ':' after true expression");
+
+			Node falseExpr = expression();
+
+			return new TernaryExprNode(left, trueExpr, falseExpr);
+		}
 		return left;
 	}
 

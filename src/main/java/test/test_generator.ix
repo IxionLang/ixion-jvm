@@ -1,6 +1,6 @@
 using java.io.FileWriter;
 
-def main(args : String[]) {
+def main {
 
     var generator = new BigFileGenerator();
     try{

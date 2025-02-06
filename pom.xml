@@ -20,15 +20,15 @@
             <version>9.7.1</version>
         </dependency>
         <dependency>
+            <groupId>com.leacox.motif</groupId>
+            <artifactId>motif</artifactId>
+            <version>0.1</version>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.34</version>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.processing</groupId>
-            <artifactId>core</artifactId>
-            <version>3.3.6</version>
         </dependency>
     </dependencies>
 </project>

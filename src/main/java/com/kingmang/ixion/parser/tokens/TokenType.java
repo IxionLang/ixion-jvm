@@ -8,6 +8,7 @@ public enum TokenType {
 	UNITTEST,
 	MATCH,
 	CASE,
+	DEFAULT,
 	EXT,
 	FINAL,
 	USING,
