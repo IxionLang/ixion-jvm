@@ -1,16 +1,15 @@
 package com.kingmang.ixion.ast;
 
+import com.kingmang.ixion.compiler.Context;
 import com.kingmang.ixion.util.FileContext;
 import com.kingmang.ixion.exceptions.IxException;
 import com.kingmang.ixion.parser.Node;
-import com.kingmang.ixion.compiler.Variable;
 import com.kingmang.ixion.types.IxType;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 public class TernaryExprNode implements Node {
-  
+
   private final Node condition;
   private final Node trueExpr;
   private final Node falseExpr;
@@ -25,24 +24,28 @@ public class TernaryExprNode implements Node {
   public void visit(FileContext context) throws IxException {
     MethodVisitor methodVisitor = context.getContext().getMethodVisitor();
 
-    Label falseLabel = new Label();
-    Label endLabel = new Label();
-
     condition.visit(context);
-    methodVisitor.visitJumpInsn(Opcodes.IFEQ, falseLabel);
 
     trueExpr.visit(context);
-    methodVisitor.visitJumpInsn(Opcodes.GOTO, endLabel);
-
-
-    methodVisitor.visitLabel(falseLabel);
     falseExpr.visit(context);
 
-    methodVisitor.visitLabel(endLabel);
+    methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, "ixion/std/ternary", "ternaryOperator", "(ZLjava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", false);
   }
 
   @Override
   public String toString() {
     return "(%s ? %s : %s)".formatted(condition, trueExpr, falseExpr);
+  }
+
+  @Override
+  public IxType getReturnType(Context context) throws IxException {
+    IxType trueType = trueExpr.getReturnType(context);
+    IxType falseType = falseExpr.getReturnType(context);
+
+    if (trueType.equals(falseType)) {
+      return trueType;
+    }
+
+    throw new IxException(null, "Incompatible types in ternary operator: %s and %s".formatted(trueType, falseType));
   }
 }
