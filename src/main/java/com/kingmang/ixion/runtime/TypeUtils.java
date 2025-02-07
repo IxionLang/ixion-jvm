@@ -1,6 +1,6 @@
-package ixion.lang;
+package com.kingmang.ixion.runtime;
 
-public class Types {
+public class TypeUtils {
 
     public static Integer Int(int arg){
         return arg;

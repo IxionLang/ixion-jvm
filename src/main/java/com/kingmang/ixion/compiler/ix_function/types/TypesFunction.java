@@ -10,7 +10,7 @@ public class TypesFunction {
     public static final IxFunction INT_BOXED =
             IxLibraryImpl.function(
                     "Int",
-                    "Types",
+                    "TypeUtils",
                     IxLibraryImpl.INT,
                     IxLibraryImpl.INTEGER_CLASS
             );
@@ -19,7 +19,7 @@ public class TypesFunction {
     public static final IxFunction FLOAT_BOXED =
             IxLibraryImpl.function(
                     "Float",
-                    "Types",
+                    "TypeUtils",
                     IxLibraryImpl.FLOAT,
                     IxLibraryImpl.FLOAT_CLASS
             );
@@ -28,7 +28,7 @@ public class TypesFunction {
     public static final IxFunction TOINT =
             IxLibraryImpl.function(
               "toInt",
-              "Types",
+              "TypeUtils",
               IxLibraryImpl.OBJECT,
               IxLibraryImpl.INT
             );
@@ -36,7 +36,7 @@ public class TypesFunction {
     public static final IxFunction TOFLOAT =
             IxLibraryImpl.function(
                     "toFloat",
-                    "Types",
+                    "TypeUtils",
                     IxLibraryImpl.OBJECT,
                     IxLibraryImpl.FLOAT
             );

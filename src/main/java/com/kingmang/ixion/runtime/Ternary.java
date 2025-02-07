@@ -1,6 +1,6 @@
-package ixion.std;
+package com.kingmang.ixion.runtime;
 
-public class ternary {
+public class Ternary {
     public static <T> T ternaryOperator(boolean condition, T trueValue, T falseValue) {
         return condition ? trueValue : falseValue;
     }
