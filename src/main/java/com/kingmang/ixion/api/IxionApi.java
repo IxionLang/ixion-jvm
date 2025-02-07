@@ -29,11 +29,6 @@ import java.util.stream.Collectors;
 
 public class IxionApi {
 
-	/*
-	Это еще не совсем api.
-	Тут просто методы для анализа и компиляции.
-	Более интересные вещи можно будет найти в ixion.std
-	 */
 	@Getter
 	private static final File outputDirectory = new File("out");
 	private final List<Path> classpath = null;
