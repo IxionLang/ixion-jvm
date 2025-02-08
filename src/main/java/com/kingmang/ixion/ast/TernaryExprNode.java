@@ -29,7 +29,7 @@ public class TernaryExprNode implements Node {
     trueExpr.visit(context);
     falseExpr.visit(context);
 
-    methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, "ixion/std/ternary", "ternaryOperator", "(ZLjava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", false);
+    methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, "com/kingmang/ixion/runtime/Ternary", "ternaryOperator", "(ZLjava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", false);
   }
 
   @Override
