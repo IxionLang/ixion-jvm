@@ -1,6 +1,5 @@
 package ixion.std;
 
-
 import lombok.Getter;
 
 public class string{
@@ -29,8 +28,8 @@ public class string{
         int count = 0;
         String[] arr = str.split("");
 
-        for (int i = 0; i < arr.length; i++) {
-            if(arr[i].equals(symbol)){
+        for (String s : arr) {
+            if (s.equals(symbol)) {
                 count++;
             }
         }

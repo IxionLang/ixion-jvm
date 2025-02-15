@@ -56,6 +56,7 @@ public class Scope {
     private void addLangFunctions(){
         addFunction(TypesFunction.INT_BOXED);
         addFunction(TypesFunction.FLOAT_BOXED);
+		addFunction(TypesFunction.AS_STRING_CHAR);
 		addFunction(TypesFunction.TOINT);
 		addFunction(TypesFunction.TOFLOAT);
     }

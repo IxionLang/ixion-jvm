@@ -844,7 +844,6 @@ public class ParserImpl implements Parser {
 		return new VariableAccessNode(name);
 	}
 
-
 	private Node superCall() throws ParserException {
 		Token superTok = tokens.get(index - 1);
 		consume(TokenType.DOT, "Expected '.' after super.");

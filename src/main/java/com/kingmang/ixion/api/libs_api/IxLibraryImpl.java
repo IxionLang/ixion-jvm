@@ -8,8 +8,12 @@ public class IxLibraryImpl {
     //constants
     private static final String runtimePath = "com/kingmang/ixion/runtime/";
     private static final String defaultJavaPath = "Ljava/lang/";
+
     public static final String INT = "I";
+    public static final String CHAR = "C";
     public static final String FLOAT = "F";
+
+    public static final String STRING_CLASS = defaultJavaPath.concat("String;");
     public static final String INTEGER_CLASS = defaultJavaPath.concat("Integer;");
     public static final String OBJECT = defaultJavaPath.concat("Object;");
     public static final String FLOAT_CLASS = defaultJavaPath.concat("Float;");

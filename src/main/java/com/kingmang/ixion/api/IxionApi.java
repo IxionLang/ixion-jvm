@@ -35,20 +35,19 @@ public class IxionApi {
 	@Getter
 	private final List<String> files = new ArrayList<>();
 
-
 	public void runClass(String className, List<String> files, String[] args) {
-		try {
+
 			String[] parts = className.split("\\.");
 			for (String file : files) {
 				if (file != null) {
 					try {
 						runClass(Path.of(outputDirectory.toURI()), parts[0], args);
-					} catch (Exception _) {}
+					} catch (Exception ex) {
+						ex.printStackTrace();
+					}
 				}
 			}
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+
 	}
 
 	public void runClass(Path outputFolder, String className, String[] args) throws Exception {

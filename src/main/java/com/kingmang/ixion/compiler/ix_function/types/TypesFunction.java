@@ -16,6 +16,14 @@ public class TypesFunction {
             );
 
 
+    public static final IxFunction AS_STRING_CHAR =
+        IxLibraryImpl.function(
+                "asString",
+                "TypeUtils",
+                IxLibraryImpl.CHAR,
+                IxLibraryImpl.STRING_CLASS
+        );
+
     public static final IxFunction FLOAT_BOXED =
             IxLibraryImpl.function(
                     "Float",
