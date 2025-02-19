@@ -197,6 +197,7 @@ public class LexerImpl implements Lexer {
 
 		return makeToken(switch (val) {
 			case "using" -> TokenType.USING;
+			case "impl" -> TokenType.IMPL;
 			case "interface" -> TokenType.INTERFACE;
 			case "match" -> TokenType.MATCH;
 			case "case" -> TokenType.CASE;

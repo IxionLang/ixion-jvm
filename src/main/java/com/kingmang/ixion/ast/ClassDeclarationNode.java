@@ -24,19 +24,23 @@ public class ClassDeclarationNode implements Node {
 
 	private final Token name;
 	private final Node superclass;
+	private final Node interfaze;
 	private final List<Node> declarations;
 	private final List<ThisMethodDeclarationNode> constructors;
 	private final boolean isFinal;
 	private final Token access;
 	private boolean staticVariableInit;
 
+
 	public ClassDeclarationNode(Token name,
 								Node superclass,
+								Node interfaze,
 								List<Node> declarations,
 								Token access,
 								boolean isFinal) {
 		this.name = name;
 		this.superclass = superclass;
+		this.interfaze = interfaze;
 		this.declarations = declarations;
 		this.constructors = new ArrayList<>();
 		this.access = access;
@@ -45,11 +49,11 @@ public class ClassDeclarationNode implements Node {
 	}
 
 	@Override
-	public void buildClasses(Context context) {
+	public void buildClasses(Context context) throws IxException {
 		ContextType prevType = context.getType();
 		String prevClass = context.getCurrentClass();
 
-		ClassWriter writer = initClass("java/lang/Object", context);
+		ClassWriter writer = initClass("java/lang/Object", "ixion/lang/IxionClass", context);
 
 		writer.visitEnd();
 
@@ -65,7 +69,7 @@ public class ClassDeclarationNode implements Node {
 		IxType prevSuperClass = context.getCurrentSuperClass();
 		context.setCurrentSuperClass(getSuperclassType(context));
 
-		ClassWriter writer = initClass(getSuperclassType(context).getInternalName(), context);
+		ClassWriter writer = initClass(getSuperclassType(context).getInternalName(), getInterfaceType(context).getInternalName(), context);
 
 		MethodVisitor defaultConstructor = null;
 		if(constructors.isEmpty()) {
@@ -129,7 +133,7 @@ public class ClassDeclarationNode implements Node {
 		IxType prevSuperClass = context.getCurrentSuperClass();
 		context.setCurrentSuperClass(getSuperclassType(context));
 
-		ClassWriter writer = initClass(getSuperclassType(context).getInternalName(), context);
+		ClassWriter writer = initClass(getSuperclassType(context).getInternalName(), getInterfaceType(context).getInternalName(), context);
 
 		MethodVisitor defaultConstructor = null;
 
@@ -183,20 +187,20 @@ public class ClassDeclarationNode implements Node {
 		context.setCurrentSuperClass(prevSuperClass);
 	}
 
-	private ClassWriter initClass(String superclassName, Context context) {
+	private ClassWriter initClass(String superclassName, String interfaze, Context context) {
 		context.setType(ContextType.CLASS);
 		int accessLevel = getAccessLevel();
 
 		String baseName = name.value();
 		String className = baseName;
 
-		if(accessLevel == 0) {
+		if (accessLevel == 0) {
 			className = context.getCurrentClass() + "PRIV" + baseName;
 		}
-		if(!context.getPackageName().isEmpty()) {
+		if (!context.getPackageName().isEmpty()) {
 			className = context.getPackageName() + "/" + className;
 		}
-		if(!className.equals(baseName)) {
+		if (!className.equals(baseName)) {
 			context.getUsings().put(baseName, className.replace('/', '.'));
 		}
 
@@ -204,19 +208,22 @@ public class ClassDeclarationNode implements Node {
 
 		ClassWriter writer = new CustomClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES, context.getLoader());
 
-		if(!isFinal) {
+
+		String[] interfaceNames = {interfaze};
+
+		if (!isFinal) {
 			writer.visit(
 					Opcodes.V9,
 					accessLevel | Opcodes.ACC_SUPER, className,
 					null, superclassName,
-					null
+					interfaceNames
 			);
-		}else{
+		} else {
 			writer.visit(
 					Opcodes.V9,
 					accessLevel | Opcodes.ACC_SUPER | Opcodes.ACC_FINAL, className,
 					null, superclassName,
-					null
+					interfaceNames
 			);
 		}
 
@@ -226,6 +233,7 @@ public class ClassDeclarationNode implements Node {
 
 		return writer;
 	}
+
 
 	private MethodVisitor createDefaultConstructor(ClassWriter writer, Context context, boolean check) throws IxException {
 		MethodVisitor constructor = writer.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
@@ -264,6 +272,11 @@ public class ClassDeclarationNode implements Node {
 	private IxType getSuperclassType(Context context) throws IxException {
 		if(superclass == null) return IxType.OBJECT_TYPE;
 		return superclass.getReturnType(context);
+	}
+
+	private IxType getInterfaceType(Context context) throws IxException {
+		if(interfaze == null) return IxType.OBJECT_TYPE;
+		return interfaze.getReturnType(context);
 	}
 
 	private int getAccessLevel() {

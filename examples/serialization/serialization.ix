@@ -1,0 +1,47 @@
+using java.io.Serializable;
+using java.io.ObjectOutputStream;
+using java.io.FileOutputStream;
+using java.io.IOException;
+using java.io.ObjectInputStream;
+using java.io.FileInputStream;
+
+def main {
+    var user = new User("Alice", 50);
+    serialize("a.data", user);
+    deserialize("a.data");
+
+}
+
+def serialize(filename : String, usr : User){
+    try {
+        var oos = new ObjectOutputStream(new FileOutputStream(filename));
+        oos.writeObject(usr);
+    } catch (e : IOException) {
+        e.printStackTrace();
+    }
+}
+
+def deserialize(filename : String){
+    try {
+        var ois = new ObjectInputStream(new FileInputStream(filename));
+        var deserializedUser = ois.readObject() to User;
+        println(deserializedUser);
+    } catch (e : Exception) {
+        e.printStackTrace();
+    }
+}
+
+class User impl Serializable {
+    var name : String = "";
+    var age : int;
+
+    this(name : String, age : int) {
+        this.name = name;
+        this.age = age;
+    }
+
+
+    override pub def toString() : String {
+        return "User{name='" + name + "', age=" + age + '}';
+    }
+}

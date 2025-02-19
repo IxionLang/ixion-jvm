@@ -5,6 +5,7 @@ public enum TokenType {
 
 	IDENTIFIER,
 	INTERFACE,
+	IMPL,
 	UNITTEST,
 	MATCH,
 	CASE,

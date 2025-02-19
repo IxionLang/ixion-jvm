@@ -1,6 +1,3 @@
-interface some {
-    def method(){}
-}
 def main {
     print("Hello World");
 }

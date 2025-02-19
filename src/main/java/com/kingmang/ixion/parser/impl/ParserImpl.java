@@ -190,10 +190,14 @@ public class ParserImpl implements Parser {
 		Token name = consume(TokenType.IDENTIFIER, "Expected class name");
 
 		Node superclass = null;
+		Node interfaze = null;
+
 		if(match(TokenType.EXT)) {
 			superclass = basicType();
 		}
-
+		if(match(TokenType.IMPL)){
+			interfaze = basicType();
+		}
 		consume(TokenType.LBRACE, "Expected '{' before class body");
 
 		LinkedList<Node> declarations = new LinkedList<>();
@@ -207,7 +211,7 @@ public class ParserImpl implements Parser {
 
 		consume(TokenType.RBRACE, "Expected '}' after class body");
 
-		return new ClassDeclarationNode(name, superclass, declarations, access, isModule);
+		return new ClassDeclarationNode(name, superclass, interfaze, declarations, access, isModule);
 	}
 
 
