@@ -8,19 +8,22 @@ import com.kingmang.ixion.parser.Node;
 import com.kingmang.ixion.parser.tokens.Token;
 import com.kingmang.ixion.parser.tokens.TokenType;
 import com.kingmang.ixion.util.FileContext;
+import com.kingmang.ixion.util.Pair;
+import com.kingmang.ixion.util.Unthrow;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-public class InterfaceNode implements Node {
+public class InterfaceDeclarationNode implements Node {
     private final Token name;
     private final List<Node> methods;
     private final Token access;
 
-    public InterfaceNode(Token name, List<Node> methods, Token access) {
+    public InterfaceDeclarationNode(Token name, List<Node> methods, Token access) {
         this.name = name;
         this.methods = methods;
         this.access = access;
@@ -37,8 +40,12 @@ public class InterfaceNode implements Node {
         context.setType(ContextType.CLASS);
 
         Type interfaceType = Type.getObjectType(context.getCurrentClass());
+        for(Node node : methods)
+            if(node instanceof FunctionDeclarationNode funcNode)
+                buildTestMethod(funcNode, writer);
+            else
+                throw new IxException(name, "Exception in using node");
 
-        buildTestMethod(writer, context);
         MethodVisitor staticMethod = writer.visitMethod(Opcodes.ACC_STATIC, "<clinit>", "()V", null, null);
         staticMethod.visitCode();
 
@@ -69,8 +76,8 @@ public class InterfaceNode implements Node {
     }
 
 
-    private void buildTestMethod(ClassWriter writer, Context context) {
-        MethodVisitor defaultMethod = writer.visitMethod(Opcodes.ACC_PUBLIC , "defaultMethod", "()V", null, null);
+    private void buildTestMethod(FunctionDeclarationNode node, ClassWriter writer) {
+        MethodVisitor defaultMethod = writer.visitMethod(Opcodes.ACC_PUBLIC , node.getName().value(), "()V", null, null);
         defaultMethod.visitCode();
         defaultMethod.visitInsn(Opcodes.RETURN);
         defaultMethod.visitMaxs(0, 0);
@@ -111,5 +118,7 @@ public class InterfaceNode implements Node {
         if(access == null || access.type() == TokenType.PUBLIC) return Opcodes.ACC_PUBLIC;
         return 0;
     }
+
+
 
 }

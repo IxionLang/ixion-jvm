@@ -40,10 +40,10 @@ public class IfStatementNode implements Node {
 		Label falseL = new Label();
 		Label end = new Label();
 
-		boolean instanceofNode = false;
+		boolean isNode = false;
 		if(condition instanceof IsNode) {
 			((IsNode) condition).setShouldReScope(true);
-			instanceofNode = true;
+			isNode = true;
 		}
 
 		if(condition instanceof EqualityOperationNode) {
@@ -64,7 +64,7 @@ public class IfStatementNode implements Node {
 
 		body.visit(context);
 
-		if(instanceofNode) {
+		if(isNode) {
 			Pair<Variable, IxType> pastVariable = ((IsNode) condition).getPastVariable();
 			pastVariable.first().setType(pastVariable.second());
 		}

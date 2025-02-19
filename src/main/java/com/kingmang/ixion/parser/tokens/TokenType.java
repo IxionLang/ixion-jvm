@@ -54,6 +54,7 @@ public enum TokenType {
 	GETTER,
 	SETTER,
 
+	AT,
 	LBRACE, RBRACE,
 	LPAREN, RPAREN,
 	LSQBR, RSQBR,

@@ -85,6 +85,7 @@ public class LexerImpl implements Lexer {
 			else {
 				TokenType type = switch (current) {
 					case '{' -> TokenType.LBRACE;
+					case '@' -> TokenType.AT;
 					case '}' -> TokenType.RBRACE;
 					case '(' -> TokenType.LPAREN;
 					case ')' -> TokenType.RPAREN;

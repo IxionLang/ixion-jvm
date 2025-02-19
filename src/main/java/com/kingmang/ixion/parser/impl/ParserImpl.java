@@ -1,7 +1,6 @@
 package com.kingmang.ixion.parser.impl;
 
 
-import com.kingmang.ixion.exceptions.IxException;
 import com.kingmang.ixion.exceptions.ParserException;
 import com.kingmang.ixion.parser.Node;
 import com.kingmang.ixion.parser.Parser;
@@ -12,7 +11,6 @@ import com.kingmang.ixion.ast.*;
 import com.kingmang.ixion.util.Pair;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -100,52 +98,18 @@ public class ParserImpl implements Parser {
 		}
 
 		Token tok = advance();
-		switch (tok.type()){
-			case FUNCTION: {
-				if(isFinal)
-					throw new ParserException(tok, "The final modifier only applies to classes");
-				return functionDeclaration(accessModifier, staticModifier, functionModifiers);
-			}
-			case CLASS:{
-				if(!functionModifiers.isEmpty())
-					throw new ParserException(tok, "Cannot apply function modifier to class");
-				return classDeclaration(accessModifier, staticModifier, isFinal);
-			}
-			case INTERFACE: {
-				if(!functionModifiers.isEmpty())
-					throw new ParserException(tok, "Cannot apply function modifier to interface");
-				return interfaceDeclaration(accessModifier, staticModifier);
-			}
-			case ENUM: {
-				if(!functionModifiers.isEmpty() || isFinal)
-					throw new ParserException(tok, "Unable to apply modifier to enum");
-				return enumDeclaration(accessModifier, staticModifier);
-			}
-			case THIS: {
-				if(!functionModifiers.isEmpty() || isFinal)
-					throw new ParserException(tok, "Unable to apply modifier to constructor");
-				return constructorDeclaration(accessModifier, staticModifier);
-			}
-			case VAR, CONST: {
-				if(!functionModifiers.isEmpty() || isFinal)
-					throw new ParserException(tok, "Unable to apply modifier to variable");
-				return variableDeclaration(accessModifier, staticModifier);
-			}
-			default: {
-				throw new ParserException(tok, "Expected declaration");
-			}
-		}
-		/*
-		return switch(tok.type()) {
 
+		return switch(tok.type()) {
+			case INTERFACE -> interfaceDeclaration(accessModifier,staticModifier);
 			case FUNCTION -> functionDeclaration(accessModifier, staticModifier, functionModifiers);
 			case CLASS -> classDeclaration(accessModifier, staticModifier, isFinal);
 			case ENUM -> enumDeclaration(accessModifier, staticModifier);
 			case THIS -> constructorDeclaration(accessModifier, staticModifier);
 			case VAR, CONST -> variableDeclaration(accessModifier, staticModifier);
+			//case AT -> annotationDeclaration();
 			default -> throw new ParserException(tok, "Expected declaration");
 		};
-		 */
+
 	}
 
 
@@ -250,12 +214,15 @@ public class ParserImpl implements Parser {
 	private Node interfaceDeclaration(Token access, Token staticModifier) throws ParserException {
 		if(staticModifier != null) throw new ParserException(staticModifier, "Cannot mark an interface as static");
 		Token name = consume(TokenType.IDENTIFIER, "Expected interface name");
-
+		List<Node> methods = new ArrayList<>();
 		consume(TokenType.LBRACE, "Expected '{' before interface body");
-
+		do{
+			match(TokenType.FUNCTION);
+			methods.add(functionDeclaration(null, null, null));
+		}while (!isAtEnd() && match(TokenType.COMMA));
 		consume(TokenType.RBRACE, "Expected '}' after interface body");
 
-		return new InterfaceNode(name, new ArrayList<>(), access);
+		return new InterfaceDeclarationNode(name, methods, access);
 	}
 
 
@@ -388,6 +355,7 @@ public class ParserImpl implements Parser {
 		return new WhileStatementNode(whileTok, condition, body);
 	}
 
+
 	private Node loopControlStatement() throws ParserException {
 		switch (tokens.get(index).type()) {
             case BREAK, CONTINUE -> {
@@ -479,6 +447,8 @@ public class ParserImpl implements Parser {
 
 		return new TryNode(tryBody, catchBlocks, finallyBlock);
 	}
+
+
 
 	private Node statement() throws ParserException {
 		return switch (tokens.get(index).type()) {
