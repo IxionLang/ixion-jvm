@@ -27,6 +27,7 @@ public class IxType {
 	public static IxType VOID_TYPE = new IxType(Type.VOID_TYPE);
 	public static IxType NULL_TYPE = IxType.getObjectType("java/lang/Object");
 	public static final IxType STRING_TYPE = IxType.getObjectType("java/lang/String");
+	public static final IxType INTERFACE_TYPE = IxType.getObjectType("ixion/lang/IxionClass");
 	public static final IxType OBJECT_TYPE = IxType.getObjectType("java/lang/Object");
 	public static final IxType NULLABLE_OBJECT_TYPE = OBJECT_TYPE.asNullable();
 

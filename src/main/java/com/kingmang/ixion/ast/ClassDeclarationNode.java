@@ -275,7 +275,7 @@ public class ClassDeclarationNode implements Node {
 	}
 
 	private IxType getInterfaceType(Context context) throws IxException {
-		if(interfaze == null) return IxType.OBJECT_TYPE;
+		if(interfaze == null) return IxType.INTERFACE_TYPE;
 		return interfaze.getReturnType(context);
 	}
 
