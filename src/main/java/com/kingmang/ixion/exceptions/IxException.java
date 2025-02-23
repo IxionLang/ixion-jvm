@@ -23,6 +23,7 @@ public class IxException extends Exception {
 	}
 
 	public String defaultError(String filename) {
+		if(location == null) return IxionPattern.formatted(-1, -1, filename, "not found token location", message);
 		return IxionPattern.formatted(location.line(), location.column(), filename, location.value(), message);
 	}
 
