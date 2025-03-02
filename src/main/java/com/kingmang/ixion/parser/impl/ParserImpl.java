@@ -14,6 +14,10 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+/*
+Синтаксическое дерево, которое строится парсером не является абстрактным,
+поскольку узлы кодируют способ их компиляции (но термин все еще применим).
+*/
 
 public class ParserImpl implements Parser {
 
@@ -101,7 +105,7 @@ public class ParserImpl implements Parser {
 
 		return switch(tok.type()) {
 			case INTERFACE -> interfaceDeclaration(accessModifier,staticModifier);
-			case FUNCTION -> functionDeclaration(accessModifier, staticModifier, functionModifiers);
+			case DEFINE_FUNCTION -> functionDeclaration(accessModifier, staticModifier, functionModifiers);
 			case CLASS -> classDeclaration(accessModifier, staticModifier, isFinal);
 			case ENUM -> enumDeclaration(accessModifier, staticModifier);
 			case THIS -> constructorDeclaration(accessModifier, staticModifier);
@@ -221,7 +225,7 @@ public class ParserImpl implements Parser {
 		List<Node> methods = new ArrayList<>();
 		consume(TokenType.LBRACE, "Expected '{' before interface body");
 		do{
-			match(TokenType.FUNCTION);
+			match(TokenType.DEFINE_FUNCTION);
 			methods.add(functionDeclaration(null, null, null));
 		}while (!isAtEnd() && match(TokenType.COMMA));
 		consume(TokenType.RBRACE, "Expected '}' after interface body");

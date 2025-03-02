@@ -15,7 +15,7 @@ public enum TokenType {
 	USING,
 	OVERRIDE,
 	PACKAGE,
-	FUNCTION,
+	DEFINE_FUNCTION,
 	VAR,
 	CONST,
 	CLASS,

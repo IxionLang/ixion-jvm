@@ -7,6 +7,9 @@ import com.kingmang.ixion.parser.tokens.TokenType;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+Приминает поток символов -> возвращает поток токенов, которые обрабатываются парсером
+ */
 
 public class LexerImpl implements Lexer {
 
@@ -208,7 +211,7 @@ public class LexerImpl implements Lexer {
 			case "setter" -> TokenType.SETTER;
 			case "override" -> TokenType.OVERRIDE;
 			case "package" -> TokenType.PACKAGE;
-			case "def" -> TokenType.FUNCTION;
+			case "def" -> TokenType.DEFINE_FUNCTION;
 			case "var" -> TokenType.VAR;
 			case "const" -> TokenType.CONST;
 			case "class" -> TokenType.CLASS;
