@@ -23,9 +23,26 @@ public class Runner {
 		api.getFiles().add(args[0]);
 		String[] parts = args[0].split("\\.");
 		api.compile();
-		api.runClass(parts[0] + "ixc", api.getFiles(), args);
+		for (String arg : args){
+			if(arg.equals("-l")) System.out.println(consoleLog(args[0]));
+			if(arg.equals("-cr")) api.runClass(parts[0] + "ixc", api.getFiles(), args);
+		}
 
 	}
 
+	static String consoleLog(String filename){
+		return
+				"""
+				[Ixion version : %s]
+				[Shuttle version : %s]
+				[Filename: %s]
+				
+				""".
+				formatted(
+						RunnerInfo.VERSION,
+						RunnerInfo.SHUTTLE_MESSAGE,
+						filename
+						);
+	}
 
 }
