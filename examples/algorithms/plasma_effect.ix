@@ -1,0 +1,25 @@
+//plasma effect from https://github.com/turborium/TurboriumBasic
+def main {
+    for (var y = 0; y < 24; y+=1) {
+        for (var x = 0; x < 60; x+=1) {
+            var val : double =
+                0.5 * Math.sin(1.24 * Math.sin(x * 0.3 + y * 0.1) +
+                Math.sin(x * 0.02 + y * 0.37) +
+                3 * Math.sin(x * 0.15 + y * 0.08) +
+                1.8 * Math.sin(x * 0.139 + y * 0.265)) + 0.5;
+
+            if (val >= 0.0) {
+                if (val < 0.25)
+                    print(" ");
+                else if (val < 0.5)
+                    print(".");
+                else if (val < 0.75)
+                    print("*");
+                else if (val <= 1)
+                    print("#");
+
+            }
+        }
+        println();
+    }
+}

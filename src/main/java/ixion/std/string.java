@@ -2,7 +2,7 @@ package ixion.std;
 
 import lombok.Getter;
 
-public class string{
+public class string {
 
     @Getter
     private String str;
