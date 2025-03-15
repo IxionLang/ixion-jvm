@@ -1,16 +1,17 @@
 package com.kingmang.ixion.runner;
 
-import com.kingmang.ixion.api.IxionApi;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import com.kingmang.ixion.api.IxionApi;
 
 
 public class Runner {
 
 
 	public static void main(String[] args) throws IOException {
+		
 		IxionApi api = new IxionApi();
 		if(!IxionApi.getOutputDirectory().exists())
 			IxionApi.getOutputDirectory().mkdir();
@@ -20,6 +21,11 @@ public class Runner {
 				Files.delete(p);
 			} catch (IOException _) {}
 		});
+		if(args.length == 0){
+			api.getFiles().add("test.ix");
+			api.compile();
+			api.runClass("testixc", api.getFiles(), args);	
+		}
 		api.getFiles().add(args[0]);
 		String[] parts = args[0].split("\\.");
 		api.compile();

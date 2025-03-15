@@ -1,0 +1,66 @@
+using java.util.ArrayList;
+using java.util.List;
+using java.util.Stack;
+using java.util.Scanner;
+
+def main {
+    var scanner = new Scanner(System.in);
+    while(true){
+        var str = scanner.nextLine();
+        println(interpret(tokenize(str)));
+    }
+}
+
+def interpret(tokens : ArrayList) : int {
+    var stack = new Stack();
+
+    for(var i = 0; i < tokens.size(); i += 1){
+        var token : Token = tokens.get(i) to Token;
+        if(token.getTag() == "PUSH"){
+            stack.push(Int(token.getValue()));
+        }else{
+            var b = toInt(stack.pop());
+            var a = toInt(stack.pop());
+            var result : int = 0;
+            if(token.getValue() == 43){
+                result = a + b;
+            }else if(token.getValue() == 45){
+                result = a - b;
+            }else if(token.getValue() == 42){
+                result = a * b;
+            }else if(token.getValue() == 47){
+                result = a / b;
+            }
+
+            stack.push(Int(result));
+        }
+    }
+
+    return toInt(stack.pop());
+}
+
+def tokenize(source : String) : ArrayList {
+    var tokens = source.split(" ");
+    var result = new ArrayList();
+    for(var i = 0; i < tokens.length(); i += 1){
+        var x = tokens[i];
+        if(Character.isDigit(x.charAt(0))){
+            result.add(new Token("PUSH", Integer.parseInt(x)));
+        }else{
+            result.add(new Token("OPERATION", x.charAt(0)));
+        }
+    }
+    return result;
+}
+
+class Token {
+    const(getter) tag : String?;
+    const(getter) value : int;
+
+    this(tag : String, value : int){
+        this.tag = tag;
+        this.value = value;
+    }
+
+    override def toString => "\ntag[::" + tag + ", value::" + value + "]\n";
+}
