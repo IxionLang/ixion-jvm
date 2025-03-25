@@ -20,6 +20,11 @@
             <version>9.7.1</version>
         </dependency>
         <dependency>
+            <groupId>com.googlecode.lanterna</groupId>
+            <artifactId>lanterna</artifactId>
+            <version>3.1.2</version>
+        </dependency>
+        <dependency>
             <groupId>com.leacox.motif</groupId>
             <artifactId>motif</artifactId>
             <version>0.1</version>

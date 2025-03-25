@@ -24,9 +24,10 @@ public class Runner {
 		if(args.length == 0){
 			api.getFiles().add("test.ix");
 			api.compile();
-			api.runClass("testixc", api.getFiles(), args);	
+			api.runClass("testixc", api.getFiles(), args);
 		}
 		api.getFiles().add(args[0]);
+		api.getFiles().add("std/string.ix");
 		String[] parts = args[0].split("\\.");
 		api.compile();
 		for (String arg : args){

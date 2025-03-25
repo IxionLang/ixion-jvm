@@ -38,7 +38,7 @@ public class IxionApi {
 	public void runClass(String className, List<String> files, String[] args) {
 
 			String[] parts = className.split("\\.");
-			for (String file : files) {
+			String file = files.get(0);
 				if (file != null) {
 					try {
 						runClass(Path.of(outputDirectory.toURI()), parts[0], args);
@@ -46,7 +46,7 @@ public class IxionApi {
 						ex.printStackTrace();
 					}
 				}
-			}
+
 
 	}
 

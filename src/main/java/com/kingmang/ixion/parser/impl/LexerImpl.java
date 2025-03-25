@@ -102,7 +102,7 @@ public class LexerImpl implements Lexer {
 					case '/' -> next('=') ? TokenType.IN_DIV : TokenType.SLASH;
 					case '%' -> next('=') ? TokenType.IN_MOD : TokenType.PERCENT;
 					case '=' -> next('>') ? TokenType.LAMBDA : next('=') ? (next('=') ? TokenType.TRI_EQ : TokenType.EQEQ) : TokenType.EQUALS;
-					case ':' -> TokenType.COLON;
+					case ':' -> next(':') ? TokenType.COLONCOLON : TokenType.COLON;
 					case '.' -> TokenType.DOT;
 					case '!' -> next('=') ? (next('=') ? TokenType.TRI_EXEQ : TokenType.EXEQ) : TokenType.EXCLAIM;
 					case '<' -> next('=') ? TokenType.LESS_EQ : next('<') ? TokenType.BITWISE_SHL : TokenType.LESS;

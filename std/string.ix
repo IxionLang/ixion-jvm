@@ -1,0 +1,39 @@
+package ixion.std;
+
+class string {
+
+    var(getter) str : String?;
+    var len : int;
+
+    this(str : String){
+        this.str = str;
+        this.len = this.getLen();
+    }
+
+    pub def join(str : String) {
+        this.str += str;
+        this.len = this.getLen();
+    }
+
+    pub def reverse() : String {
+        var sb = new StringBuilder(str);
+        return sb.reverse().toString();
+    }
+
+    pub def removeItem(symbol : String){
+        this.str = this.str.replace(symbol, "");
+    }
+
+    pub def joinFont(symbol : String){
+        this.str = symbol + this.str;
+    }
+
+    pub def getLen() : int {
+        return str.length();
+    }
+
+    override def toString() : String {
+        return str;
+    }
+
+}

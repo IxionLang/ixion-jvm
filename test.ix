@@ -1,0 +1,8 @@
+using ixion.std.string;
+
+def main(args : String[]){
+    var s = new string("Hello");
+    s.join(" World");
+    println(s);
+}
+

@@ -1,5 +1,0 @@
-using ixion.std.string;
-
-def main() {
-    print("main file in test");
-}
