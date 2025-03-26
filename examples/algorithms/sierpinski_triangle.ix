@@ -5,9 +5,9 @@ using javax.swing.WindowConstants;
 
 def main {
     var f = new JFrame("Sierpinski Triangle");
-    f.setSize(800, 800);
+    f.setSize(500, 500);
     f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-    f.setContentPane(new Triangle(4));
+    f.setContentPane(new Triangle(3));
     f.setVisible(true);
 }
 
@@ -21,7 +21,7 @@ class Triangle ext JPanel {
     }
 
     override def paintComponent(g : Graphics) {
-        drawSierpinskiTriangle(g, 400, 400, 350, iterations);
+        drawSierpinskiTriangle(g, 230, 220, 200, iterations);
     }
 
     priv def drawSierpinskiTriangle(g : Graphics, x : int, y : int, sizeTriangle : int, iterations : int) {
