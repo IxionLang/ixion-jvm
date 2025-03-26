@@ -40,6 +40,7 @@ public class IfStatementNode implements Node {
 		Label falseL = new Label();
 		Label end = new Label();
 
+		// это не флаг: "является ли узлом", а узел `is`
 		boolean isNode = false;
 		if(condition instanceof IsNode) {
 			((IsNode) condition).setShouldReScope(true);

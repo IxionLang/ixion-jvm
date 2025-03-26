@@ -492,7 +492,7 @@ public class ParserImpl implements Parser {
 	}
 
 	private Node ternaryExpr() throws ParserException {
-		Node left = logicalAndExpr();
+		Node left = logicalNullExpr();
 		if(match(TokenType.QUESTION)) {
 
 			Node trueExpr = expression();

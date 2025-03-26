@@ -1,0 +1,40 @@
+using javax.swing.JPanel;
+using javax.swing.JFrame;
+using java.awt.Graphics;
+using javax.swing.WindowConstants;
+
+def main {
+    var f = new JFrame("Sierpinski Triangle");
+    f.setSize(800, 800);
+    f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+    f.setContentPane(new Triangle(4));
+    f.setVisible(true);
+}
+
+
+class Triangle ext JPanel {
+
+    var iterations : int;
+
+    this(iterations : int) {
+        this.iterations = iterations;
+    }
+
+    override def paintComponent(g : Graphics) {
+        drawSierpinskiTriangle(g, 400, 400, 350, iterations);
+    }
+
+    priv def drawSierpinskiTriangle(g : Graphics, x : int, y : int, sizeTriangle : int, iterations : int) {
+        if (iterations == 0) {
+            var pointsX = new int[]{ x, x - sizeTriangle, x + sizeTriangle };
+            var pointsY = new int[]{ y - sizeTriangle, y + sizeTriangle, y + sizeTriangle };
+            g.fillPolygon(pointsX, pointsY, 3);
+        } else {
+            var halfsizeTriangle = sizeTriangle / 2;
+            drawSierpinskiTriangle(g, x, y - halfsizeTriangle, halfsizeTriangle, iterations - 1);
+            drawSierpinskiTriangle(g, x - halfsizeTriangle, y + halfsizeTriangle, halfsizeTriangle, iterations - 1);
+            drawSierpinskiTriangle(g, x + halfsizeTriangle, y + halfsizeTriangle, halfsizeTriangle, iterations - 1);
+        }
+
+    }
+}

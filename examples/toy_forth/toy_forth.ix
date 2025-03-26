@@ -13,7 +13,7 @@ def main {
 
 def interpret(tokens : ArrayList) : int {
     var stack = new Stack();
-   
+
     for(var i = 0; i < tokens.size(); i += 1){
         var token : Token = tokens.get(i) to Token;
         if(token.getTag() == "PUSH"){

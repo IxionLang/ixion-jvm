@@ -15,23 +15,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Getter
-public class FunctionCallNode implements Node {
 
-	private final Token name;
-	private final List<Node> args;
-
-	public FunctionCallNode(Token name, List<Node> args) {
-		this.name = name;
-		this.args = args;
-	}
+public record FunctionCallNode(Token name, List<Node> args) implements Node {
 
 	@Override
 	public void visit(FileContext context) throws IxException {
 		context.getContext().updateLine(name.line());
 		IxType[] argTypes = new IxType[args.size()];
 
-		for(int i = 0; i < args.size(); i++) {
+		for (int i = 0; i < args.size(); i++) {
 			Node arg = args.get(i);
 
 			argTypes[i] = arg.getReturnType(context.getContext());
@@ -40,15 +32,16 @@ public class FunctionCallNode implements Node {
 		try {
 			IxFunction function = context.getContext().getScope().lookupFunction(name.value(), argTypes);
 
-			if(function == null) throw new IxException(name,
+			if (function == null) throw new IxException(name,
 					"Could not resolve function '%s' with arguments: %s".formatted(name.value(),
 							argTypes.length == 0 ? "(none)" :
-							Stream.of(argTypes).map(IxType::toString).collect(Collectors.joining(", "))));
+									Stream.of(argTypes).map(IxType::toString).collect(Collectors.joining(", "))));
 
-			if(function.functionType() == IxFunctionType.OUTPUT)
+			if (function.functionType() == IxFunctionType.OUTPUT)
 				context.getContext().getMethodVisitor().visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-			else if(function.functionType() == IxFunctionType.CLASS) {
-				if(context.getContext().isStaticMethod()) throw new IxException(name, "Cannot invoke instance method '%s' from static context.".formatted(name.value()));
+			else if (function.functionType() == IxFunctionType.CLASS) {
+				if (context.getContext().isStaticMethod())
+					throw new IxException(name, "Cannot invoke instance method '%s' from static context.".formatted(name.value()));
 				context.getContext().getMethodVisitor().visitVarInsn(Opcodes.ALOAD, 0);
 			}
 
@@ -66,7 +59,7 @@ public class FunctionCallNode implements Node {
 	public IxType getReturnType(Context context) throws IxException {
 		IxType[] argTypes = new IxType[args.size()];
 
-		for(int i = 0; i < args.size(); i++) {
+		for (int i = 0; i < args.size(); i++) {
 			Node arg = args.get(i);
 
 			argTypes[i] = arg.getReturnType(context);
@@ -75,7 +68,7 @@ public class FunctionCallNode implements Node {
 		try {
 			IxFunction function = context.getScope().lookupFunction(name.value(), argTypes);
 
-			if(function == null) throw new IxException(name,
+			if (function == null) throw new IxException(name,
 					"Could not resolve function '%s' with arguments: %s".formatted(name.value(),
 							argTypes.length == 0 ? "(none)" :
 									Stream.of(argTypes).map(IxType::toString).collect(Collectors.joining(", "))));

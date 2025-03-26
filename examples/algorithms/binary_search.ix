@@ -5,7 +5,7 @@ def main {
     println(result);
 }
 
-def binary_search(array : int[], target : int) : int{
+def binarySearch(array : int[], target : int) : int{
     var left : int = 0;
     var right : int = array.length - 1;
 
