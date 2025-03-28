@@ -1,0 +1,52 @@
+using processing.core.PApplet;
+using java.util.ArrayList;
+using processing.core.PConstants;
+
+def main(args : String[]){
+    var processingArgs = new String[]{"MySketch"};
+    var mySketch = new MySketch();
+    PApplet.runSketch(processingArgs, mySketch);
+}
+
+class MySketch ext PApplet {
+    var width : float;
+    var height : float;
+    var angle : float;
+
+    pub def settings(){
+        width = 600;
+        height = 600;
+        super.size (width to int, height to int);
+    }
+
+    pub def setup(){
+
+    }
+
+    pub def draw(){
+        super.background(255,255,255);
+        super.noStroke();
+        super.fill(0,0,0);
+        super.rectMode(PConstants.CENTER);
+
+        angle += 0.01 to float;
+        var s = (Math.cos(angle) * (width / 2)) to float;
+        var t = (Math.sin(angle) * (width / 2)) to float;
+        squares(s,t, width/2, height/2, width/6, 1);
+
+        super.rect(width/2,height/2,width/3,height/3);
+    }
+
+    def squares(s : float, t : float, parX : float, parY : float, sideLen : float, level : int){
+        super.rect(s + parX, t + parY, sideLen, sideLen);
+        super.rect(-s + parX, -t + parY, sideLen, sideLen);
+        super.rect(t + parX, -s + parY, sideLen, sideLen);
+        super.rect(-t + parX, s + parY, sideLen, sideLen);
+        if(level > 0) {
+            squares(s/2, t/2, s + parX, t + parY, sideLen/2, level - 1);
+            squares(s/2, t/2, -s + parX, -t + parY, sideLen/2, level - 1);
+            squares(s/2, t/2, t + parX, -s + parY, sideLen/2, level - 1);
+            squares(s/2, t/2, -t + parX, s + parY, sideLen/2, level - 1);
+        }
+    }
+}

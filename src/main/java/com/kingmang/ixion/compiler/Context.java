@@ -1,5 +1,4 @@
 package com.kingmang.ixion.compiler;
-
 import com.kingmang.ixion.class_utils.CustomClassLoader;
 import com.kingmang.ixion.ast.VariableDeclarationNode;
 import com.kingmang.ixion.types.IxType;
