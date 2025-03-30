@@ -273,21 +273,25 @@ public class LexerImpl implements Lexer {
 	}
 
 	private boolean match(char c) {
-		return current == c && (advance() != -1);
+        if (current != c) return false;
+        advance();
+        return true;
 	}
 
 	private boolean next(char c) {
-		return text.charAt(index) == c && advance() != -1;
+        if (text.charAt(index) != c) return false;
+        advance();
+        return true;
 	}
 
 	private boolean isAtEnd() {
 		return index == text.length();
 	}
 
-	private char advance() {
+	private void advance() {
 		current = text.charAt(index);
 		column++;
-		return text.charAt(index++);
+		index++;
 	}
 
 	private Token makeToken(TokenType type) {

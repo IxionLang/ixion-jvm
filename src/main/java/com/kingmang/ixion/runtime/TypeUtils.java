@@ -2,7 +2,7 @@ package com.kingmang.ixion.runtime;
 
 public class TypeUtils {
 
-    /*=======*/
+    /*Строки*/
     public static String asString(char arg){
         return String.valueOf(arg);
     }
@@ -21,8 +21,9 @@ public class TypeUtils {
     public static String asString(long arg){
         return String.valueOf(arg);
     }
-    /*======*/
+    /**/
 
+    //Примитивы в объекты
     public static Integer Int(int arg){
         return arg;
     }
@@ -30,8 +31,10 @@ public class TypeUtils {
     public static Float Float(float arg){
         return arg;
     }
+    /**/
 
-    //Object to primitive
+
+    //Объекты в примитивы
     public static int toInt(Object arg){
         return (int) arg;
     }
@@ -39,5 +42,5 @@ public class TypeUtils {
     public static float toFloat(Object arg){
         return (float) arg;
     }
-
+    /**/
 }

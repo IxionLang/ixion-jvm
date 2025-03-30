@@ -440,11 +440,10 @@ public class IxType {
 
 	@Override
 	public boolean equals(Object obj) {
-		if(!(obj instanceof IxType)) {
+		if(!(obj instanceof IxType other)) {
 			return false;
 		}
-		IxType other = (IxType) obj;
-		if(isNullable() != other.isNullable()) return false;
+        if(isNullable() != other.isNullable()) return false;
 		return other.getRawType().equals(this.asmType);
 	}
 

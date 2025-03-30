@@ -72,36 +72,18 @@ public class TypeUtil {
 	}
 
 	public static void correctLdc(Object object, Context context) {
-		if(object == null) {
-			context.getMethodVisitor().visitInsn(Opcodes.ACONST_NULL);
-		}
-		else if(object instanceof Integer) {
-			generateCorrectInt((Integer) object, context);
-		}
-		else if(object instanceof Double) {
-			generateCorrectDouble((Double) object, context);
-		}
-		else if(object instanceof Float) {
-			generateCorrectFloat((Float) object, context);
-		}
-		else if(object instanceof Boolean) {
-			context.getMethodVisitor().visitInsn((Boolean) object ? Opcodes.ICONST_1 : Opcodes.ICONST_0);
-		}
-		else if(object instanceof Character) {
-			generateCorrectInt((Character) object, context);
-		}
-		else if(object instanceof Long) {
-			generateCorrectLong((Long) object, context);
-		}
-		else if(object instanceof Byte) {
-			generateCorrectInt((Byte) object, context);
-		}
-		else if(object instanceof Short) {
-			generateCorrectInt((Short) object, context);
-		}
-		else {
-			context.getMethodVisitor().visitLdcInsn(object);
-		}
+        switch (object) {
+            case null -> context.getMethodVisitor().visitInsn(Opcodes.ACONST_NULL);
+            case Integer i -> generateCorrectInt(i, context);
+            case Double v -> generateCorrectDouble(v, context);
+            case Float v -> generateCorrectFloat(v, context);
+            case Boolean b -> context.getMethodVisitor().visitInsn(b ? Opcodes.ICONST_1 : Opcodes.ICONST_0);
+            case Character c -> generateCorrectInt(c, context);
+            case Long l -> generateCorrectLong(l, context);
+            case Byte b -> generateCorrectInt(b, context);
+            case Short i -> generateCorrectInt(i, context);
+            default -> context.getMethodVisitor().visitLdcInsn(object);
+        }
 	}
 
 	public static int getInvokeOpcode(Method m) {

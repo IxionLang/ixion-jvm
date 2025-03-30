@@ -59,11 +59,11 @@ public class ParserImpl implements Parser {
 	private Node packageStatement() throws ParserException {
 		Token packageToken = tokens.get(index - 1);
 
-		Node name = classType();
+		TypeNode name = classType();
 
 		consume(TokenType.SEMI, "Expected ';' after package");
 
-		return new PackageNode(packageToken, (TypeNode) name);
+		return new PackageNode(packageToken, name);
 	}
 
 	private Node usingStatement() throws ParserException {
