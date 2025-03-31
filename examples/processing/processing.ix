@@ -19,17 +19,13 @@ class MySketch ext PApplet {
         super.size (width to int, height to int);
     }
 
-    pub def setup(){
-
-    }
-
     pub def draw(){
         super.background(255,255,255);
         super.noStroke();
         super.fill(0,0,0);
         super.rectMode(PConstants.CENTER);
 
-        angle += 0.01 to float;
+        angle += 0.01f;
         var s = (Math.cos(angle) * (width / 2)) to float;
         var t = (Math.sin(angle) * (width / 2)) to float;
         squares(s,t, width/2, height/2, width/6, 1);
