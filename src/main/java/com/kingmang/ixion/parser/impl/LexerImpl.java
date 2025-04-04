@@ -76,7 +76,7 @@ public class LexerImpl implements Lexer {
 			else if(isValidIdentifierStart(current)) {
 				token = identifier();
 			}
-			else if(isNumeric(current)) {
+			else if(isDigit(current)) {
 				token = number();
 			}
 			else if(current == '"') {
@@ -254,7 +254,7 @@ public class LexerImpl implements Lexer {
 	}
 
 	private Token number() {
-		while (!isAtEnd() && isNumeric(current)) {
+		while (!isAtEnd() && isDigit(current)) {
 			advance();
 		}
 		if(!isAtEnd()) index--;
@@ -265,7 +265,7 @@ public class LexerImpl implements Lexer {
 		if(match('.')) {
             do {
                 advance();
-            } while (!isAtEnd() && isNumeric(current));
+            } while (!isAtEnd() && isDigit(current));
 			if(!isAtEnd()) index--;
 		}
 		if(current == 'f' || current == 'F') advance();
@@ -298,7 +298,7 @@ public class LexerImpl implements Lexer {
 		return new Token(type, text.substring(start, index), line, column);
 	}
 
-	private static boolean isNumeric(char c) {
+	private static boolean isDigit(char c) {
 		return '0' <= c && c <= '9';
 	}
 
@@ -311,7 +311,7 @@ public class LexerImpl implements Lexer {
 	}
 
 	private static boolean isValidIdentifierPart(char c) {
-		return isAlpha(c) || isNumeric(c) || c == '_';
+		return isAlpha(c) || isDigit(c) || c == '_';
 	}
 
 	private static boolean isWhitespace(char c) {

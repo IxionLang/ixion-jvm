@@ -9,7 +9,9 @@ import com.kingmang.ixion.api.IxionApi;
 
 public class Runner {
 
-
+	static String[] std_files = {
+		"string.ix"
+	};
 	public static void main(String[] args) throws IOException {
 		
 		IxionApi api = new IxionApi();
@@ -27,7 +29,10 @@ public class Runner {
 			api.runClass("testixc", api.getFiles(), args);
 		}
 		api.getFiles().add(args[0]);
-		api.getFiles().add("std/string.ix");
+
+		for(String std_file : std_files)
+			api.getFiles().add("std/" + std_file);
+
 		String[] parts = args[0].split("\\.");
 		api.compile();
 		for (String arg : args){

@@ -154,7 +154,7 @@ public class ParserImpl implements Parser {
 		return new FunctionDeclarationNode(type, name, body, parameters, returnType, throwsList, access, staticModifier, annotations);
 	}
 
-	/*
+
 	private Node unitTestDeclaration() throws ParserException {
 		Token unittestToken = tokens.get(index - 1);
 
@@ -166,7 +166,7 @@ public class ParserImpl implements Parser {
 		return new UnitTestNode(unittestToken, body);
 	}
 
-	 */
+
 
 	private Node constructorDeclaration(Token access, Token staticModifier) throws ParserException {
 		if(!isParsingClass) throw new ParserException(tokens.get(index - 1), "Cannot declare constructor outside of class");

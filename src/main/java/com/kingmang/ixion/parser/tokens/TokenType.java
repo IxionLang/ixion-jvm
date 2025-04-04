@@ -7,6 +7,7 @@ public enum TokenType {
 	INTERFACE,
 	IMPL,
 	UNITTEST,
+	ASSERT,
 	MATCH,
 	CASE,
 	DEFAULT,

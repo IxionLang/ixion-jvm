@@ -6,7 +6,7 @@ import com.kingmang.ixion.types.IxType;
 
 public class IxLibraryImpl {
     //constants
-    private static final String runtimePath = "com/kingmang/ixion/runtime/";
+    private static String runtimePath = "com/kingmang/ixion/runtime/";
     private static final String defaultJavaPath = "Ljava/lang/";
 
     public static final String INT = "I";
@@ -19,7 +19,7 @@ public class IxLibraryImpl {
     public static final String FLOAT_CLASS = defaultJavaPath.concat("Float;");
 
     public static IxFunction function(String name, String className, String arg, String returnedType){
-
+        //if(className.contains("java")) runtimePath = "";
         return new IxFunction(
                 IxFunctionType.STATIC,
                 name,

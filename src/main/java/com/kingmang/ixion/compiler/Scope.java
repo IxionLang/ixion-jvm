@@ -60,6 +60,8 @@ public class Scope {
 		addFunction(TypesFunction.TOINT);
 		addFunction(TypesFunction.TOFLOAT);
     }
+
+
 	private void addPrintlnFunctions() {
 		addFunction(PrintlnFunction.PRINTLN_VOID);
 		addFunction(PrintlnFunction.PRINTLN_DOUBLE);
