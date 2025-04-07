@@ -1,0 +1,45 @@
+class UnitTest{
+
+    var(getter) id : int;
+    var(getter) tests_count : int;
+    var(getter) passed_tests : int;
+
+    this(id : int){
+        this.id = id;
+    }
+
+    var pattern = "[Assertation error]\n│> Incorrect behavior from ";
+
+    def assert(expr : boolean){
+        tests_count += 1;
+        if(!expr)
+            error();
+        else
+            passed_tests += 1;
+    }
+
+    priv def error(){
+        System.err.println(
+        pattern.concat(String.valueOf(id))
+        .concat(" test")
+        .concat("\n")
+        );
+    }
+
+    pub def log() : String {
+        return "TODO";
+    }
+
+    priv def passed() : String {
+        return "passed test: "
+        .concat(String.valueOf(passed_tests))
+        .concat("/")
+        .concat(String.valueOf(tests_count));
+    }
+
+    override pub def toString() : String {
+        return asString(id);
+    }
+
+
+}

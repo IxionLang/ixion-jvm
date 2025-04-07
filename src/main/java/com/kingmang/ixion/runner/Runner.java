@@ -10,7 +10,8 @@ import com.kingmang.ixion.api.IxionApi;
 public class Runner {
 
 	static String[] std_files = {
-		"string.ix"
+		"string.ix",
+		"unit_test.ix"
 	};
 	public static void main(String[] args) throws IOException {
 		
