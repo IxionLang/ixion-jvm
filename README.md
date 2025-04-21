@@ -9,17 +9,24 @@ Multi-paradigm compiled programming language for the jvm platform.
 > [!IMPORTANT]
 > Before installing the language, install jdk.
 
-Hello World in Ixion:
+greeting in Ixion:
 ```scala
-def main => println("Hello World");
-```
-or:
-
-```scala
-def main(args: String[]) {
-   println("Hello World");
+def greeting(steps : int){
+    const langs = new String[]{
+        "Hello, world!",
+		"¡Hola Mundo!",
+		"Γειά σου Κόσμε!",
+		"Привет, мир!",
+		"こんにちは世界！"
+    };
+    for(var i = 0; i < steps; i+=1){
+        println(langs[i]);
+    }
 }
+
+def main => greeting(2);
 ```
+
 
 > [!NOTE]
 > The language contains nullable types and non-nullable types.

@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.kingmang.ixion.api.IxionApi;
+import lombok.SneakyThrows;
 
 
 public class Runner {
@@ -13,7 +14,8 @@ public class Runner {
 		"string.ix",
 		"unit_test.ix"
 	};
-	public static void main(String[] args) throws IOException {
+	@SneakyThrows
+    public static void main(String[] args) {
 		
 		IxionApi api = new IxionApi();
 		if(!IxionApi.getOutputDirectory().exists())
@@ -24,10 +26,12 @@ public class Runner {
 				Files.delete(p);
 			} catch (IOException _) {}
 		});
+
 		if(args.length == 0){
-			api.getFiles().add("test.ix");
-			api.compile();
-			api.runClass("testixc", api.getFiles(), args);
+			System.err.println("[Error] \n Please enter a file name. Example: ixion test.ix");
+			//api.getFiles().add("test.ix");
+			//api.compile();
+			//api.runClass("testixc", api.getFiles(), args);
 		}
 		api.getFiles().add(args[0]);
 
