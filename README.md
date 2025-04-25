@@ -78,7 +78,7 @@ class Man ext Human {
        this.age = age;
     }
 
-    override def toString: String {
+    override def toString : String {
         var name : String = super.toString();
         return name + " My age is " + age + ".";
     }
