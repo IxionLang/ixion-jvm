@@ -104,7 +104,7 @@ public class ParserImpl implements Parser {
 		Token tok = advance();
 
 		return switch(tok.type()) {
-			case INTERFACE -> interfaceDeclaration(accessModifier,staticModifier);
+			case TRAIT -> traitDeclaration(accessModifier,staticModifier);
 			case DEFINE_FUNCTION -> functionDeclaration(accessModifier, staticModifier, functionModifiers);
 			case CLASS -> classDeclaration(accessModifier, staticModifier, isFinal);
 			case ENUM -> enumDeclaration(accessModifier, staticModifier);
@@ -161,9 +161,8 @@ public class ParserImpl implements Parser {
 		consume(TokenType.LBRACE, "Expected '{' before unittest body");
 
 		Node body = blockStatement();
-
-
-		return new UnitTestNode(unittestToken, body);
+		return null;
+		//return new UnitTestNode(unittestToken, body);
 	}
 
 
@@ -219,18 +218,18 @@ public class ParserImpl implements Parser {
 	}
 
 
-	private Node interfaceDeclaration(Token access, Token staticModifier) throws ParserException {
-		if(staticModifier != null) throw new ParserException(staticModifier, "Cannot mark an interface as static");
-		Token name = consume(TokenType.IDENTIFIER, "Expected interface name");
+	private Node traitDeclaration(Token access, Token staticModifier) throws ParserException {
+		if(staticModifier != null) throw new ParserException(staticModifier, "Cannot mark an trait as static");
+		Token name = consume(TokenType.IDENTIFIER, "Expected trait name");
 		List<Node> methods = new ArrayList<>();
-		consume(TokenType.LBRACE, "Expected '{' before interface body");
-		do{
+		consume(TokenType.LBRACE, "Expected '{' before trait body");
+		while(!isAtEnd() && tokens.get(index).type() != TokenType.RBRACE) {
 			match(TokenType.DEFINE_FUNCTION);
 			methods.add(functionDeclaration(null, null, null));
-		}while (!isAtEnd() && match(TokenType.COMMA));
-		consume(TokenType.RBRACE, "Expected '}' after interface body");
+		}
+		consume(TokenType.RBRACE, "Expected '}' after trait body");
 
-		return new InterfaceDeclarationNode(name, methods, access);
+		return new TraitDeclarationNode(name, methods, access);
 	}
 
 
