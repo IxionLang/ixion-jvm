@@ -8,22 +8,18 @@ import com.kingmang.ixion.parser.Node;
 import com.kingmang.ixion.parser.tokens.Token;
 import com.kingmang.ixion.parser.tokens.TokenType;
 import com.kingmang.ixion.util.FileContext;
-import com.kingmang.ixion.util.Pair;
-import com.kingmang.ixion.util.Unthrow;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.Type;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class InterfaceDeclarationNode implements Node {
+public class TraitDeclarationNode implements Node {
     private final Token name;
     private final List<Node> methods;
     private final Token access;
 
-    public InterfaceDeclarationNode(Token name, List<Node> methods, Token access) {
+    public TraitDeclarationNode(Token name, List<Node> methods, Token access) {
         this.name = name;
         this.methods = methods;
         this.access = access;
@@ -36,13 +32,12 @@ public class InterfaceDeclarationNode implements Node {
         ContextType prevType = context.getType();
         String prevClass = context.getCurrentClass();
 
-        ClassWriter writer = initInterfaceClass(context);
+        ClassWriter writer = initTraitClass(context);
         context.setType(ContextType.CLASS);
 
-        Type interfaceType = Type.getObjectType(context.getCurrentClass());
         for(Node node : methods)
             if(node instanceof FunctionDeclarationNode funcNode)
-                buildTestMethod(funcNode, writer);
+                funcNode.preprocess(context);
             else
                 throw new IxException(name, "Exception in using node");
 
@@ -69,24 +64,13 @@ public class InterfaceDeclarationNode implements Node {
     public void buildClasses(Context context) {
         String prevClass = context.getCurrentClass();
 
-        ClassWriter writer = initInterfaceClass(context);
+        ClassWriter writer = initTraitClass(context);
         writer.visitEnd();
 
         context.setCurrentClass(prevClass);
     }
 
-
-    private void buildTestMethod(FunctionDeclarationNode node, ClassWriter writer) {
-        MethodVisitor defaultMethod = writer.visitMethod(Opcodes.ACC_PUBLIC , node.getName().value(), "()V", null, null);
-        defaultMethod.visitCode();
-        defaultMethod.visitInsn(Opcodes.RETURN);
-        defaultMethod.visitMaxs(0, 0);
-        defaultMethod.visitEnd();
-    }
-
-
-
-    private ClassWriter initInterfaceClass(Context context) {
+    private ClassWriter initTraitClass(Context context) {
         int accessLevel = getAccessLevel();
 
         String baseName = name.value();
