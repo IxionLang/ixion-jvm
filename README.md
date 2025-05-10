@@ -14,10 +14,10 @@ greeting in Ixion:
 def greeting(steps : int){
     const langs = new String[]{
         "Hello, world!",
-		"¡Hola Mundo!",
-		"Γειά σου Κόσμε!",
-		"Привет, мир!",
-		"こんにちは世界！"
+        "¡Hola Mundo!",
+        "Γειά σου Κόσμε!",
+        "Привет, мир!",
+        "こんにちは世界！"
     };
     for(var i = 0; i < steps; i+=1){
         println(langs[i]);
