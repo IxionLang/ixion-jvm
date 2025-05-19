@@ -56,9 +56,9 @@ public class LambdaDeclarationNode implements Node {
         }
         // Параметры
         parameterTypes = new ArrayList<>();
-        for (Pair<Token, Node> pair : parameters) {
-            Node parameterTypeNode = pair.second();
-            parameterTypes.add(parameterTypeNode == null ? IxType.OBJECT_TYPE : parameterTypeNode.getReturnType(context.getContext()));
+        for (int i = 0; i < parameters.size(); i++) {
+            Node parameterTypeNode = parameters.get(i).second();
+            parameterTypes.add(parameterTypeNode == null ? IxType.getType(itfMethod.getParameterTypes()[i]) : parameterTypeNode.getReturnType(context.getContext()));
         }
         // Определение
         {
