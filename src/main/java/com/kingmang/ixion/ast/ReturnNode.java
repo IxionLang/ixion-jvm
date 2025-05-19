@@ -40,10 +40,10 @@ public class ReturnNode implements Node {
 			expression.visit(context);
 
 			try {
-				if(!scope.getReturnType().isAssignableFrom(returnType, context.getContext(), true)) {
-					throw new IxException(returnTok,
-							"Cannot return type '%s' from function expecting '%s'"
-									.formatted(returnType, scope.getReturnType()));
+				if (returnType.isPrimitive() && !scope.getReturnType().isPrimitive()) {
+					returnType.autoBox(mv);
+				} else if(!scope.getReturnType().isAssignableFrom(returnType, context.getContext(), true)) {
+					throw new IxException(returnTok, "Cannot return type '%s' from function expecting '%s'".formatted(returnType, scope.getReturnType()));
 				}
 			} catch (ClassNotFoundException e) {
 				throw new IxException(returnTok, "Could not resolve class '%s'".formatted(e.getMessage()));

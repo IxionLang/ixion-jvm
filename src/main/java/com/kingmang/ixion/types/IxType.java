@@ -86,6 +86,22 @@ public class IxType {
 				getSort() != Sort.NULL;
 	}
 
+	public Class<?> toPrimitiveClass(Context context) throws ClassNotFoundException {
+		if (isPrimitive())
+			return toClass(context);
+		return switch (asmType.getClassName()) {
+			case "java/lang/Boolean" -> boolean.class;
+			case "java/lang/Character" -> char.class;
+			case "java/lang/Byte" -> byte.class;
+			case "java/lang/Short" -> short.class;
+			case "java/lang/Integer" -> int.class;
+			case "java/lang/Float" -> float.class;
+			case "java/lang/Long" -> long.class;
+			case "java/lang/Double" -> double.class;
+			default -> null;
+		};
+	}
+
 	public Class<?> toClass(Context context) throws ClassNotFoundException {
 		return switch (asmType.getSort()) {
 			case Type.BOOLEAN -> boolean.class;

@@ -1,0 +1,7 @@
+def caller(task: Runnable) {
+    task.run();
+}
+
+def main {
+    caller(() => println("Hello, Negro!"));
+}

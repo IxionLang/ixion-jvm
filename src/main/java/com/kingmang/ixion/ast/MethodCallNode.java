@@ -70,20 +70,20 @@ public class MethodCallNode implements Node {
 			Node arg = args.get(i);
 			IxType resolvedType = resolvedTypes[i];
 
+			if (arg instanceof LambdaDeclarationNode lambda)
+				lambda.setItf(resolvedType);
+
 			arg.visit(context);
 			try {
-				resolvedType.isAssignableFrom(arg.getReturnType(context.getContext()), context.getContext(), true);
+				IxType argType = arg.getReturnType(context.getContext());
+				resolvedType.isAssignableFrom(argType, context.getContext(), true); // DomamaN202: IDK WTF
+				argType.autoBox(context.getContext().getMethodVisitor());
 			} catch (ClassNotFoundException e) {
 				throw new IxException(name, "Could not resolve class '%s'".formatted(e.getMessage()));
 			}
 		}
 
-		Stream<IxType> paramTypes = Arrays.stream(resolvedTypes);
-
-		String descriptor = "(%s)%s"
-				.formatted(paramTypes.map(IxType::getDescriptor).collect(Collectors.joining()), Type.getType(toCall.getReturnType()).getDescriptor());
-
-		context.getContext().getMethodVisitor().visitMethodInsn(isSuper ? Opcodes.INVOKESPECIAL : TypeUtil.getInvokeOpcode(toCall), leftType.getInternalName(), name.value(), descriptor, false);
+		TypeUtil.insertInvoke(context, toCall, isSuper);
 	}
 
 	@Override
@@ -138,11 +138,20 @@ public class MethodCallNode implements Node {
 						continue out;
 
 					if (expectArg.isAssignableFrom(arg, context, false)) {
-						if (!expectArg.equals(arg)) changes += expectArg.assignChangesFrom(arg);
+						if (!expectArg.equals(arg))
+							changes += expectArg.assignChangesFrom(arg);
+					} else if (expectArg.isPrimitive() != arg.isPrimitive()) {
+						changes += 3;
+					} else if (expectArg.isPrimitive() ^ arg.isPrimitive()) {
+						if (!arg.toPrimitiveClass(context).equals(expectArg.toPrimitiveClass(context)))
+							continue out;
+					} else if (expectArg.toClass(context).isAnnotationPresent(FunctionalInterface.class) && args.get(i) instanceof LambdaDeclarationNode) {
+						changes++;
 					} else {
 						continue out;
 					}
 				}
+
 				possible.add(new Pair<>(changes, method));
 			}
 		}
