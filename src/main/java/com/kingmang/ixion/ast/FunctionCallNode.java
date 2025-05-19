@@ -30,7 +30,7 @@ public record FunctionCallNode(Token name, List<Node> args) implements Node {
 		}
 
 		try {
-			IxFunction function = context.getContext().getScope().lookupFunction(name.value(), argTypes);
+			IxFunction function = context.getContext().getScope().lookupFunction(name.value(), argTypes, args.toArray(Node[]::new));
 
 			if (function == null) throw new IxException(name,
 					"Could not resolve function '%s' with arguments: %s".formatted(name.value(),
@@ -66,7 +66,7 @@ public record FunctionCallNode(Token name, List<Node> args) implements Node {
 		}
 
 		try {
-			IxFunction function = context.getScope().lookupFunction(name.value(), argTypes);
+			IxFunction function = context.getScope().lookupFunction(name.value(), argTypes, args.toArray(Node[]::new));
 
 			if (function == null) throw new IxException(name,
 					"Could not resolve function '%s' with arguments: %s".formatted(name.value(),

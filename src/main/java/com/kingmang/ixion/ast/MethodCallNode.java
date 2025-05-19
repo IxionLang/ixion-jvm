@@ -70,6 +70,9 @@ public class MethodCallNode implements Node {
 			Node arg = args.get(i);
 			IxType resolvedType = resolvedTypes[i];
 
+			if (arg instanceof LambdaDeclarationNode lambda)
+				lambda.setItf(resolvedType);
+
 			arg.visit(context);
 			try {
 				IxType argType = arg.getReturnType(context.getContext());
@@ -142,6 +145,8 @@ public class MethodCallNode implements Node {
 					} else if (expectArg.isPrimitive() ^ arg.isPrimitive()) {
 						if (!arg.toPrimitiveClass(context).equals(expectArg.toPrimitiveClass(context)))
 							continue out;
+					} else if (expectArg.toClass(context).isAnnotationPresent(FunctionalInterface.class) && args.get(i) instanceof LambdaDeclarationNode) {
+						changes++;
 					} else {
 						continue out;
 					}

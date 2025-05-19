@@ -1,4 +1,7 @@
+def caller(task: Runnable) {
+    task.run();
+}
+
 def main {
-    var foo = ((text) => println(text)) to java.util.function.Consumer;
-    foo.accept("Hello, Negro!");
+    caller(() => println("Hello, Negro!"));
 }

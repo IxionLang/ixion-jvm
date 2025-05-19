@@ -1,5 +1,6 @@
 package com.kingmang.ixion.compiler;
 
+import com.kingmang.ixion.ast.LambdaDeclarationNode;
 import com.kingmang.ixion.compiler.ix_function.types.TypesFunction;
 import com.kingmang.ixion.util.FileContext;
 import com.kingmang.ixion.compiler.ix_function.IxFunctionType;
@@ -117,6 +118,43 @@ public class Scope {
 		return functionMap.get(name);
 	}
 
+	public IxFunction lookupFunction(String name, IxType[] argsTypes, Node[] args) throws ClassNotFoundException {
+		ArrayList<IxFunction> funcs = functionMap.get(name);
+		if(funcs == null) return null;
+
+		ArrayList<Pair<Integer, IxFunction>> possible = new ArrayList<>();
+
+		out : for(IxFunction f : funcs) {
+			IxType[] expectArgs = f.type().getArgumentTypes();
+
+			if (expectArgs.length != argsTypes.length) continue;
+
+			int changes = 0;
+
+			for (int i = 0; i < expectArgs.length; i++) {
+				IxType expectArg = expectArgs[i];
+				IxType arg = argsTypes[i];
+
+				if (arg.equals(IxType.VOID_TYPE))
+					continue out;
+
+				if (expectArg.isAssignableFrom(arg, context, false)) {
+					if (!expectArg.equals(arg)) changes += expectArg.assignChangesFrom(arg);
+				} else if (expectArg.toClass(context).isAnnotationPresent(FunctionalInterface.class) && args[i] instanceof LambdaDeclarationNode) {
+					changes++;
+				} else {
+					continue out;
+				}
+			}
+			possible.add(new Pair<>(changes, f));
+		}
+		if(possible.isEmpty()) return null;
+
+		possible.sort(Comparator.comparingInt(Pair::first));
+
+		return possible.get(0).second();
+	}
+
 	public IxFunction lookupFunction(String name, IxType[] argsTypes, Node[] args, boolean visit, FileContext fc) throws ClassNotFoundException, IxException {
 		ArrayList<IxFunction> funcs = functionMap.get(name);
 		if(funcs == null) return null;
@@ -139,6 +177,8 @@ public class Scope {
 
 				if (expectArg.isAssignableFrom(arg, context, false)) {
 					if (!expectArg.equals(arg)) changes += expectArg.assignChangesFrom(arg);
+				} else if (expectArg.toClass(context).isAnnotationPresent(FunctionalInterface.class) && args[i] instanceof LambdaDeclarationNode) {
+					changes++;
 				} else {
 					continue out;
 				}
@@ -157,6 +197,9 @@ public class Scope {
 			for (int i = 0; i < resolvedArgs.length; i++) {
 				IxType resolvedArg = resolvedArgs[i];
 				Node arg = args[i];
+
+				if (arg instanceof LambdaDeclarationNode lambda)
+					lambda.setItf(resolvedArg);
 
 				arg.visit(fc);
 				resolvedArg.isAssignableFrom(argsTypes[i], context, true);
