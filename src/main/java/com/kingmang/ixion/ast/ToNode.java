@@ -25,6 +25,12 @@ public class ToNode implements Node {
 		IxType from = left.getReturnType(context);
 		IxType to = type.getReturnType(context);
 
+		if (left instanceof GroupingNode group && group.getValue() instanceof LambdaDeclarationNode lambda) {
+			lambda.setItf(to);
+			lambda.visit(fc);
+			return;
+		}
+
 		try {
 			if(from.toClass(context).equals(to.toClass(context))) return;
 		} catch (ClassNotFoundException e) {

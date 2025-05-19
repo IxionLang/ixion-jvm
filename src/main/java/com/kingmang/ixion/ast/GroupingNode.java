@@ -6,7 +6,9 @@ import com.kingmang.ixion.parser.Value;
 import com.kingmang.ixion.parser.Node;
 import com.kingmang.ixion.compiler.Context;
 import com.kingmang.ixion.types.IxType;
+import lombok.Getter;
 
+@Getter
 public class GroupingNode implements Node {
 	private final Node value;
 

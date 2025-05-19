@@ -836,9 +836,9 @@ public class ParserImpl implements Parser {
 	private Node lambda() throws ParserException {
 		index--;
 		List<Pair<Token, Node>> parameters = lambdaParameters("lambda parameter list");
-		consume(TokenType.LAMBDA, "Excepted '=>' after parameters");
+		Token token = consume(TokenType.LAMBDA, "Excepted '=>' after parameters");
 		Node body = match(TokenType.LBRACE) ? blockStatement() : expression();
-		return new LambdaDeclarationNode(parameters, body);
+		return new LambdaDeclarationNode(token, parameters, body);
 	}
 
 	private List<Pair<Token, Node>> lambdaParameters(String name) throws ParserException {

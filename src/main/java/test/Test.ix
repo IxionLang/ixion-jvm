@@ -1,4 +1,4 @@
 def main {
-    var foo = (text) => println(text);
-    foo.invoke("Hello, Negro!");
+    var foo = ((text) => println(text)) to java.util.function.Consumer;
+    foo.accept("Hello, Negro!");
 }
