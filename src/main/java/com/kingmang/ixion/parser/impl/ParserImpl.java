@@ -744,7 +744,7 @@ public class ParserImpl implements Parser {
 			case THIS -> new ThisNode(tok);
 			case SUPER -> superCall();
 			case NEW -> newObject();
-			case LPAREN -> grouping();
+			case LPAREN -> groupingOrLambda();
 			case IDENTIFIER -> variable();
 			default -> throw new ParserException(tok, "Expected value");
 		};
@@ -804,6 +804,59 @@ public class ParserImpl implements Parser {
 		return valueList;
 	}
 
+	private Node groupingOrLambda() throws ParserException {
+		if (tokens.get(index).type() == TokenType.RPAREN)
+			return lambda();
+		for (int i = index; i < tokens.size(); i++) {
+			switch (tokens.get(i).type()) {
+				case TokenType.IDENTIFIER:
+					switch (tokens.get(i + 1).type()) {
+						case COMMA:
+							i++;
+							continue;
+						case COLON:
+							i+=2;
+							if (tokens.get(i + 1).type() == TokenType.COMMA)
+								i++;
+							continue;
+						case TokenType.RPAREN:
+							return lambda();
+						default:
+							return grouping();
+					}
+				case TokenType.RPAREN:
+					return lambda();
+				default:
+					return grouping();
+			}
+		}
+		throw new ParserException(tokens.get(index), "Expected ')' after grouping or lambda");
+	}
+
+	private Node lambda() throws ParserException {
+		index--;
+		List<Pair<Token, Node>> parameters = lambdaParameters("lambda parameter list");
+		consume(TokenType.LAMBDA, "Excepted '=>' after parameters");
+		Node body = match(TokenType.LBRACE) ? blockStatement() : expression();
+		return new LambdaDeclarationNode(parameters, body);
+	}
+
+	private List<Pair<Token, Node>> lambdaParameters(String name) throws ParserException {
+		if (tokens.get(index).type() == TokenType.LPAREN)
+			consume(TokenType.LPAREN, "Expected '(' before " + name);
+		else return new ArrayList<>();
+		ArrayList<Pair<Token, Node>> parameters = new ArrayList<>();
+		if (tokens.get(index).type() != TokenType.RPAREN) {
+			do {
+				Token parameterName = consume(TokenType.IDENTIFIER, "Expected parameter name");
+				Node type = match(TokenType.COLON) ? type() : null;
+				parameters.add(new Pair<>(parameterName, type));
+			} while (match(TokenType.COMMA));
+		}
+		consume(TokenType.RPAREN, "Expected ')' after " + name);
+		return parameters;
+	}
+
 	private Node grouping() throws ParserException {
 		Node val = expression();
 		consume(TokenType.RPAREN, "Expected ')' after expression");
@@ -812,7 +865,7 @@ public class ParserImpl implements Parser {
 
 	private Node variable() throws ParserException {
 		Token name = tokens.get(index - 1);
-		List<Node> args = new ArrayList<>();
+		List<Node> args;
 		if (tokens.get(index).type() == TokenType.LPAREN) {
 			args = arguments("function arguments");
 			return new FunctionCallNode(name, args);

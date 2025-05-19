@@ -319,10 +319,7 @@ public class AssignmentNode implements Node {
 
 			Method m = resolveSetMethod(klass, name, setName, returnType, context.getContext(), isStaticAccess);
 
-			String descriptor = "(%s)V".formatted(IxType.getType(m.getParameterTypes()[0]).getDescriptor());
-
-			context.getContext().getMethodVisitor().visitMethodInsn(TypeUtil.getInvokeOpcode(m),
-					objType.getInternalName(), setName, descriptor, false);
+			TypeUtil.insertInvoke(context, m, false);
 		}
 	}
 

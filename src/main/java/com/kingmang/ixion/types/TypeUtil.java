@@ -3,16 +3,20 @@ package com.kingmang.ixion.types;
 import com.kingmang.ixion.exceptions.IxException;
 import com.kingmang.ixion.compiler.Context;
 import com.kingmang.ixion.parser.tokens.Token;
+import com.kingmang.ixion.util.FileContext;
 import com.kingmang.ixion.util.Pair;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.stream.Collectors;
 
 
 public class TypeUtil {
@@ -84,6 +88,12 @@ public class TypeUtil {
             case Short i -> generateCorrectInt(i, context);
             default -> context.getMethodVisitor().visitLdcInsn(object);
         }
+	}
+
+	public static void insertInvoke(FileContext context, Method method, boolean superCall) {
+		Class<?> klass = method.getDeclaringClass();
+		boolean isInterface = Modifier.isInterface(klass.getModifiers());
+		context.getContext().getMethodVisitor().visitMethodInsn(superCall ? Opcodes.INVOKESPECIAL : isInterface ? Opcodes.INVOKEINTERFACE : TypeUtil.getInvokeOpcode(method), klass.getName().replace('.', '/'), method.getName(), "(%s)%s".formatted(Arrays.stream(IxType.getType(method).getArgumentTypes()).map(IxType::getDescriptor).collect(Collectors.joining()), Type.getType(method.getReturnType()).getDescriptor()), isInterface);
 	}
 
 	public static int getInvokeOpcode(Method m) {

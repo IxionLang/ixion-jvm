@@ -1,0 +1,4 @@
+def main {
+    var foo = (text) => println(text);
+    foo.invoke("Hello, Negro!");
+}

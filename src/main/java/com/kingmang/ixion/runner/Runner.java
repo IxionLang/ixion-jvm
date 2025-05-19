@@ -9,11 +9,11 @@ import lombok.SneakyThrows;
 
 
 public class Runner {
-
-	static String[] std_files = {
+	public static final String[] STD_FILES = {
 		"string.ix",
 		"unit_test.ix"
 	};
+
 	@SneakyThrows
     public static void main(String[] args) {
 		
@@ -35,8 +35,8 @@ public class Runner {
 		}
 		api.getFiles().add(args[0]);
 
-		for(String std_file : std_files)
-			api.getFiles().add("std/" + std_file);
+		for(String file : STD_FILES)
+			api.getFiles().add("std/" + file);
 
 		String[] parts = args[0].split("\\.");
 		api.compile();
