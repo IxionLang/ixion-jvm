@@ -1,7 +1,7 @@
-def caller(task: Runnable) {
-    task.run();
+def caller(task: test.TSC) {
+    task.test("Hello, Negro!");
 }
 
 def main {
-    caller(() => println("Hello, Negro!"));
+    caller((text) => println(text));
 }
