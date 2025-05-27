@@ -1,4 +1,5 @@
 package com.kingmang.ixion.compiler;
+import com.kingmang.ixion.ast.AnnotationNode;
 import com.kingmang.ixion.class_utils.CustomClassLoader;
 import com.kingmang.ixion.ast.VariableDeclarationNode;
 import com.kingmang.ixion.types.IxType;
@@ -8,6 +9,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +80,9 @@ public class Context {
 	@Setter
 	@Getter
 	private Label loopEndLabel;
+
+	@Getter
+    private List<AnnotationNode> annotations = new ArrayList<>();
 
 	public Context() {
 		this.usings = new HashMap<>();
@@ -210,5 +215,13 @@ public class Context {
 		usings.put("Override", "java.lang.Override");
 		usings.put("SafeVarargs", "java.lang.SafeVarargs");
 		usings.put("SuppressWarnings", "java.lang.SuppressWarnings");
+	}
+
+	public void addAnnotation(AnnotationNode annotation) {
+		annotations.add(annotation);
+	}
+
+    public void clearAnnotations() {
+		annotations.clear();
 	}
 }

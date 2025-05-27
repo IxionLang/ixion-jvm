@@ -38,6 +38,7 @@ public class FunctionDeclarationNode implements Node {
 	private final List<Token> functionModifiers;
 	private IxType returnType;
 	private String descriptor;
+	private List<AnnotationNode> annotations = new ArrayList<>();
 
 	public FunctionDeclarationNode(
 			DeclarationType type,
@@ -59,6 +60,10 @@ public class FunctionDeclarationNode implements Node {
 		this.access = access;
 		this.staticModifier = staticModifier;
 		this.functionModifiers = functionModifiers;
+	}
+
+	public void addAnnotation(AnnotationNode annotation) {
+		annotations.add(annotation);
 	}
 
 	@Override
@@ -139,12 +144,18 @@ public class FunctionDeclarationNode implements Node {
 
 	@Override
 	public void visit(FileContext context) throws IxException {
+		Context ctx = context.getContext();
 		context.getContext().setConstructor(false);
 		MethodVisitor mv;
 		if(context.getContext().getType() == ContextType.GLOBAL) mv = makeGlobalFunction(context.getContext());
 		else mv = makeClassFunction(context.getContext());
 		createMainMethod(context.getContext());
 		mv.visitCode();
+
+		// Apply annotations after creating the MethodVisitor
+		for (AnnotationNode annotation : annotations) {
+			annotation.applyToMethod(mv, ctx);
+		}
 
 		for(Token token : functionModifiers) {
 			if(token.type() == TokenType.OVERRIDE)

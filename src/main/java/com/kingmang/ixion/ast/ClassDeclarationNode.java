@@ -30,6 +30,7 @@ public class ClassDeclarationNode implements Node {
 	private final boolean isFinal;
 	private final Token access;
 	private boolean staticVariableInit;
+	private List<AnnotationNode> annotations = new ArrayList<>();
 
 
 	public ClassDeclarationNode(Token name,
@@ -70,6 +71,11 @@ public class ClassDeclarationNode implements Node {
 		context.setCurrentSuperClass(getSuperclassType(context));
 
 		ClassWriter writer = initClass(getSuperclassType(context).getInternalName(), getInterfaceType(context).getInternalName(), context);
+
+		// Apply annotations
+		for (AnnotationNode annotation : annotations) {
+			annotation.applyToClass(writer, context);
+		}
 
 		MethodVisitor defaultConstructor = null;
 		if(constructors.isEmpty()) {
@@ -296,5 +302,9 @@ public class ClassDeclarationNode implements Node {
 	@Override
 	public String toString() {
 		return "class %s {%s}".formatted(name.value(), declarations.stream().map(Node::toString).collect(Collectors.joining()));
+	}
+
+	public void addAnnotation(AnnotationNode annotation) {
+		annotations.add(annotation);
 	}
 }

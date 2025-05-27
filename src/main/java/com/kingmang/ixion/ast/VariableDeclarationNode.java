@@ -7,6 +7,8 @@ import com.kingmang.ixion.parser.Node;
 import com.kingmang.ixion.parser.tokens.Token;
 import com.kingmang.ixion.types.IxType;
 import org.objectweb.asm.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class VariableDeclarationNode implements Node {
 
@@ -18,6 +20,7 @@ public class VariableDeclarationNode implements Node {
 	private final Token staticModifier;
 	private final Token get;
 	private final Token set;
+	private List<AnnotationNode> annotations = new ArrayList<>();
 
 	public VariableDeclarationNode(
 			Token name,
@@ -40,8 +43,16 @@ public class VariableDeclarationNode implements Node {
 		this.set = set;
 	}
 
+	public void addAnnotation(AnnotationNode annotation) {
+		annotations.add(annotation);
+	}
+
 	@Override
 	public void preprocess(Context context) throws IxException {
+		// Add any annotations from the context
+		annotations.addAll(context.getAnnotations());
+		context.clearAnnotations();
+
 		if(context.getType() == ContextType.GLOBAL) {
 			if(context.getScope().lookupVariable(name.value()) != null) throw new IxException(name, "Redefinition of variable '%s' in global scope.".formatted(name.value()));
 			defineGetAndSet(true, true, context);
@@ -112,7 +123,7 @@ public class VariableDeclarationNode implements Node {
 			context.getContext().setStaticMethod(false);
 			context.getContext().updateLine(name.line());
 
-			generateValue(context);
+            generateValue(context);
 
 			int setOpcode = isStatic(context.getContext()) ? Opcodes.PUTSTATIC : Opcodes.PUTFIELD;
 
@@ -130,6 +141,11 @@ public class VariableDeclarationNode implements Node {
 		String descriptor = fieldType.getDescriptor();
 
 		FieldVisitor fv = context.getCurrentClassWriter().visitField(Opcodes.ACC_PRIVATE | staticMod | finalMod, name.value(), descriptor, null, null);
+
+		// Apply annotations to the field
+		for (AnnotationNode annotation : annotations) {
+			annotation.applyToField(fv, context);
+		}
 
 		fv.visitEnd();
 
@@ -227,7 +243,14 @@ public class VariableDeclarationNode implements Node {
 
 	@Override
 	public String toString() {
-		StringBuilder builder = new StringBuilder((isConst ? "const " : "var ") + name.value());
+		StringBuilder builder = new StringBuilder();
+		
+		// Add annotations
+		for (AnnotationNode annotation : annotations) {
+			builder.append(annotation).append("\n");
+		}
+		
+		builder.append(isConst ? "const " : "var ").append(name.value());
 		if(expectedType != null) {
 			builder.append(": ").append(expectedType);
 		}

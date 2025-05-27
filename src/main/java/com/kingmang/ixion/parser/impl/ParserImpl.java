@@ -13,6 +13,8 @@ import com.kingmang.ixion.util.Pair;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 /*
 Синтаксическое дерево, которое строится парсером не является абстрактным,
@@ -86,9 +88,12 @@ public class ParserImpl implements Parser {
 		Token staticModifier = null;
 		boolean isFinal = false;
 		List<Token> functionModifiers = new ArrayList<>();
+		List<Node> annotations = new ArrayList<>();
 
 		while (true) {
-			if (match(TokenType.OVERRIDE) && tokens.get(index-1) == null) {
+			if (match(TokenType.AT)) {
+				annotations.add(annotationDeclaration());
+			} else if (match(TokenType.OVERRIDE) && tokens.get(index-1) == null) {
 				functionModifiers.add(tokens.get(index - 1));
 			} else if ((match(TokenType.PUBLIC) || match(TokenType.PRIVATE)) && tokens.get(index-1) == null) {
 				accessModifier = tokens.get(index - 1);
@@ -103,17 +108,29 @@ public class ParserImpl implements Parser {
 
 		Token tok = advance();
 
-		return switch(tok.type()) {
-			case TRAIT -> traitDeclaration(accessModifier,staticModifier);
+		Node declaration = switch(tok.type()) {
+			case TRAIT -> traitDeclaration(accessModifier, staticModifier);
 			case DEFINE_FUNCTION -> functionDeclaration(accessModifier, staticModifier, functionModifiers);
 			case CLASS -> classDeclaration(accessModifier, staticModifier, isFinal);
 			case ENUM -> enumDeclaration(accessModifier, staticModifier);
 			case THIS -> constructorDeclaration(accessModifier, staticModifier);
 			case VAR, CONST -> variableDeclaration(accessModifier, staticModifier);
-			//case AT -> annotationDeclaration();
 			default -> throw new ParserException(tok, "Expected declaration");
 		};
 
+		for (Node annotation : annotations) {
+            switch (declaration) {
+                case ClassDeclarationNode classDeclarationNode ->
+                        classDeclarationNode.addAnnotation((AnnotationNode) annotation);
+                case FunctionDeclarationNode functionDeclarationNode ->
+                        functionDeclarationNode.addAnnotation((AnnotationNode) annotation);
+                case VariableDeclarationNode variableDeclarationNode ->
+                        variableDeclarationNode.addAnnotation((AnnotationNode) annotation);
+                default -> throw new ParserException(tok, "Expected annotations");
+            }
+		}
+
+		return declaration;
 	}
 
 
@@ -1019,5 +1036,32 @@ public class ParserImpl implements Parser {
 
 	private Token advance() {
 		return tokens.get(index++);
+	}
+
+	private Node annotationDeclaration() throws ParserException {
+		Token atToken = tokens.get(index - 1);
+		Token name = consume(TokenType.IDENTIFIER, "Expected annotation name");
+		
+		List<Node> arguments = new ArrayList<>();
+		Map<String, Node> namedArguments = new HashMap<>();
+		
+		if (match(TokenType.LPAREN)) {
+			if (tokens.get(index).type() != TokenType.RPAREN) {
+				do {
+					if (match(TokenType.IDENTIFIER) && tokens.get(index).type() == TokenType.EQUALS) {
+						// Named argument
+						Token argName = tokens.get(index - 1);
+						advance(); // consume '='
+						namedArguments.put(argName.value(), expression());
+					} else {
+						// Positional argument
+						arguments.add(expression());
+					}
+				} while (match(TokenType.COMMA));
+			}
+			consume(TokenType.RPAREN, "Expected ')' after annotation arguments");
+		}
+		
+		return new AnnotationNode(name, arguments, namedArguments);
 	}
 }
