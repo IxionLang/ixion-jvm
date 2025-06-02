@@ -1,12 +1,28 @@
-using java.util.ArrayList;
+class Human {
+   var name: String = "";
 
-def main(args: String[]){
-    var list = new ArrayList();
+   this(name: String) {
+      this.name = name;
+   }
+   override def toString => "My name is " + name + ".";
 
-    list.add("Hello");
-    list.add("World");
+}
 
-    for(var i = 0; i < list.size(); i++){
-        println(list.get(i));
+class Man ext Human {
+    var age : int;
+
+    this(age: int) : ("Artyom") {
+       this.age = age;
     }
+
+    override def toString : String {
+        var name : String = super.toString();
+        return name + " My age is " + age + ".";
+    }
+
+}
+
+def main {
+   var simpleMan: Human = new Man(16);
+   println(simpleMan);
 }

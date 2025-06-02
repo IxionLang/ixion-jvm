@@ -1,0 +1,12 @@
+using java.util.ArrayList;
+
+def main(args: String[]){
+    var list = new ArrayList();
+
+    list.add("Hello");
+    list.add("World");
+
+    for(var i = 0; i < list.size(); i++){
+        println(list.get(i));
+    }
+}

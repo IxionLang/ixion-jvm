@@ -1,5 +1,7 @@
-﻿package com.kingmang.ixion.test_runner;
+package com.kingmang.ixion.test_runner.entities;
 
+import com.kingmang.ixion.runner.Runner;
+import com.kingmang.ixion.test_runner.TestBenchmark;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,16 +18,22 @@ public class IxTest {
      */
     private final String filename;
     private final String name;
+    private final IxTestTimeBound timeBound;
 
     /**
      * Запуск теста
      * @throws RuntimeException - ошибка при выполнении
+     * @return - время выполнения
      */
-    public void run() throws RuntimeException {
+    public long run() throws RuntimeException {
+        TestBenchmark benchmark = new TestBenchmark();
+        benchmark.begin();
+        Runner.run(filename);
+        return benchmark.measure();
     }
 
     @Override
     public String toString() {
-        return "[" + name + ", file: " + filename + "]";
+        return name + " :: " + filename;
     }
 }
