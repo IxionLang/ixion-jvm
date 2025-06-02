@@ -1,3 +1,5 @@
+package ixion.std;
+
 class UnitTest{
 
     var(getter) id : int;

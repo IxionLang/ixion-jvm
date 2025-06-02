@@ -9,7 +9,7 @@
 * [Массивы](#Массивы)
 * [Функции](#Функции)
   * [Функции](#Функции)
-  * [Лямбда-функции](##Лямбда-функции)
+  * [Лямбда-функции]( ##Лямбда-функции)
 * [Тернарный Оператор](#Тернарный-оператор)
 * [Битовые сдвиги](#Битовые-сдвиги)
 * [Библиотеки](#Библиотеки)
@@ -263,17 +263,7 @@ def main(){
 
 }
 ```
-```scala
-def main(){
 
-    var names = new String[] {
-            "Artyom",
-            "Alexandr",
-            "Danya"
-    };
-
-}
-```
 Пример 2:
 ````scala
 def main {
@@ -317,7 +307,16 @@ def custom_mul : int {
 }
 ````
 ## Лямбда-функции
-Пример:
+Примеры:
+
+````scala
+def main {
+  var a = () => print("Hello");
+  a.invoke();
+}
+````
+
+Пример 2:
 ````scala
 def main {
     print(message());
@@ -325,7 +324,7 @@ def main {
 
 def message => "Lambda!!!";
 ````
-
+(во втором примере скорее сокращенная запись функции, а не лямбда)
 # Тернарный оператор
 Пример использования:
 ```scala
@@ -392,5 +391,138 @@ def main {
 
 Более подробно о методах библиотек можно почитать в соответствующих главах.
 
+# ООП
+
+## Классы
+
+Пример создания класса с методом greeting, 
+а также последующим созданием объекта данного класса.
+````scala
+def main {
+    var a = new Test();
+    a.greeting("Artyom");
+}
 
 
+class Test {
+    pub def greeting(name : String){
+        println("Hello " + name + "!");
+    }
+}
+````
+Конструктор:
+````scala
+def main {
+    var a = new Test("Artyom");
+    a.greeting();
+}
+
+
+class Test {
+
+    var name : String?;
+
+    this(name : String){
+        this.name = name;
+    }
+
+    pub def greeting {
+        println("Hello " + name + "!");
+    }
+}
+````
+
+Генерация геттеров и сеттеров для полей:
+````scala
+def main {
+    var person = new Person("Alex", 20);
+    person.setName("Joe");
+    println(person.getName());
+    println(person.getAge());
+}
+
+
+class Person {
+
+    var(getter, setter) name : String?;
+    var(getter) age : int;
+
+    this(name : String, age : int){
+        this.name = name;
+        this.age = age;
+    }
+
+}
+````
+
+## Перечисления
+
+````scala
+def main {
+    println(Days.MONDAY);
+}
+
+
+enum Days {
+    MONDAY,
+    SUNDAY,
+    SATURDAY
+}
+````
+
+## Интерфейсы
+
+В Ixion вместо интерфейсов используются трэйты (traits).
+Отличие в том, что в них всегда есть default-реализация.
+
+Пример:
+````scala
+def main {
+    var car = new BMW();
+    car.printModel();
+}
+
+class BMW impl Car{
+    override def printModel {
+        println("bmw");
+    }
+}
+
+trait Car {
+    def printModel {
+        println("simple model");
+    }
+}
+````
+
+## Наследование
+````scala
+class Human {
+   var name: String = "";
+
+   this(name: String) {
+      this.name = name;
+   }
+   override def toString => "My name is " + name + ".";
+
+}
+
+class Man ext Human {
+    var age : int;
+
+    this(age: int) : ("Oleg") {
+       this.age = age;
+    }
+
+    override def toString : String {
+        var name : String = super.toString();
+        return name + " My age is " + age + ".";
+    }
+
+}
+
+def main {
+   var simpleMan: Human = new Man(20);
+   println(simpleMan);
+}
+````
