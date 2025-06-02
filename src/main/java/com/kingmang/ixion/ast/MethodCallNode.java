@@ -76,8 +76,8 @@ public class MethodCallNode implements Node {
 			arg.visit(context);
 			try {
 				IxType argType = arg.getReturnType(context.getContext());
-				resolvedType.isAssignableFrom(argType, context.getContext(), true); // DomamaN202: IDK WTF
-				argType.autoBox(context.getContext().getMethodVisitor());
+				if (!resolvedType.isAssignableFrom(argType, context.getContext(), true) && argType.isPrimitive()) // DomamaN202: IDK WTF
+					argType.autoBox(context.getContext().getMethodVisitor());
 			} catch (ClassNotFoundException e) {
 				throw new IxException(name, "Could not resolve class '%s'".formatted(e.getMessage()));
 			}
