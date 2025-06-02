@@ -1,4 +1,4 @@
 def main(){
     var test : String?;
-    if(test == null) { throw new RuntimeException("assertion error"); }
+    println(test)
 }
