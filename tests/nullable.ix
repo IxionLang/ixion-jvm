@@ -1,0 +1,4 @@
+def main(){
+    var test : String?;
+    println(test)
+}
