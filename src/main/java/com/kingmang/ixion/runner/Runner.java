@@ -22,7 +22,7 @@ public class Runner {
 	private static void deleteTemp() {
 		if (!IxionApi.getOutputDirectory().exists()) {
 			if (!IxionApi.getOutputDirectory().mkdir()) {
-				System.err.println("[Warning] Не удалось создать папку /out");
+				System.err.println("[Warning] Failed to create folder /out");
 			}
 		}
 		Files.walk(Path.of(IxionApi.getOutputDirectory().toURI()))
@@ -31,7 +31,7 @@ public class Runner {
 				try {
 					Files.delete(p);
 				} catch (IOException e) {
-					System.err.println("[Warning] Не удалось удалить файл: " + p);
+					System.err.println("[Warning] Failed to delete file: " + p);
 				}
 			});
 	}
@@ -70,7 +70,6 @@ public class Runner {
 
 	@SneakyThrows
 	public static void main(String[] args) {
-		// обработка колличества аргументов
 		if (args.length < 1) {
 			incorrectCommand();
 			return;
@@ -83,7 +82,7 @@ public class Runner {
 				if (args.length < 2) { incorrectCommand(); return; }
 				String inputFilePath = args[1];
 				if (!Files.exists(Path.of(inputFilePath))) {
-					System.err.println("[Error] Файл не найден: " + inputFilePath);
+					System.err.println("[Error] file not found: " + inputFilePath);
 					return;
 				}
 				System.out.println(consoleLog(inputFilePath));
@@ -92,18 +91,18 @@ public class Runner {
 				if (args.length < 2) { incorrectCommand(); return; }
 				String inputFilePath = args[1];
 				if (!Files.exists(Path.of(inputFilePath))) {
-					System.err.println("[Error] Файл не найден: " + inputFilePath);
+					System.err.println("[Error] file not found: " + inputFilePath);
 					return;
 				}
 				deleteTemp(); run(inputFilePath);
 			}
             case "-t" -> runTests();
-            default -> System.err.println("[Error] Неизвестная команда: " + command);
+            default -> System.err.println("[Error] unknown command: " + command);
         }
 	}
 
 	private static void incorrectCommand() {
-		System.err.println("[Error] \n Пожалуйста, введите команду и имя файла.");
+		System.err.println("[Error] \n Enter command and file.");
 		System.out.println("| console log: -l");
 		System.out.println("| run file: -r filename");
 		System.out.println("| run tests: -t");
