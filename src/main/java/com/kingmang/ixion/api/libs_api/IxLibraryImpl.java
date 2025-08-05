@@ -6,24 +6,23 @@ import com.kingmang.ixion.types.IxType;
 
 public class IxLibraryImpl {
     //constants
-    private static String runtimePath = "com/kingmang/ixion/runtime/";
-    private static final String defaultJavaPath = "Ljava/lang/";
+    private static final String RUNTIME_PATH = "com/kingmang/ixion/runtime/";
+    private static final String DEFAULT_JAVA_PATH = "Ljava/lang/";
 
     public static final String INT = "I";
     public static final String CHAR = "C";
     public static final String FLOAT = "F";
 
-    public static final String STRING_CLASS = defaultJavaPath.concat("String;");
-    public static final String INTEGER_CLASS = defaultJavaPath.concat("Integer;");
-    public static final String OBJECT = defaultJavaPath.concat("Object;");
-    public static final String FLOAT_CLASS = defaultJavaPath.concat("Float;");
+    public static final String STRING_CLASS = DEFAULT_JAVA_PATH.concat("String;");
+    public static final String INTEGER_CLASS = DEFAULT_JAVA_PATH.concat("Integer;");
+    public static final String OBJECT = DEFAULT_JAVA_PATH.concat("Object;");
+    public static final String FLOAT_CLASS = DEFAULT_JAVA_PATH.concat("Float;");
 
     public static IxFunction function(String name, String className, String arg, String returnedType){
-        //if(className.contains("java")) runtimePath = "";
         return new IxFunction(
                 IxFunctionType.STATIC,
                 name,
-                runtimePath.concat(className),
+                RUNTIME_PATH.concat(className),
                 IxType.getMethodType("(".concat(arg).concat(")").concat(returnedType))
         );
     }
