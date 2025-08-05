@@ -1,9 +1,11 @@
-using com.kingmang.ixion.runtime.Defer;
+//asjdklasd;ka
+/*
+askdasl;'d
+asd
+asdasd
+*/
 
-def main(args: String[]) {
-
-    var d = new Defer();
-    d.defer(() => println("a"));
-    d.defer(() => println("b"));
-    d.run();
+def main {
+    var a : String?;
+    print(a);
 }

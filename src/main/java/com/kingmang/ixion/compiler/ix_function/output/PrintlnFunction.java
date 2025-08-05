@@ -7,8 +7,6 @@ import com.kingmang.ixion.types.IxType;
 public class PrintlnFunction {
     /*
     Функция пойдет в scope.
-    Почему не переопределить это с помощью препроцессора?
-    А потому что print должен уметь выводить типы со значением null
     */
     public static final IxFunction PRINTLN_VOID =
             new IxFunction(
