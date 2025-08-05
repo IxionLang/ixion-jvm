@@ -1,4 +1,4 @@
 package com.kingmang.ixion.runtime.functions;
 
-public interface Function<R> {
+public interface Function<R> extends Runnable {
 }

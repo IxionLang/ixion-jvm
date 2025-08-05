@@ -1,6 +1,7 @@
 package com.kingmang.ixion.api;
 
 
+import com.kingmang.ixion.parser.tokens.TokenStream;
 import com.kingmang.ixion.util.FileContext;
 import com.kingmang.ixion.class_utils.CustomClassLoader;
 import com.kingmang.ixion.compiler.Context;
@@ -65,9 +66,9 @@ public class IxionApi {
 		String source = Files.readString(path);
 
 		Lexer lexer = new LexerImpl(source);
-		List<Token> lexResult = lexer.tokenize();
+		TokenStream tokens = lexer.tokenize();
 
-		Parser parser = new ParserImpl(lexResult);
+		Parser parser = new ParserImpl(tokens);
 		return parser.parse();
 	}
 

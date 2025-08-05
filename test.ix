@@ -1,3 +1,9 @@
+using com.kingmang.ixion.runtime.Defer;
+
 def main(args: String[]) {
-    println("Hello, Ixion!");
+
+    var d = new Defer();
+    d.defer(() => println("a"));
+    d.defer(() => println("b"));
+    d.run();
 }

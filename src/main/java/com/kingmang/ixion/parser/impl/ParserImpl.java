@@ -6,6 +6,7 @@ import com.kingmang.ixion.parser.Node;
 import com.kingmang.ixion.parser.Parser;
 
 import com.kingmang.ixion.parser.tokens.Token;
+import com.kingmang.ixion.parser.tokens.TokenStream;
 import com.kingmang.ixion.parser.tokens.TokenType;
 import com.kingmang.ixion.ast.*;
 import com.kingmang.ixion.util.Pair;
@@ -24,10 +25,10 @@ import java.util.HashMap;
 public class ParserImpl implements Parser {
 
 	private int index;
-	private final List<Token> tokens;
+	private final TokenStream tokens;
 	private boolean isParsingClass;
 
-	public ParserImpl(List<Token> tokens){
+	public ParserImpl(TokenStream tokens){
 		this.tokens = tokens;
 		this.index = 0;
 		this.isParsingClass = false;

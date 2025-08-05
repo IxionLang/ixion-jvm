@@ -2,6 +2,7 @@ package com.kingmang.ixion.parser.impl;
 
 import com.kingmang.ixion.parser.Lexer;
 import com.kingmang.ixion.parser.tokens.Token;
+import com.kingmang.ixion.parser.tokens.TokenStream;
 import com.kingmang.ixion.parser.tokens.TokenType;
 
 import java.util.ArrayList;
@@ -11,7 +12,7 @@ import java.util.List;
 Приминает поток символов -> возвращает поток токенов, которые обрабатываются парсером
  */
 
-public class LexerImpl implements Lexer {
+public class LexerImpl implements Lexer{
 
 	public static List<TokenType> PRIMITIVE_TYPES = List.of(
 			TokenType.INT,
@@ -41,8 +42,8 @@ public class LexerImpl implements Lexer {
 	}
 
 	@Override
-	public List<Token> tokenize() {
-		ArrayList<Token> tokens = new ArrayList<>();
+	public TokenStream tokenize() {
+		TokenStream tokens = new TokenStream();
 
 		while(!isAtEnd()) {
 			start = index;
@@ -117,11 +118,22 @@ public class LexerImpl implements Lexer {
 				token = makeToken(type);
 			}
 
-			tokens.add(token);
+			tokens.append(token);
 		}
-		tokens.add(makeToken(TokenType.EOF));
+		tokens.append(makeToken(TokenType.EOF));
 
 		return tokens;
+	}
+
+	@Override
+	public boolean hasNext() {
+		return true;
+	}
+
+	//WARNING: not implemented!
+	@Override
+	public Token next() {
+		return null;
 	}
 
 	private TokenType question() {
@@ -317,5 +329,6 @@ public class LexerImpl implements Lexer {
 	private static boolean isWhitespace(char c) {
 		return c == ' ' || c == '\r' || c == '\t' || c == '\n';
 	}
+
 
 }
