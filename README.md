@@ -5,8 +5,6 @@
 Multi-paradigm compiled programming language for the jvm platform.
 </div>
 
-> [!WARNING]
-> The project is currently being rewritten from scratch. When it is 80% ready, it will be immediately uploaded to this repository
 
 > [!IMPORTANT]
 > Before installing the language, install jdk.
