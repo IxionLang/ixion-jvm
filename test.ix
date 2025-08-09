@@ -1,11 +1,3 @@
-//asjdklasd;ka
-/*
-askdasl;'d
-asd
-asdasd
-*/
-
 def main {
-    var a : String?;
-    print(a);
+    print("hi")
 }

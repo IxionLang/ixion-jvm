@@ -21,7 +21,7 @@ public enum TokenType {
 	CONST,
 	CLASS,
 	ENUM,
-	TO,
+	AS,
 	RETURN,
 	CONTINUE,
 	BREAK,

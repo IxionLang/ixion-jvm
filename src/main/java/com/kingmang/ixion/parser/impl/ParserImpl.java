@@ -49,11 +49,11 @@ public class ParserImpl implements Parser {
 			packageName = packageStatement();
 		}
 
-		while(!isAtEnd() && match(TokenType.USING)) {
+		while(!atTheEnd() && match(TokenType.USING)) {
 			imports.add(usingStatement());
 		}
 
-		while(!isAtEnd()) {
+		while(!atTheEnd()) {
 			declarations.add(declaration());
 		}
 		return new ProgramNode(packageName, imports, declarations);
@@ -225,7 +225,7 @@ public class ParserImpl implements Parser {
 
 		boolean wasParsingClass = isParsingClass;
 		isParsingClass = true;
-		while(!isAtEnd() && tokens.get(index).type() != TokenType.RBRACE) {
+		while(!atTheEnd() && tokens.get(index).type() != TokenType.RBRACE) {
 			declarations.add(declaration());
 		}
 		isParsingClass = wasParsingClass;
@@ -241,7 +241,7 @@ public class ParserImpl implements Parser {
 		Token name = consume(TokenType.IDENTIFIER, "Expected trait name");
 		List<Node> methods = new ArrayList<>();
 		consume(TokenType.LBRACE, "Expected '{' before trait body");
-		while(!isAtEnd() && tokens.get(index).type() != TokenType.RBRACE) {
+		while(!atTheEnd() && tokens.get(index).type() != TokenType.RBRACE) {
 			match(TokenType.DEFINE_FUNCTION);
 			methods.add(functionDeclaration(null, null, null));
 		}
@@ -262,7 +262,7 @@ public class ParserImpl implements Parser {
 		if(tokens.get(index).type() != TokenType.RBRACE) {
 			do {
 				fields.add(consume(TokenType.IDENTIFIER, "Expected enum field name"));
-			} while (!isAtEnd() && match(TokenType.COMMA));
+			} while (!atTheEnd() && match(TokenType.COMMA));
 		}
 
 		consume(TokenType.RBRACE, "Expected '}' after enum body");
@@ -320,7 +320,7 @@ public class ParserImpl implements Parser {
 			do {
 				if(match(TokenType.VAR) || match(TokenType.CONST)) nodes.add(variableDeclaration(null, null));
 				else nodes.add(statement());
-			} while (!isAtEnd() && tokens.get(index).type() != TokenType.RBRACE);
+			} while (!atTheEnd() && tokens.get(index).type() != TokenType.RBRACE);
 		}
 
 		consume(TokenType.RBRACE, "Expected '}' after block");
@@ -677,7 +677,7 @@ public class ParserImpl implements Parser {
 
 	private Node cast() throws ParserException {
 		Node left = unary();
-		while(match(TokenType.TO)) {
+		while(match(TokenType.AS)) {
 			Token as = tokens.get(index - 1);
 			Node type = type();
 
@@ -853,15 +853,15 @@ public class ParserImpl implements Parser {
 
 	private Node lambda() throws ParserException {
 		index--;
-		List<Pair<Token, Node>> parameters = lambdaParameters("lambda parameter list");
+		List<Pair<Token, Node>> parameters = lambdaParameters();
 		Token token = consume(TokenType.LAMBDA, "Excepted '=>' after parameters");
 		Node body = match(TokenType.LBRACE) ? blockStatement() : expression();
 		return new LambdaDeclarationNode(token, parameters, body);
 	}
 
-	private List<Pair<Token, Node>> lambdaParameters(String name) throws ParserException {
+	private List<Pair<Token, Node>> lambdaParameters() throws ParserException {
 		if (tokens.get(index).type() == TokenType.LPAREN)
-			consume(TokenType.LPAREN, "Expected '(' before " + name);
+			consume(TokenType.LPAREN, "Expected '(' before " + "lambda parameter list");
 		else return new ArrayList<>();
 		ArrayList<Pair<Token, Node>> parameters = new ArrayList<>();
 		if (tokens.get(index).type() != TokenType.RPAREN) {
@@ -871,7 +871,7 @@ public class ParserImpl implements Parser {
 				parameters.add(new Pair<>(parameterName, type));
 			} while (match(TokenType.COMMA));
 		}
-		consume(TokenType.RPAREN, "Expected ')' after " + name);
+		consume(TokenType.RPAREN, "Expected ')' after " + "lambda parameter list");
 		return parameters;
 	}
 
@@ -988,7 +988,7 @@ public class ParserImpl implements Parser {
 		if(tokens.get(index).type() != TokenType.RPAREN) {
 			do {
 				args.add(expression());
-			} while (!isAtEnd() && match(TokenType.COMMA));
+			} while (!atTheEnd() && match(TokenType.COMMA));
 		}
 
 		consume(TokenType.RPAREN, "Expected ')' after " + name);
@@ -1031,7 +1031,7 @@ public class ParserImpl implements Parser {
 		return advance();
 	}
 
-	private boolean isAtEnd() {
+	private boolean atTheEnd() {
 		return tokens.get(index).type() == TokenType.EOF;
 	}
 
