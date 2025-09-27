@@ -1,0 +1,21 @@
+<filetype binary="false" default_extension="ix" description="Ixion files" name="Ixion">
+    <highlighting>
+        <options>
+            <option name="LINE_COMMENT" value="//" />
+            <option name="COMMENT_START" value="/*" />
+            <option name="COMMENT_END" value="*/" />
+            <option name="HEX_PREFIX" value="0x" />
+            <option name="NUM_POSTFIXES" value="" />
+            <option name="HAS_BRACES" value="true" />
+            <option name="HAS_BRACKETS" value="true" />
+            <option name="HAS_PARENS" value="true" />
+            <option name="HAS_STRING_ESCAPES" value="true" />
+        </options>
+        <keywords keywords="var;const;type;use;false;true;pub" ignore_case="false" />
+        <keywords2 keywords="def;struct;enum;for;match;if;else;with;while;return" />
+        <keywords3 keywords="string;float;int;any;double" />
+    </highlighting>
+    <extensionMap>
+        <mapping ext="ix" />
+    </extensionMap>
+</filetype>

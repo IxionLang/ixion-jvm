@@ -1,0 +1,14 @@
+use <prelude>
+
+type my_type = int | float
+
+pub def main(){
+    print_type(10)
+    print_type(10.0)
+}
+
+def print_type(list : my_type){
+    match list with
+    | int i => println("value " + i + " is integer")
+    | float f => println("value " + f + " is float")
+}
