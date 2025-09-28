@@ -9,9 +9,9 @@ Multi-paradigm compiled programming language for the jvm platform.
 > [!IMPORTANT]
 > Before installing the language, install jdk.
 
-greeting in Ixion:
+Greeting in Ixion:
 ```scala
-use<prelude>
+use <prelude>
 
 def greeting(){
     var langs = [
@@ -21,8 +21,8 @@ def greeting(){
         "Привет, мир!",
         "こんにちは世界！"
     ]
-    for i : range(0, len(langs) - 1 {
-        println(list_get(langs,i)
+    for i : range(0, len(langs) - 1) {
+        println(list_get(langs,i))
     }
 }
 
@@ -32,7 +32,7 @@ pub def main(args : string[]){
 ```
 
 
-pattern matching example:
+Pattern matching example:
 
 ```scala
 use <prelude>
