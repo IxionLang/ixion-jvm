@@ -11,85 +11,41 @@ Multi-paradigm compiled programming language for the jvm platform.
 
 greeting in Ixion:
 ```scala
-def greeting(steps : int){
-    const langs = new String[]{
+use <prelude>
+
+def main(){
+    const langs = [
         "Hello, world!",
         "¡Hola Mundo!",
         "Γειά σου Κόσμε!",
         "Привет, мир!",
         "こんにちは世界！"
-    };
-    for(var i = 0; i < steps; i+=1){
-        println(langs[i]);
-    }
+    ]
+    println(langs)
 }
-
-def main => greeting(2);
 ```
 
 
-> [!NOTE]
-> The language contains nullable types and non-nullable types.
+pattern matching:
 
 ```scala
-def main(args: String[]) {
-   var a : String?;
-   var b : String = "Hello";
+use <prelude>
+
+type my_type = int | float
+
+pub def main(){
+    print_type(10)
+    print_type(10.0)
 }
+
+def print_type(list : my_type){
+    match list with
+    | int i => println("value " + i + " is integer")
+    | float f => println("value " + f + " is float")
+}
+
 ```
 
-java ArrayList example:
-
-```scala
-using java.util.ArrayList;
-
-def main(args: String[]){
-    var list = new ArrayList();
-
-    list.add("Hello");
-    list.add("World");
-
-    for(var i = 0; i < list.size(); i++){
-        println(list.get(i));
-    }
-}
-```
-
-> [!NOTE]
-> The language supports OOP.
-
-Inheritance example:
-
-```scala
-class Human {
-   var name: String = "";
-
-   this(name: String) {
-      this.name = name;
-   }
-   override def toString => "My name is " + name + ".";
-
-}
-
-class Man ext Human {
-    var age : int;
-
-    this(age: int) : ("Artyom") {
-       this.age = age;
-    }
-
-    override def toString : String {
-        var name : String = super.toString();
-        return name + " My age is " + age + ".";
-    }
-
-}
-
-def main {
-   var simpleMan: Human = new Man(16);
-   println(simpleMan);
-}
-```
 
 ## Contributions
 We will review and help with all reasonable pull requests as long as the guidelines below are met.
