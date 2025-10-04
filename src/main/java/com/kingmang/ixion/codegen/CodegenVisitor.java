@@ -21,10 +21,16 @@ import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/*
+IMPORTANT !!!
+ * Codegen in JVM bytecode is temporarily unavailable.
+ * Currently, compilation to Java is being implemented, and later,
+ * after the transition to Java 25, codegen in JVM bytecode will be reactivated.
+*/
+
 /**
  * Visitor for generating jvm bytecode from Ixion nodes
  * Converts abstract syntax tree to executable bytecode using ASM library
- * Warning! Codegen is still under development and may contain bugs.
  */
 public class CodegenVisitor implements Visitor<Optional<ClassWriter>> {
     public final static int flags = ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS;
