@@ -1,13 +1,10 @@
 package com.kingmang.ixion.codegen;
-
 import com.kingmang.ixion.Visitor;
 import com.kingmang.ixion.api.Context;
 import com.kingmang.ixion.api.IxApi;
 import com.kingmang.ixion.api.IxFile;
 import com.kingmang.ixion.ast.*;
-import com.kingmang.ixion.runtime.DefType;
-import com.kingmang.ixion.runtime.IxType;
-import com.kingmang.ixion.runtime.StructType;
+import com.kingmang.ixion.runtime.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,13 +19,13 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     private int indentLevel = 0;
     private final Stack<DefType> functionStack = new Stack<>();
     private final Map<String, String> structClasses = new HashMap<>();
+    private final Map<DefType, Map<String, Integer>> localMaps = new HashMap<>();
 
     public JavaCodegenVisitor(IxApi ixApi, IxFile source) {
         this.ixApi = ixApi;
         this.source = source;
         this.currentContext = source.rootContext;
     }
-
 
     private void indent() {
         for (int i = 0; i < indentLevel; i++) {
@@ -50,27 +47,96 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     }
 
     @Override
+    public Optional<String> visit(Statement statement) {
+        return statement.accept(this);
+    }
+
+    @Override
     public Optional<String> visitAssignExpr(AssignExpression expr) {
+        if (expr.left instanceof IdentifierExpression id) {
+            print(id.identifier.source() + " = ");
+            expr.right.accept(this);
+        } else if (expr.left instanceof PropertyAccessExpression pa) {
+            pa.accept(this);
+            print(" = ");
+            expr.right.accept(this);
+        }
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitBad(BadExpression expr) {
+        print("/* ERROR: Bad expression */");
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitBinaryExpr(BinaryExpression expr) {
-        print("(");
         expr.left.accept(this);
-        print(" " + expr.operator.source() + " ");
+
+        String operator = switch (expr.operator.type()) {
+            case AND -> " && ";
+            case OR -> " || ";
+            case EQUAL -> " == ";
+            case NOTEQUAL -> " != ";
+            case LT -> " < ";
+            case GT -> " > ";
+            case LE -> " <= ";
+            case GE -> " >= ";
+            case ADD -> " + ";
+            case SUB -> " - ";
+            case MUL -> " * ";
+            case DIV -> " / ";
+            case MOD -> " % ";
+            case XOR -> " ^ ";
+            default -> " " + expr.operator.source() + " ";
+        };
+
+        print(operator);
         expr.right.accept(this);
-        print(")");
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitCall(CallExpression expr) {
+        if (expr.item instanceof IdentifierExpression identifier) {
+            expr.item.realType = currentContext.getVariable(identifier.identifier.source());
+        }
+
+        if (expr.item.realType instanceof DefType callType) {
+            if (callType.glue) {
+                String owner = callType.owner.replace('/', '.');
+                String name = callType.name;
+                if (callType.isPrefixed) name = "_" + name;
+
+                print(owner + "." + name + "(");
+            } else {
+                String name = "_" + callType.name;
+                print(name + "(");
+            }
+
+            for (int i = 0; i < expr.arguments.size(); i++) {
+                if (i > 0) print(", ");
+                expr.arguments.get(i).accept(this);
+            }
+            print(")");
+        } else if (expr.item.realType instanceof StructType st) {
+            print("new " + st.name + "(");
+            for (int i = 0; i < expr.arguments.size(); i++) {
+                if (i > 0) print(", ");
+                expr.arguments.get(i).accept(this);
+            }
+            print(")");
+        } else {
+            expr.item.accept(this);
+            print("(");
+            for (int i = 0; i < expr.arguments.size(); i++) {
+                if (i > 0) print(", ");
+                expr.arguments.get(i).accept(this);
+            }
+            print(")");
+        }
+
         return Optional.empty();
     }
 
@@ -81,56 +147,86 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
 
     @Override
     public Optional<String> visitEmptyList(EmptyListExpression emptyList) {
+        print("new java.util.ArrayList<>()");
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitGroupingExpr(GroupingExpression expr) {
+        print("(");
+        expr.expression.accept(this);
+        print(")");
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitIdentifierExpr(IdentifierExpression expr) {
+        print(expr.identifier.source());
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitIndexAccess(IndexAccessExpression expr) {
+        expr.left.accept(this);
+        print(".get(");
+        expr.right.accept(this);
+        print(")");
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitLiteralExpr(LiteralExpression expr) {
+        if (expr.realType instanceof BuiltInType bt) {
+            switch (bt) {
+                case STRING -> print("\"" + expr.literal.source().replace("\"", "\\\"") + "\"");
+                case BOOLEAN -> print(expr.literal.source());
+                default -> print(expr.literal.source());
+            }
+        } else {
+            print(expr.literal.source());
+        }
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitLiteralList(LiteralListExpression expr) {
+        print("java.util.Arrays.asList(");
+        for (int i = 0; i < expr.entries.size(); i++) {
+            if (i > 0) print(", ");
+            expr.entries.get(i).accept(this);
+        }
+        print(")");
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitModuleAccess(ModuleAccessExpression expr) {
+        expr.foreign.accept(this);
+        print(".");
+        expr.identifier.accept(this);
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitPostfixExpr(PostfixExpression expr) {
+        expr.expression.accept(this);
+        print(expr.operator.source());
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitPrefix(PrefixExpression expr) {
+        print(expr.operator.source());
+        expr.right.accept(this);
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitPropertyAccess(PropertyAccessExpression expr) {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<String> visit(Statement statement) {
+        expr.expression.accept(this);
+        for (var identifier : expr.identifiers) {
+            print("." + identifier.identifier.source());
+        }
         return Optional.empty();
     }
 
@@ -141,26 +237,55 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
 
     @Override
     public Optional<String> visitBlockStmt(BlockStatement statement) {
+        println("{");
+        indentLevel++;
+        for (var stmt : statement.statements) {
+            stmt.accept(this);
+        }
+        indentLevel--;
+        println("}");
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitEnum(EnumStatement statement) {
+        indent();
+        print("enum " + statement.name.source() + " {");
+        for (int i = 0; i < statement.values.size(); i++) {
+            if (i > 0) print(", ");
+            print(statement.values.get(i).source());
+        }
+        println("}");
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitExport(ExportStatement statement) {
-        return Optional.empty();
+        return statement.stmt.accept(this);
     }
 
     @Override
     public Optional<String> visitExpressionStmt(ExpressionStatement statement) {
+        indent();
+        statement.expression.accept(this);
+        println(";");
         return Optional.empty();
     }
 
     @Override
     public Optional<String> visitFor(ForStatement statement) {
+        indent();
+        print("for (int " + statement.name.source() + " : ");
+        statement.expression.accept(this);
+        println(") {");
+
+        indentLevel++;
+        currentContext = statement.block.context;
+        statement.block.accept(this);
+        indentLevel--;
+
+        println("}");
+        currentContext = currentContext.getParent();
         return Optional.empty();
     }
 
@@ -168,19 +293,24 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     public Optional<String> visitFunctionStmt(FunctionStatement statement) {
         var funcType = currentContext.getVariableTyped(statement.name.source(), DefType.class);
         functionStack.push(funcType);
+        localMaps.put(funcType, new HashMap<>());
 
         indent();
         print("public static ");
-        if(funcType.name.equals("main")){
+
+        if (funcType.name.equals("main")) {
             print("void main(String[] args)");
-        }else {
-            print(funcType.returnType.getName() + " ");
-            print("_" + funcType.name + "(");
+        } else {
+            String returnType = getJavaTypeName(funcType.returnType);
+            String functionName = funcType.glue ? funcType.name : "_" + funcType.name;
+
+            print(returnType + " " + functionName + "(");
 
             for (int i = 0; i < funcType.parameters.size(); i++) {
                 var param = funcType.parameters.get(i);
                 if (i > 0) print(", ");
-                print(param.getValue1().getName() + " " + param.getValue0());
+                String paramType = getJavaTypeName(param.getValue1());
+                print(paramType + " " + param.getValue0());
             }
             print(")");
         }
@@ -189,12 +319,45 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         indentLevel++;
         currentContext = statement.body.context;
         statement.body.accept(this);
-        indentLevel--;
 
+        if (!funcType.name.equals("main") && !hasReturnStatement(statement.body) && !funcType.returnType.equals(BuiltInType.VOID)) {
+            indent();
+            String defaultValue = getDefaultValue(funcType.returnType);
+            println("return " + defaultValue + ";");
+        }
+
+        indentLevel--;
         println("}");
+
         functionStack.pop();
         currentContext = currentContext.getParent();
         return Optional.empty();
+    }
+
+    private boolean hasReturnStatement(BlockStatement body) {
+        for (var stmt : body.statements) {
+            if (stmt instanceof ReturnStatement) {
+                return true;
+            } else if (stmt instanceof BlockStatement block) {
+                if (hasReturnStatement(block)) return true;
+            } else if (stmt instanceof IfStatement ifStmt) {
+                boolean trueBranch = hasReturnStatement(ifStmt.trueBlock);
+                boolean falseBranch = hasReturnStatementInStatement(ifStmt.falseStatement);
+                if (trueBranch && falseBranch) return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasReturnStatementInStatement(Statement stmt) {
+        if (stmt instanceof ReturnStatement) return true;
+        if (stmt instanceof BlockStatement block) return hasReturnStatement(block);
+        if (stmt instanceof IfStatement ifStmt) {
+            boolean trueBranch = hasReturnStatement(ifStmt.trueBlock);
+            boolean falseBranch = hasReturnStatementInStatement(ifStmt.falseStatement);
+            return trueBranch && falseBranch;
+        }
+        return false;
     }
 
     @Override
@@ -209,14 +372,12 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         statement.trueBlock.accept(this);
         indentLevel--;
 
-        indent();
         if (statement.falseStatement != null) {
             println("} else {");
             indentLevel++;
             statement.falseStatement.accept(this);
             indentLevel--;
         }
-        indent();
         println("}");
 
         currentContext = currentContext.getParent();
@@ -230,6 +391,28 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
 
     @Override
     public Optional<String> visitMatch(MatchStatement statement) {
+        for (var entry : statement.cases.entrySet()) {
+            var typeStmt = entry.getKey();
+            var pair = entry.getValue();
+            var scopedName = pair.getValue0();
+            var block = pair.getValue1();
+
+            indent();
+            print("if (");
+            statement.expression.accept(this);
+            print(" instanceof ");
+            var actualType = statement.types.get(typeStmt);
+            print(actualType.getName() + " " + scopedName);
+            println(") {");
+
+            indentLevel++;
+            currentContext = block.context;
+            block.accept(this);
+            indentLevel--;
+
+            println("}");
+        }
+
         return Optional.empty();
     }
 
@@ -240,6 +423,13 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
 
     @Override
     public Optional<String> visitReturnStmt(ReturnStatement statement) {
+        indent();
+        print("return");
+        if (!(statement.expression instanceof EmptyExpression)) {
+            print(" ");
+            statement.expression.accept(this);
+        }
+        println(";");
         return Optional.empty();
     }
 
@@ -247,41 +437,51 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     public Optional<String> visitStruct(StructStatement statement) {
         var structType = currentContext.getVariableTyped(statement.name.source(), StructType.class);
 
-        StringBuilder structCode = new StringBuilder();
-        int savedIndent = indentLevel;
-        indentLevel = 1;
+        println("public static class " + structType.name + " {");
 
+        indentLevel++;
         for (var pair : structType.parameters) {
             String fieldName = pair.getValue0();
             IxType fieldType = pair.getValue1();
-            indent();
-            structCode.append("public ").append(fieldType.getName())
-                    .append(" ").append(fieldName).append(";\n");
+            String javaType = getJavaTypeName(fieldType);
+            println("public " + javaType + " " + fieldName + ";");
         }
 
-        structCode.append("\n");
-        indent();
-        structCode.append("public ").append(structType.name).append("(");
+        println("");
+        print("public " + structType.name + "(");
 
         for (int i = 0; i < structType.parameters.size(); i++) {
             var param = structType.parameters.get(i);
-            if (i > 0) structCode.append(", ");
-            structCode.append(param.getValue1().getName()).append(" ").append(param.getValue0());
+            if (i > 0) print(", ");
+            String javaType = getJavaTypeName(param.getValue1());
+            print(javaType + " " + param.getValue0());
         }
-        structCode.append(") {\n");
+        println(") {");
 
-        indentLevel = 2;
+        indentLevel++;
         for (var param : structType.parameters) {
-            indent();
-            structCode.append("this.").append(param.getValue0())
-                    .append(" = ").append(param.getValue0()).append(";\n");
+            println("this." + param.getValue0() + " = " + param.getValue0() + ";");
         }
-        indentLevel = 1;
-        indent();
-        structCode.append("}\n");
+        indentLevel--;
+        println("}");
 
-        indentLevel = savedIndent;
-        structClasses.put(structType.name, structCode.toString());
+        println("");
+        println("@Override");
+        println("public String toString() {");
+        indentLevel++;
+        print("return \"" + structType.name + "{\" + ");
+        for (int i = 0; i < structType.parameters.size(); i++) {
+            var param = structType.parameters.get(i);
+            String fieldName = param.getValue0();
+            if (i > 0) print(" + \", \" + ");
+            print("\"" + fieldName + "=\" + " + fieldName);
+        }
+        println(" + \"}\";");
+        indentLevel--;
+        println("}");
+        indentLevel--;
+        println("}");
+
         return Optional.empty();
     }
 
@@ -299,7 +499,8 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     public Optional<String> visitVariable(VariableStatement statement) {
         indent();
         var type = currentContext.getVariable(statement.identifier());
-        print(type.getName() + " " + statement.identifier() + " = ");
+        String javaType = getJavaTypeName(type);
+        print(javaType + " " + statement.identifier() + " = ");
         statement.expression.accept(this);
         println(";");
         return Optional.empty();
@@ -307,11 +508,85 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
 
     @Override
     public Optional<String> visitWhile(WhileStatement statement) {
+        indent();
+        print("while (");
+        statement.condition.accept(this);
+        println(") {");
+
+        indentLevel++;
+        currentContext = statement.block.context;
+        statement.block.accept(this);
+        indentLevel--;
+
+        println("}");
+        currentContext = currentContext.getParent();
         return Optional.empty();
+    }
+
+    private String getJavaTypeName(IxType type) {
+        if (type instanceof BuiltInType builtIn) {
+            return switch (builtIn) {
+                case INT -> "int";
+                case FLOAT -> "float";
+                case DOUBLE -> "double";
+                case BOOLEAN -> "boolean";
+                case STRING -> "String";
+                case VOID -> "void";
+                case ANY -> "Object";
+            };
+        } else if (type instanceof ListType) {
+            return "java.util.List";
+        } else if (type instanceof UnionType) {
+            return "Object";
+        } else if (type instanceof StructType structType) {
+            return structType.name;
+        }
+        return type.getName();
+    }
+
+    private String getDefaultValue(IxType type) {
+        if (type instanceof BuiltInType builtIn) {
+            return switch (builtIn) {
+                case INT -> "0";
+                case FLOAT -> "0.0f";
+                case DOUBLE -> "0.0";
+                case BOOLEAN -> "false";
+                case STRING -> "null";
+                case VOID -> "";
+                case ANY -> "null";
+            };
+        } else if (type instanceof ListType) {
+            return "null";
+        } else if (type instanceof UnionType) {
+            return "null";
+        } else if (type instanceof StructType) {
+            return "null";
+        }
+        return "null";
     }
 
     public Map<String, String> getStructClasses() {
         return structClasses;
     }
 
+    public String generateCompleteFile() {
+        StringBuilder completeFile = new StringBuilder();
+
+        String packageName = source.getFullRelativePath().replace("/", ".");
+        if (packageName.contains(".")) {
+            packageName = packageName.substring(0, packageName.lastIndexOf('.'));
+            completeFile.append("package ").append(packageName).append(";\n\n");
+        }
+
+        completeFile.append("import java.util.*;\n");
+        completeFile.append("import com.kingmang.ixion.modules.Prelude;\n\n");
+
+        String className = source.file.getName().replace(".ix", "").replace(".java", "");
+        completeFile.append("public class ").append(className).append(" {\n");
+
+        completeFile.append(output);
+
+        completeFile.append("}\n");
+        return completeFile.toString();
+    }
 }

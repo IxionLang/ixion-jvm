@@ -22,6 +22,9 @@ public class Prelude {
 	public static void print(Object arg) {
 		System.out.print(arg.toString());
 	}
+    public static void write(Object arg) {
+        System.out.print(arg.toString() + " ");
+    }
 
     public static int parse_int(String value) {
         return Integer.parseInt(value);
