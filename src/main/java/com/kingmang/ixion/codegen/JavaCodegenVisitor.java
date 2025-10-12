@@ -350,6 +350,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     }
 
     private boolean hasReturnStatementInStatement(Statement stmt) {
+        if (stmt == null) return false;
         if (stmt instanceof ReturnStatement) return true;
         if (stmt instanceof BlockStatement block) return hasReturnStatement(block);
         if (stmt instanceof IfStatement ifStmt) {
@@ -401,11 +402,46 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
             print("if (");
             statement.expression.accept(this);
             print(" instanceof ");
+
             var actualType = statement.types.get(typeStmt);
-            print(actualType.getName() + " " + scopedName);
+            String javaTypeName = getJavaTypeName(actualType);
+
+            String tempVarName = "temp_" + scopedName;
+            if (actualType instanceof BuiltInType builtIn) {
+                switch (builtIn) {
+                    case INT -> javaTypeName = "Integer";
+                    case FLOAT -> javaTypeName = "Float";
+                    case DOUBLE -> javaTypeName = "Double";
+                    case BOOLEAN -> javaTypeName = "Boolean";
+                    default -> {}
+                }
+            }
+
+            print(javaTypeName + " " + tempVarName);
             println(") {");
 
             indentLevel++;
+
+            if (actualType instanceof BuiltInType builtIn && builtIn != BuiltInType.STRING) {
+                indent();
+                print(getJavaTypeName(actualType) + " " + scopedName + " = ");
+                print(tempVarName);
+
+                switch (builtIn) {
+                    case INT -> print(".intValue()");
+                    case FLOAT -> print(".floatValue()");
+                    case DOUBLE -> print(".doubleValue()");
+                    case BOOLEAN -> print(".booleanValue()");
+                    default -> {}
+                }
+                println(";");
+            } else {
+                indent();
+                print(getJavaTypeName(actualType) + " " + scopedName + " = ");
+                print("(" + javaTypeName + ") " + tempVarName);
+                println(";");
+            }
+
             currentContext = block.context;
             block.accept(this);
             indentLevel--;
@@ -551,9 +587,8 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
                 case FLOAT -> "0.0f";
                 case DOUBLE -> "0.0";
                 case BOOLEAN -> "false";
-                case STRING -> "null";
+                case STRING, ANY -> "null";
                 case VOID -> "";
-                case ANY -> "null";
             };
         } else if (type instanceof ListType) {
             return "null";
@@ -589,4 +624,6 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         completeFile.append("}\n");
         return completeFile.toString();
     }
+
+
 }

@@ -1,5 +1,6 @@
 package com.kingmang.ixion;
 
+import com.kingmang.ixion.api.Debugger;
 import com.kingmang.ixion.api.IxApi;
 import com.kingmang.ixion.api.IxionConstant;
 import com.kingmang.ixion.exception.IxException;
@@ -108,11 +109,11 @@ public class Ixion {
 
     public void compileAndRunJava(String projectRoot, String basePath, String className)
             throws IOException, InterruptedException {
-        System.out.println("Compiling Java source code...");
+        Debugger.debug("Compiling Java source code...");
         compileJavaToBytecode(projectRoot, basePath);
 
         if (!compileOnly) {
-            System.out.println("Running Java program...");
+            Debugger.debug("Running Java program...");
             executeJava(className);
         }
     }
