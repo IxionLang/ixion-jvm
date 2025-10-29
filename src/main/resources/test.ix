@@ -1,0 +1,10 @@
+use <prelude>
+
+def main(){
+    var list = [1,2,3]
+    for i : list {
+        var z = 10
+        println(i + z)
+    }
+}
+

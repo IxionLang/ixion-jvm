@@ -1,4 +1,5 @@
 package com.kingmang.ixion.codegen;
+
 import com.kingmang.ixion.Visitor;
 import com.kingmang.ixion.api.Context;
 import com.kingmang.ixion.api.IxApi;
@@ -28,9 +29,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     }
 
     private void indent() {
-        for (int i = 0; i < indentLevel; i++) {
-            output.append("    ");
-        }
+        output.append("    ".repeat(Math.max(0, indentLevel)));
     }
 
     private void println(String line) {
@@ -190,12 +189,19 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
 
     @Override
     public Optional<String> visitLiteralList(LiteralListExpression expr) {
-        print("java.util.Arrays.asList(");
-        for (int i = 0; i < expr.entries.size(); i++) {
-            if (i > 0) print(", ");
-            expr.entries.get(i).accept(this);
+        if (expr.entries.isEmpty()) {
+            print("new java.util.ArrayList<>()");
+        } else {
+            IxType elementType = expr.entries.getFirst().realType;
+            String wrapperType = getWrapperTypeName(elementType);
+
+            print("java.util.Arrays.<" + wrapperType + ">asList(");
+            for (int i = 0; i < expr.entries.size(); i++) {
+                if (i > 0) print(", ");
+                expr.entries.get(i).accept(this);
+            }
+            print(")");
         }
-        print(")");
         return Optional.empty();
     }
 
@@ -275,15 +281,47 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     @Override
     public Optional<String> visitFor(ForStatement statement) {
         indent();
-        print("for (int " + statement.name.source() + " : ");
-        statement.expression.accept(this);
-        println(") {");
 
-        indentLevel++;
+        IxType elementType = BuiltInType.ANY;
+        if (statement.expression.realType instanceof ListType(IxType contentType)) {
+            elementType = contentType;
+        } else if (statement.expression instanceof IdentifierExpression idExpr) {
+            var varType = currentContext.getVariable(idExpr.identifier.source());
+            if (varType instanceof ListType(IxType contentType)) {
+                elementType = contentType;
+            }
+        }
+
+        String javaElementType = getJavaTypeName(elementType);
+
+        if (elementType instanceof BuiltInType builtIn && builtIn.isNumeric()) {
+            String wrapperType = getWrapperTypeName(elementType);
+            print("for (java.util.Iterator<" + wrapperType + "> iter = ");
+            statement.expression.accept(this);
+            println(".iterator(); iter.hasNext(); ) {");
+
+            indentLevel++;
+            indent();
+            print(javaElementType + " " + statement.name.source() + " = ");
+            switch (builtIn) {
+                case INT -> print("iter.next().intValue()");
+                case FLOAT -> print("iter.next().floatValue()");
+                case DOUBLE -> print("iter.next().doubleValue()");
+                case BOOLEAN -> print("iter.next().booleanValue()");
+                default -> print("iter.next()");
+            }
+            println(";");
+
+        } else {
+            print("for (" + javaElementType + " " + statement.name.source() + " : ");
+            statement.expression.accept(this);
+            println(") {");
+            indentLevel++;
+        }
+
         currentContext = statement.block.context;
         statement.block.accept(this);
         indentLevel--;
-
         println("}");
         currentContext = currentContext.getParent();
         return Optional.empty();
@@ -359,6 +397,24 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
             return trueBranch && falseBranch;
         }
         return false;
+    }
+
+    private String getWrapperTypeName(IxType type) {
+        if (type instanceof BuiltInType builtIn) {
+            return switch (builtIn) {
+                case INT -> "Integer";
+                case FLOAT -> "Float";
+                case DOUBLE -> "Double";
+                case BOOLEAN -> "Boolean";
+                case STRING -> "String";
+                case VOID -> "Void";
+                case ANY -> "Object";
+            };
+        } else if (type instanceof ListType(IxType contentType)) {
+            String elementType = getWrapperTypeName(contentType);
+            return "java.util.List<" + elementType + ">";
+        }
+        return getJavaTypeName(type);
     }
 
     @Override
@@ -570,8 +626,9 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
                 case VOID -> "void";
                 case ANY -> "Object";
             };
-        } else if (type instanceof ListType) {
-            return "java.util.List";
+        } else if (type instanceof ListType(IxType contentType)) {
+            String elementType = getWrapperTypeName(contentType);
+            return "java.util.List<" + elementType + ">";
         } else if (type instanceof UnionType) {
             return "Object";
         } else if (type instanceof StructType structType) {
@@ -602,27 +659,6 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
 
     public Map<String, String> getStructClasses() {
         return structClasses;
-    }
-
-    public String generateCompleteFile() {
-        StringBuilder completeFile = new StringBuilder();
-
-        String packageName = source.getFullRelativePath().replace("/", ".");
-        if (packageName.contains(".")) {
-            packageName = packageName.substring(0, packageName.lastIndexOf('.'));
-            completeFile.append("package ").append(packageName).append(";\n\n");
-        }
-
-        completeFile.append("import java.util.*;\n");
-        completeFile.append("import com.kingmang.ixion.modules.Prelude;\n\n");
-
-        String className = source.file.getName().replace(".ix", "").replace(".java", "");
-        completeFile.append("public class ").append(className).append(" {\n");
-
-        completeFile.append(output);
-
-        completeFile.append("}\n");
-        return completeFile.toString();
     }
 
 

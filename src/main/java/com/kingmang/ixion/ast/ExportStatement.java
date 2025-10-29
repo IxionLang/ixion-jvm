@@ -3,6 +3,7 @@ package com.kingmang.ixion.ast;
 import com.kingmang.ixion.StatementVisitor;
 import com.kingmang.ixion.lexer.Position;
 
+// export statement = pub (public)
 public final class ExportStatement extends Statement {
     public final Statement stmt;
 
