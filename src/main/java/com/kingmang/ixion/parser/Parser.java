@@ -7,7 +7,7 @@ import com.kingmang.ixion.lexer.LexerImpl;
 import com.kingmang.ixion.lexer.Position;
 import com.kingmang.ixion.lexer.Token;
 import com.kingmang.ixion.lexer.TokenType;
-import com.kingmang.ixion.parser.infinix.*;
+import com.kingmang.ixion.parser.infix.*;
 import com.kingmang.ixion.parser.prefix.*;
 import com.kingmang.ixion.runtime.CollectionUtil;
 import org.javatuples.Pair;

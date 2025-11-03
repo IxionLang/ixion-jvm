@@ -1,4 +1,4 @@
-package com.kingmang.ixion.parser.infinix;
+package com.kingmang.ixion.parser.infix;
 
 import com.kingmang.ixion.ast.AssignExpression;
 import com.kingmang.ixion.ast.Expression;
