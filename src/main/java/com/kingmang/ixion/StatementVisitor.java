@@ -13,7 +13,7 @@ public interface StatementVisitor<R> {
     R visitFunctionStmt(DefStatement statement);
     R visitIf(IfStatement statement);
     R visitUse(UseStatement statement);
-    R visitMatch(MatchStatement statement);
+    R visitMatch(CaseStatement statement);
     R visitParameterStmt(ParameterStatement statement);
     R visitReturnStmt(ReturnStatement statement);
     R visitStruct(StructStatement statement);

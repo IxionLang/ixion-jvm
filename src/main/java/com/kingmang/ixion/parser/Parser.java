@@ -9,7 +9,6 @@ import com.kingmang.ixion.lexer.Token;
 import com.kingmang.ixion.lexer.TokenType;
 import com.kingmang.ixion.parser.infix.*;
 import com.kingmang.ixion.parser.prefix.*;
-import com.kingmang.ixion.runtime.CollectionUtil;
 import org.javatuples.Pair;
 
 import java.util.*;
@@ -340,34 +339,35 @@ public class Parser {
     }
 
     /**
-     * Parses a match (pattern matching) statement
-     * @return The parsed match statement
+     * Parses a case (pattern matching) statement
+     * @return The parsed case statement
      */
-    private Statement parseMatch() {
+    private Statement parseCase() {
         var pos = getPos();
 
         var expr = expression();
-        consume(WITH, "Expected 'with' after expression in match statement");
 
+        consume(LBRACE, "Expected opening curly braces before case body.");
         Map<TypeStatement, Pair<String, BlockStatement>> cases = new HashMap<>();
 
-        // Parse cases until no more pipes are found
-        while (match(PIPE)) {
+        while (!check(RBRACE)) {
             var type = parseUnion();
-            var s = consume(IDENTIFIER, "Expected name for reified value before `->` in match statement.");
+            var s = consume(IDENTIFIER, "Expected name for reified value before `=>` in case statement.");
 
-            consume(ARROW, "Expected `->` after pattern before expression in match statement.");
+            consume(ARROW, "Expected `=>` after type before expression in case statement.");
             BlockStatement caseBody;
             if (check(LBRACE)) {
                 caseBody = parseBlock();
             } else {
                 var stmt = new ExpressionStatement(getPos(), expression());
-                caseBody = new BlockStatement(getPos(), CollectionUtil.list(stmt), new Context());
+                caseBody = new BlockStatement(getPos(), List.of(stmt), new Context());
             }
             cases.put(type, new Pair<>(s.source(), caseBody));
         }
 
-        return new MatchStatement(pos, expr, cases);
+        consume(RBRACE, "Expected closing curly braces after case body.");
+
+        return new CaseStatement(pos, expr, cases);
     }
 
     /**
@@ -439,7 +439,7 @@ public class Parser {
         if (match(PUB)) return parsePublic();
         if (match(TYPEALIAS)) return parseTypeAlias();
 
-        if (match(MATCH)) return parseMatch();
+        if (match(CASE)) return parseCase();
         if (match(DEF)) return parseFunction();
         if (match(IF)) return parseIf();
         if (check(VARIABLE) || check(CONSTANT)) return parseVariable();

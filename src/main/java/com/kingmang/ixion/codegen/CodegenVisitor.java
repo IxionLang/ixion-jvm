@@ -721,7 +721,7 @@ public class CodegenVisitor implements Visitor<Optional<ClassWriter>> {
      * @return Empty optional
      */
     @Override
-    public Optional<ClassWriter> visitMatch(final MatchStatement statement) {
+    public Optional<ClassWriter> visitMatch(final CaseStatement statement) {
         var funcType = functionStack.peek();
         var ga = funcType.ga;
 

@@ -163,6 +163,9 @@ public class Ixion {
         String moduleLocation = Path.of(pwd).toString();
 
         try {
+            String stdDir = Path.of(moduleLocation, "std").toString();
+            compileAllJavaFiles(stdDir);
+
             String classPath = null;
             String basePath = null;
 

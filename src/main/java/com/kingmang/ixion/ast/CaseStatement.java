@@ -8,12 +8,12 @@ import org.javatuples.Pair;
 import java.util.HashMap;
 import java.util.Map;
 
-public final class MatchStatement extends Statement {
+public final class CaseStatement extends Statement {
     public final Map<TypeStatement, Pair<String, BlockStatement>> cases;
     public final Expression expression;
     public final Map<TypeStatement, IxType> types = new HashMap<>();
 
-    public MatchStatement(Position pos, Expression expression, Map<TypeStatement, Pair<String, BlockStatement>> cases) {
+    public CaseStatement(Position pos, Expression expression, Map<TypeStatement, Pair<String, BlockStatement>> cases) {
         super(pos);
         this.expression = expression;
         this.cases = cases;

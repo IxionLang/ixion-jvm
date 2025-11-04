@@ -6,7 +6,7 @@ import java.util.Set;
 
 public enum TokenType {
 
-    MATCH("match"),
+    CASE("case"),
     WITH("with"),
     FOR("for"),
     WHILE("while"),
@@ -75,7 +75,7 @@ public enum TokenType {
 
     private static final HashMap<String, TokenType> matcher = new HashMap<>();
     private static final Set<TokenType> KEYWORD_TYPES = EnumSet.of(
-            MATCH, WITH, FOR, WHILE, IF, ELSE, RETURN, STRUCT, ENUM, DEF,
+            CASE, FOR, WHILE, IF, ELSE, RETURN, STRUCT, ENUM, DEF,
             TYPEALIAS, CONSTANT, VARIABLE, PUB, USE, NEW, TRUE, FALSE
     );
 

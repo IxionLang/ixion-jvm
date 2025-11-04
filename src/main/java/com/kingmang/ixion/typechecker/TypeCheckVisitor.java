@@ -477,7 +477,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @return Empty optional as match statements don't produce values
      */
     @Override
-    public Optional<IxType> visitMatch(MatchStatement statement) {
+    public Optional<IxType> visitMatch(CaseStatement statement) {
         statement.expression.accept(this);
 
         if (statement.expression.realType instanceof UnionType ut) {

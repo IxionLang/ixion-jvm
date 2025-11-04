@@ -1,6 +1,15 @@
 use <prelude>
-use <testuse>
 
-pub def main(args : string[]){
-    testuse::greet("Artyom")
+type number = int | float
+
+pub def main(){
+    print_type(10)
+    print_type(10.0f)
+}
+
+def print_type(num : number){
+    case num {
+        int i => println("value " + i + " is integer")
+        float f => println("value " + f + " is float")
+    }
 }

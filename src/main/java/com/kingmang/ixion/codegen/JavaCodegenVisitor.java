@@ -454,7 +454,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     }
 
     @Override
-    public Optional<String> visitMatch(MatchStatement statement) {
+    public Optional<String> visitMatch(CaseStatement statement) {
         for (var entry : statement.cases.entrySet()) {
             var typeStmt = entry.getKey();
             var pair = entry.getValue();

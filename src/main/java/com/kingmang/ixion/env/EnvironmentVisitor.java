@@ -383,7 +383,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @return Empty optional
      */
     @Override
-    public Optional<IxType> visitMatch(MatchStatement statement) {
+    public Optional<IxType> visitMatch(CaseStatement statement) {
         statement.expression.accept(this);
         statement.cases.forEach((keyType, pair) -> {
             String id = pair.getValue0();
