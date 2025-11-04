@@ -5,7 +5,7 @@ pub def main(){
     var int_list = [1,2,3]
     var int_list2 = int[]
 
-    append(int_list2, 20)
+    list_append(int_list2, 20)
 
     println(int_list)
     println(int_list2)
