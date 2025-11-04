@@ -1,0 +1,5 @@
+use <prelude>
+
+pub def greet(name : string) {
+    println("Hello " + name)
+}

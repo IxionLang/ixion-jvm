@@ -111,7 +111,13 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
                 print(owner + "." + name + "(");
             } else {
                 String name = "_" + callType.name;
-                print(name + "(");
+
+                if (callType.external != null && !callType.external.equals(source)) {
+                    String className = IxApi.getClassName(callType.external);
+                    print(className + "." + name + "(");
+                } else {
+                    print(name + "(");
+                }
             }
 
             for (int i = 0; i < expr.arguments.size(); i++) {
@@ -138,6 +144,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
 
         return Optional.empty();
     }
+
 
     @Override
     public Optional<String> visitEmpty(EmptyExpression empty) {

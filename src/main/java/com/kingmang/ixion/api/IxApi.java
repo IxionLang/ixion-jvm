@@ -27,11 +27,21 @@ public record IxApi(
         boolean developmentMode
 ) {
 
-
+    /**
+     * Default constructor for IxApi
+     */
     public IxApi() {
         this(new ArrayList<>(), new HashMap<>(), true);
     }
 
+    /**
+     * Compiles Ixion code to JVM bytecode
+     * @param projectRoot The root directory of the project
+     * @param filename The filename to compile
+     * @return The full name of the generated class
+     * @throws FileNotFoundException If the file is not found
+     * @throws IxException.CompilerError If compilation errors occur
+     */
     public String compile(String projectRoot, String filename) throws FileNotFoundException, IxException.CompilerError {
 
         String relativePath = FilenameUtils.getPath(filename);
@@ -93,6 +103,11 @@ public record IxApi(
         return base.replace("/", ".");
     }
 
+    /**
+     * Outputs compiled bytecode to class files
+     * @param compilationSet The set of files to output
+     * @throws IxException.CompilerError If output errors occur
+     */
     public void output(Map<String, ? extends IxFile> compilationSet) throws IxException.CompilerError {
 
         BytecodeGenerator bytecodeGenerator = new BytecodeGenerator();
@@ -139,21 +154,22 @@ public record IxApi(
         }
 
     }
+
     /**
-     * Компилирует Ixion код в Java исходный код
-     * @param projectRoot корневая директория проекта
-     * @param filename имя файла для компиляции
-     * @return полное имя сгенерированного Java класса
+     * Compiles Ixion code to Java source code
+     * @param projectRoot The root directory of the project
+     * @param filename The filename to compile
+     * @return The full name of the generated Java class
+     * @throws FileNotFoundException If the file is not found
+     * @throws IxException.CompilerError If compilation errors occur
      */
     public String compileToJava(String projectRoot, String filename) throws FileNotFoundException, IxException.CompilerError {
-        // Парсинг и анализ (такой же как в compile())
         String relativePath = FilenameUtils.getPath(filename);
         String name = FilenameUtils.getName(filename);
 
         var entry = parse(projectRoot, relativePath, name);
         IxException.killIfErrors(this, "Correct parser errors before continuing.");
 
-        // Создание окружения и проверка типов
         for (String filePath : compilationSet.keySet()) {
             var source = compilationSet.get(filePath);
             EnvironmentVisitor environmentVisitor = new EnvironmentVisitor(this, source.rootContext, source);
@@ -173,7 +189,6 @@ public record IxApi(
             IxException.killIfErrors(this, "Correct syntax errors before type checking can continue.");
         }
 
-        // Обработка импортов
         for (String filePath : compilationSet.keySet()) {
             var source = compilationSet.get(filePath);
             for (String s : source.imports.keySet()) {
@@ -190,7 +205,6 @@ public record IxApi(
             }
         }
 
-        // Проверка типов
         for (String filePath : compilationSet.keySet()) {
             var source = compilationSet.get(filePath);
             TypeCheckVisitor typeCheckVisitor = new TypeCheckVisitor(this, source.rootContext, source);
@@ -198,19 +212,21 @@ public record IxApi(
             IxException.killIfErrors(this, "Correct type errors before compilation can continue.");
         }
 
-        // Генерация Java кода
         outputJava(compilationSet);
 
         String base = entry.getFullRelativePath();
         return base.replace("/", ".");
     }
 
-
+    /**
+     * Outputs compiled code to Java source files
+     * @param compilationSet The set of files to output
+     * @throws IxException.CompilerError If output errors occur
+     */
     public void outputJava(Map<String, ? extends IxFile> compilationSet) throws IxException.CompilerError {
         for (var key : compilationSet.keySet()) {
             var source = compilationSet.get(key);
 
-            // Генерируем Java код для основного файла
             JavaCodegenVisitor javaGenerator = new JavaCodegenVisitor(this, source);
             source.acceptVisitor(javaGenerator);
 
@@ -220,19 +236,15 @@ public record IxApi(
                     ? base.substring(0, base.lastIndexOf("/")).replace("/", ".")
                     : "";
 
-            // Формируем полный Java файл с package и imports
             StringBuilder fullJavaFile = new StringBuilder();
 
-            // Package declaration
             if (!packageName.isEmpty()) {
                 fullJavaFile.append("package ").append(packageName).append(";\n\n");
             }
 
-            // Imports
             fullJavaFile.append("import java.util.*;\n");
             fullJavaFile.append("import java.lang.*;\n\n");
 
-            // Class declaration
             String className = base.contains("/")
                     ? base.substring(base.lastIndexOf("/") + 1)
                     : base;
@@ -240,7 +252,6 @@ public record IxApi(
             fullJavaFile.append(javaCode);
             fullJavaFile.append("}\n");
 
-            // Сохраняем .java файл
             String fileName = Path.of(source.projectRoot, IxionConstant.OUT_DIR, base + ".java").toString();
             File javaFile = new File(fileName);
             javaFile.getParentFile().mkdirs();
@@ -252,13 +263,14 @@ public record IxApi(
                 System.exit(9);
             }
 
-            // Генерируем внутренние классы для структур
             generateStructJavaFiles(source, javaGenerator.getStructClasses());
         }
     }
 
     /**
-     * Генерирует отдельные Java файлы для структур
+     * Generates separate Java files for structures
+     * @param source The source file containing structures
+     * @param structClasses Map of structure names to their generated code
      */
     private void generateStructJavaFiles(IxFile source, Map<String, String> structClasses) {
         String basePackage = source.getFullRelativePath().contains("/")
@@ -271,17 +283,14 @@ public record IxApi(
 
             StringBuilder fullStructFile = new StringBuilder();
 
-            // Package declaration
             if (!basePackage.isEmpty()) {
                 fullStructFile.append("package ").append(basePackage).append(";\n\n");
             }
 
-            // Class declaration
             fullStructFile.append("public class ").append(structName).append(" {\n");
             fullStructFile.append(structCode);
             fullStructFile.append("}\n");
 
-            // Сохраняем .java файл структуры
             String fileName = Path.of(source.projectRoot, IxionConstant.OUT_DIR,
                     basePackage.replace(".", "/"), structName + ".java").toString();
             File structFile = new File(fileName);
@@ -297,7 +306,13 @@ public record IxApi(
     }
 
     /**
-     * Универсальный метод компиляции с выбором цели
+     * Universal compilation method with target selection
+     * @param projectRoot The root directory of the project
+     * @param filename The filename to compile
+     * @param target The compilation target (JVM bytecode or Java source)
+     * @return The full name of the generated class
+     * @throws FileNotFoundException If the file is not found
+     * @throws IxException.CompilerError If compilation errors occur
      */
     public String compile(String projectRoot, String filename, CompilationTarget target)
             throws FileNotFoundException, IxException.CompilerError {
@@ -307,13 +322,22 @@ public record IxApi(
         };
     }
 
+    /**
+     * Enum representing compilation targets
+     */
     public enum CompilationTarget {
         JVM_BYTECODE,
         JAVA_SOURCE
     }
 
-
-
+    /**
+     * Parses an Ixion file and its imports
+     * @param projectRoot The root directory of the project
+     * @param relativePath The relative path of the file
+     * @param name The name of the file
+     * @return The parsed IxFile object
+     * @throws FileNotFoundException If the file is not found
+     */
     public IxFile parse(String projectRoot, String relativePath, String name) throws FileNotFoundException {
 
         var source = new IxFile(projectRoot, relativePath, name);
@@ -364,12 +388,31 @@ public record IxApi(
         return source;
     }
 
+    /**
+     * Extracts class name from IxFile
+     * @param file The IxFile object
+     * @return The class name
+     */
+    public static String getClassName(IxFile file) {
+        String fileName = file.getFullRelativePath();
+        int lastSlash = fileName.lastIndexOf('/');
+        if (lastSlash != -1) {
+            fileName = fileName.substring(lastSlash + 1);
+        }
+        int dotIndex = fileName.lastIndexOf('.');
+        if (dotIndex != -1) {
+            fileName = fileName.substring(0, dotIndex);
+        }
+        return fileName;
+    }
 
-
+    /**
+     * Exits the application with an error message and code
+     * @param message The error message to display
+     * @param code The exit code
+     */
     public static void exit(String message, int code) {
         System.err.println(message);
         System.exit(code);
     }
-
-
 }
