@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="https://github.com/IxionLang/Ixion/blob/main/assets/icon.png" width="200">
+  <img src="https://github.com/IxionLang/Ixion/blob/main/assets/icon.png" width="150">
 
-<h1>The Ixion Programming Language</h1>
+<h2>The Ixion Programming Language</h2>
 Multi-paradigm compiled programming language for the jvm platform.
 </div>
 
@@ -31,17 +31,18 @@ pattern matching:
 ```scala
 use <prelude>
 
-type my_type = int | float
+type number = int | float
 
 pub def main(){
     print_type(10)
-    print_type(10.0)
+    print_type(10.0f)
 }
 
-def print_type(list : my_type){
-    match list with
-    | int i => println("value " + i + " is integer")
-    | float f => println("value " + f + " is float")
+def print_type(num : number){
+    case num {
+        int i => println("value " + i + " is integer")
+        float f => println("value " + f + " is float")
+    }
 }
 
 ```
