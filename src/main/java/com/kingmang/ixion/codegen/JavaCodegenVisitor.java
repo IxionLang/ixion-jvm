@@ -328,7 +328,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     }
 
     @Override
-    public Optional<String> visitFunctionStmt(FunctionStatement statement) {
+    public Optional<String> visitFunctionStmt(DefStatement statement) {
         var funcType = currentContext.getVariableTyped(statement.name.source(), DefType.class);
         functionStack.push(funcType);
         localMaps.put(funcType, new HashMap<>());

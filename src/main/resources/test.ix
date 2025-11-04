@@ -1,10 +1,14 @@
 use <prelude>
 
-def main(){
-    var list = [1,2,3]
-    for i : list {
-        var z = 10
-        println(i + z)
+def sum(a: int, b: int): int {
+    if (a > 3) {
+        // no return here
+    } else {
+        return a + b
     }
+
 }
 
+pub def main(args : string[]){
+    println(sum(3,4))
+}

@@ -10,7 +10,6 @@ import com.kingmang.ixion.exception.*;
 import com.kingmang.ixion.lexer.Token;
 import com.kingmang.ixion.lexer.TokenType;
 import com.kingmang.ixion.modules.Modules;
-import com.kingmang.ixion.parser.ReservedWords;
 import com.kingmang.ixion.runtime.*;
 import com.kingmang.ixion.typechecker.TypeUtils;
 import org.javatuples.Pair;
@@ -235,7 +234,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @return Optional containing the function type definition
      */
     @Override
-    public Optional<IxType> visitFunctionStmt(FunctionStatement statement) {
+    public Optional<IxType> visitFunctionStmt(DefStatement statement) {
         String name = statement.name.source();
         List<String> generics = statement.generics.stream().map(Token::source).toList();
 

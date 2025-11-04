@@ -314,7 +314,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @return Empty optional as function definitions don't produce values
      */
     @Override
-    public Optional<IxType> visitFunctionStmt(FunctionStatement statement) {
+    public Optional<IxType> visitFunctionStmt(DefStatement statement) {
 
         var funcType = currentContext.getVariableTyped(statement.name.source(), DefType.class);
         if (funcType != null) {

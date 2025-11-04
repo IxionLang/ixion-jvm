@@ -513,7 +513,7 @@ public class CodegenVisitor implements Visitor<Optional<ClassWriter>> {
      * @return Empty optional
      */
     @Override
-    public Optional<ClassWriter> visitFunctionStmt(FunctionStatement statement) {
+    public Optional<ClassWriter> visitFunctionStmt(DefStatement statement) {
         var funcType = currentContext.getVariableTyped(statement.name.source(), DefType.class);
         functionStack.add(funcType);
         var childEnvironment = statement.body.context;

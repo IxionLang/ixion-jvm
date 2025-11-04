@@ -7,15 +7,15 @@ import com.kingmang.ixion.lexer.Token;
 
 import java.util.List;
 
-public final class FunctionStatement extends Statement implements PublicAccess {
+public final class DefStatement extends Statement implements PublicAccess {
     public final Token name;
     public final BlockStatement body;
     public final List<ParameterStatement> parameters;
     public final TypeStatement returnType;
     public final List<Token> generics;
 
-    public FunctionStatement(Position pos, Token name, List<ParameterStatement> parameters, TypeStatement returnType,
-                             BlockStatement body, List<Token> generics) {
+    public DefStatement(Position pos, Token name, List<ParameterStatement> parameters, TypeStatement returnType,
+                        BlockStatement body, List<Token> generics) {
         super(pos);
         this.name = name;
         this.parameters = parameters;

@@ -10,7 +10,7 @@ public interface StatementVisitor<R> {
     R visitExport(ExportStatement statement);
     R visitExpressionStmt(ExpressionStatement statement);
     R visitFor(ForStatement statement);
-    R visitFunctionStmt(FunctionStatement statement);
+    R visitFunctionStmt(DefStatement statement);
     R visitIf(IfStatement statement);
     R visitUse(UseStatement statement);
     R visitMatch(MatchStatement statement);

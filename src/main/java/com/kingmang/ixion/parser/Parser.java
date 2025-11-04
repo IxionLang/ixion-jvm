@@ -242,7 +242,7 @@ public class Parser {
      * Parses a function definition
      * @return The parsed function statement
      */
-    private FunctionStatement parseFunction() {
+    private DefStatement parseFunction() {
         var pos = getPos();
         Token name = consume(IDENTIFIER, "Expected function name.");
 
@@ -276,7 +276,33 @@ public class Parser {
 
         BlockStatement block = parseBlock();
 
-        return new FunctionStatement(pos, name, parameters, returnType, block, generics);
+        DefStatement func =  new DefStatement(pos, name, parameters, returnType, block, generics);
+        if (!hasReturnStatement(func.body) && returnType != null) {
+            error(name,
+                    "Function must return a value of type " + "'" + func.returnType.identifier.source() + "'");
+        }
+        return func;
+    }
+
+    private boolean hasReturnStatement(Statement stmt) {
+        if (stmt instanceof BlockStatement block) {
+            for (Statement s : block.statements) {
+                if (hasReturnStatement(s)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        else if (stmt instanceof ReturnStatement) {
+            return true;
+        }
+        else if (stmt instanceof IfStatement ifStmt) {
+            boolean thenHasReturn = hasReturnStatement(ifStmt.trueBlock);
+            boolean elseHasReturn = ifStmt.falseStatement != null &&
+                    hasReturnStatement(ifStmt.falseStatement);
+            return thenHasReturn && elseHasReturn;
+        }
+        return false;
     }
 
     /**
