@@ -10,7 +10,7 @@ Multi-paradigm compiled programming language for the jvm platform.
 > Before installing the language, install jdk.
 
 greeting in Ixion:
-```scala
+```gleam
 use <prelude>
 
 def main(){
@@ -28,7 +28,7 @@ def main(){
 
 pattern matching:
 
-```scala
+```gleam
 use <prelude>
 
 type number = int | float
