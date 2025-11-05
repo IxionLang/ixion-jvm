@@ -185,14 +185,41 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         if (expr.realType instanceof BuiltInType bt) {
             switch (bt) {
                 case STRING -> print("\"" + expr.literal.source().replace("\"", "\\\"") + "\"");
-                case BOOLEAN -> print(expr.literal.source());
+                case CHAR -> {
+                    String escapedChar = getEscapedChar(expr);
+                    ;
+                    print("'" + escapedChar + "'");
+                }
                 default -> print(expr.literal.source());
             }
         } else {
-            print(expr.literal.source());
+            switch (expr.literal.type()) {
+                case CHAR -> {
+                    String escapedChar = getEscapedChar(expr);
+                    print("'" + escapedChar + "'");
+                }
+                case STRING -> print("\"" + expr.literal.source().replace("\"", "\\\"") + "\"");
+                default -> print(expr.literal.source());
+            }
         }
         return Optional.empty();
     }
+
+    private static String getEscapedChar(LiteralExpression expr) {
+        char charValue = expr.literal.source().charAt(0);
+        return switch (charValue) {
+            case '\n' -> "\\n";
+            case '\t' -> "\\t";
+            case '\r' -> "\\r";
+            case '\b' -> "\\b";
+            case '\f' -> "\\f";
+            case '\'' -> "\\'";
+            case '\\' -> "\\\\";
+            case '\0' -> "\\0";
+            default -> String.valueOf(charValue);
+        };
+    }
+
 
     @Override
     public Optional<String> visitLiteralList(LiteralListExpression expr) {
@@ -409,6 +436,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     private String getWrapperTypeName(IxType type) {
         if (type instanceof BuiltInType builtIn) {
             return switch (builtIn) {
+                case CHAR -> "Character";
                 case INT -> "Integer";
                 case FLOAT -> "Float";
                 case DOUBLE -> "Double";
@@ -625,6 +653,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     private String getJavaTypeName(IxType type) {
         if (type instanceof BuiltInType builtIn) {
             return switch (builtIn) {
+                case CHAR -> "char";
                 case INT -> "int";
                 case FLOAT -> "float";
                 case DOUBLE -> "double";
@@ -647,6 +676,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     private String getDefaultValue(IxType type) {
         if (type instanceof BuiltInType builtIn) {
             return switch (builtIn) {
+                case CHAR -> "\\u0000";
                 case INT -> "0";
                 case FLOAT -> "0.0f";
                 case DOUBLE -> "0.0";

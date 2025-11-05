@@ -25,6 +25,12 @@ public record LiteralParser(boolean isList) implements PrefixParselet {
             return new LiteralListExpression(pos, args);
         }
 
+        if (token.type() == TokenType.CHAR) {
+            String source = token.source();
+            char charValue = source.charAt(0);
+            return new LiteralExpression(pos, new Token(TokenType.CHAR, token.line(), token.col(), String.valueOf(charValue)));
+        }
+
         return new LiteralExpression(pos, token);
     }
 }

@@ -68,6 +68,7 @@ public enum TokenType {
     INT,
     FLOAT,
     DOUBLE,
+    CHAR,
     NUMBER,
 
     ERROR,

@@ -1,15 +1,10 @@
 use <prelude>
 
-type number = int | float
-
-pub def main(){
-    print_type(10)
-    print_type(10.0f)
+def main(){
+    var d = getTab()
+    print(d + "Hello")
 }
 
-def print_type(num : number){
-    case num {
-        int i => println("value " + i + " is integer")
-        float f => println("value " + f + " is float")
-    }
+def getTab() : char {
+    return '\t'
 }

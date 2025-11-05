@@ -42,6 +42,7 @@ public class Parser {
         // Register prefix parsers for literals and identifiers
         putPrefix(INT, new LiteralParser(false));
         putPrefix(FLOAT, new LiteralParser(false));
+        putPrefix(CHAR, new LiteralParser(false));
         putPrefix(DOUBLE, new LiteralParser(false));
         putPrefix(TRUE, new LiteralParser(false));
         putPrefix(FALSE, new LiteralParser(false));

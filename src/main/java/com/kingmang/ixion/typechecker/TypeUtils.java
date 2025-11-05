@@ -35,6 +35,7 @@ public class TypeUtils {
         return switch (tokenType) {
             case TRUE, FALSE -> BuiltInType.BOOLEAN;
             case STRING -> BuiltInType.STRING;
+            case CHAR -> BuiltInType.CHAR;
             case INT -> BuiltInType.INT;
             case FLOAT -> BuiltInType.FLOAT;
             case DOUBLE -> BuiltInType.DOUBLE;
@@ -45,6 +46,7 @@ public class TypeUtils {
     public static BuiltInType getFromString(String value) {
         return switch (value) {
             case "int" -> BuiltInType.INT;
+            case "char" -> BuiltInType.CHAR;
             case "float" -> BuiltInType.FLOAT;
             case "double" -> BuiltInType.DOUBLE;
             case "bool" -> BuiltInType.BOOLEAN;

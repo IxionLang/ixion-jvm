@@ -17,6 +17,16 @@ public enum BuiltInType implements IxType, Serializable {
             false,
             false
     ),
+
+    CHAR(
+            "char",
+            Character.class,
+            "C",
+            TypeSpecificOpcodes.INT,
+            '\u0000',
+            true
+    ),
+
     INT(
             "int",
             Integer.class,
@@ -75,6 +85,7 @@ public enum BuiltInType implements IxType, Serializable {
 
     static {
         widenings.put(BOOLEAN, -1);
+        widenings.put(CHAR, 0);
         widenings.put(INT, 0);
         widenings.put(FLOAT, 1);
         widenings.put(DOUBLE, 2);
@@ -147,6 +158,10 @@ public enum BuiltInType implements IxType, Serializable {
             case INT -> {
                 mv.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Integer");
                 mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false);
+            }
+            case CHAR -> {
+                mv.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Character");
+                mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Character", "charValue", "()C", false);
             }
             case FLOAT -> {
                 mv.visitTypeInsn(Opcodes.CHECKCAST, "java/lang/Integer");
@@ -235,7 +250,7 @@ public enum BuiltInType implements IxType, Serializable {
 
     public void pushOne(GeneratorAdapter ga) {
         switch (this) {
-            case INT -> ga.push(1);
+            case INT, CHAR -> ga.push(1);
             case FLOAT -> ga.push(1.0f);
             case DOUBLE -> ga.push(1.0);
             default -> ga.push(0);
@@ -250,6 +265,7 @@ public enum BuiltInType implements IxType, Serializable {
     public void unboxNoCheck(MethodVisitor mv) {
         switch (this) {
             case INT -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Integer", "intValue", "()I", false);
+            case CHAR -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Character", "charValue", "()C", false);
             case FLOAT -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Float", "floatValue", "()F", false);
             case DOUBLE -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Double", "doubleValue", "()D", false);
             case BOOLEAN -> mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/Boolean", "booleanValue", "()Z", false);

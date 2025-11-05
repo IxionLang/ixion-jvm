@@ -36,6 +36,10 @@ public class LexerImpl implements Lexer{
             return consumeStringToken(startLine, startCol);
         }
 
+        if (currentChar == '\'') {
+            return consumeCharToken(startLine, startCol);
+        }
+
         return consumeOperatorToken(startLine, startCol);
     }
 
@@ -94,6 +98,44 @@ public class LexerImpl implements Lexer{
 
         advance();
         advance();
+    }
+
+    private Token consumeCharToken(int line, int col) {
+        advance();
+
+        char currentChar = peek();
+        char charValue;
+
+        if (currentChar == '\\') {
+            advance();
+            char escapeChar = peek();
+            charValue = switch (escapeChar) {
+                case 'n' -> '\n';
+                case 't' -> '\t';
+                case 'r' -> '\r';
+                case 'b' -> '\b';
+                case 'f' -> '\f';
+                case '\'' -> '\'';
+                case '\\' -> '\\';
+                case '0' -> '\0';
+                default -> {
+                    advance();
+                    yield '\\';
+                }
+            };
+            advance();
+        } else {
+            charValue = currentChar;
+            advance();
+        }
+
+        if (peek() != '\'') {
+            return new Token(TokenType.ERROR, line, col, "Unterminated character literal");
+        }
+
+        advance();
+
+        return new Token(TokenType.CHAR, line, col, String.valueOf(charValue));
     }
 
     private char advance() {
