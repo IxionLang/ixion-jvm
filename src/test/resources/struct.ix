@@ -1,0 +1,27 @@
+use <prelude>
+
+type left_value = struct {
+    arg : string
+}
+
+type right_value = struct {
+    arg : string
+}
+
+type value = struct {
+    left : left_value
+    right : right_value
+}
+
+def new_value(l_arg : string, r_arg : string) : value {
+    return value(left_value(l_arg), right_value(r_arg))
+}
+
+def print_value(v : value) {
+    println("value{left{" + v.left.arg + "}, " + "right{" + v.right.arg + "}}")
+}
+
+pub def main(){
+    var v = new_value("first", "second")
+    print_value(v)
+}

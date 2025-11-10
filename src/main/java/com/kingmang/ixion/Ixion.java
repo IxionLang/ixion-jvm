@@ -5,9 +5,7 @@ import com.kingmang.ixion.api.IxApi;
 import com.kingmang.ixion.api.IxionConstant;
 import com.kingmang.ixion.exception.IxException;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -97,7 +95,7 @@ public class Ixion {
         ProcessBuilder processBuilder = new ProcessBuilder(
                 "java",
                 "-cp",
-                IxionConstant.OUT_DIR + System.getProperty("path.separator") + "target/classes",
+                IxionConstant.OUT_DIR + File.pathSeparator + "target/classes",
                 className
         );
         processBuilder.inheritIO();
@@ -176,7 +174,7 @@ public class Ixion {
                 if (!compileOnly) {
                     compileAndRunJava(moduleLocation, basePath, classPath);
                 } else {
-                    System.out.println("Java source generated: " +
+                    Debugger.debug("Java source generated: " +
                             Path.of(moduleLocation, IxionConstant.OUT_DIR, basePath + ".java"));
                 }
             } else {
@@ -201,5 +199,62 @@ public class Ixion {
     public enum CompilationTarget {
         JVM_BYTECODE,
         JAVA_SOURCE
+    }
+
+    // for unit tests:
+
+    public String getCompiledProgramOutput(String entryFileName) throws IOException, InterruptedException {
+        StringBuilder output = new StringBuilder();
+
+        if (entryFileName == null || entryFileName.isEmpty()) {
+            return "Error: Entry file name is required";
+        }
+
+        var api = new IxApi();
+        String moduleLocation = System.getProperty("user.dir");
+
+        try {
+            String stdDir = Path.of(moduleLocation, "std").toString();
+            compileAllJavaFiles(stdDir);
+
+            String classPath = api.compile(moduleLocation, entryFileName);
+            output.append(executeBytecodeAndGetOutput(classPath));
+
+        } catch (Exception e) {
+            output.append("Error: ").append(e.getMessage());
+        }
+
+        return output.toString();
+    }
+
+    private String executeBytecodeAndGetOutput(String className) throws IOException, InterruptedException {
+        ProcessBuilder processBuilder = new ProcessBuilder(
+                "java",
+                "--enable-preview",
+                "-cp",
+                IxionConstant.OUT_DIR + System.getProperty("path.separator") + "target/classes",
+                className
+        );
+
+        return executeProcessAndGetOutput(processBuilder);
+    }
+
+    private String executeProcessAndGetOutput(ProcessBuilder processBuilder) throws IOException, InterruptedException {
+        Process process = processBuilder.start();
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        StringBuilder output = new StringBuilder();
+        String line;
+
+        while ((line = reader.readLine()) != null) {
+            output.append(line).append(System.lineSeparator());
+        }
+
+        int status = process.waitFor();
+        if (status != 0) {
+            output.append("Process finished with exit code ").append(status);
+        }
+
+        return output.toString();
     }
 }
