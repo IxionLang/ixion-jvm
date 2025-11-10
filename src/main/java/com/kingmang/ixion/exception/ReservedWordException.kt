@@ -1,7 +1,3 @@
-package com.kingmang.ixion.exception;
+package com.kingmang.ixion.exception
 
-public class ReservedWordException extends IxException {
-    public ReservedWordException() {
-        super(19, "Identifier `{0}` is a reserved word.", null);
-    }
-}
+class ReservedWordException : IxException(19, "Identifier `{0}` is a reserved word.", null)

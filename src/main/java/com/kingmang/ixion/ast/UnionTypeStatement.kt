@@ -1,21 +1,12 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.StatementVisitor;
-import com.kingmang.ixion.lexer.Position;
+import com.kingmang.ixion.StatementVisitor
+import com.kingmang.ixion.lexer.Position
+import java.util.*
 
-import java.util.List;
-import java.util.Optional;
-
-public final class UnionTypeStatement extends TypeStatement {
-    public final List<TypeStatement> types;
-
-    public UnionTypeStatement(Position pos, List<TypeStatement> types) {
-        super(pos, null, Optional.empty(), true);
-        this.types = types;
-    }
-
-    @Override
-    public <R> R accept(StatementVisitor<R> visitor) {
-        return visitor.visitUnionType(this);
+class UnionTypeStatement(pos: Position?, @JvmField val types: MutableList<TypeStatement?>?) :
+    TypeStatement(pos, null, Optional.empty<TypeStatement?>() as Optional<TypeStatement?>?, true) {
+    override fun <R> accept(visitor: StatementVisitor<R?>?): R? {
+        return visitor?.visitUnionType(this)
     }
 }

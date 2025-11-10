@@ -1,30 +1,22 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.StatementVisitor;
-import com.kingmang.ixion.api.PublicAccess;
-import com.kingmang.ixion.lexer.Position;
-import com.kingmang.ixion.lexer.Token;
+import com.kingmang.ixion.StatementVisitor
+import com.kingmang.ixion.api.PublicAccess
+import com.kingmang.ixion.lexer.Position
+import com.kingmang.ixion.lexer.Token
 
-import java.util.List;
+class StructStatement(
+    pos: Position?,
+    @JvmField val name: Token,
+    @JvmField val fields: MutableList<ParameterStatement?>?,
+    @JvmField val generics: MutableList<Token?>?
+) : Statement(pos), PublicAccess {
 
-public final class StructStatement extends Statement implements PublicAccess {
-    public final Token name;
-    public final List<ParameterStatement> fields;
-    public final List<Token> generics;
-
-    public StructStatement(Position pos, Token name, List<ParameterStatement> fields, List<Token> generics) {
-        super(pos);
-        this.name = name;
-        this.fields = fields;
-        this.generics = generics;
+    override fun <R> accept(visitor: StatementVisitor<R?>?): R? {
+        return visitor?.visitStruct(this)
     }
 
-    public <R> R accept(StatementVisitor<R> visitor) {
-        return visitor.visitStruct(this);
-    }
-
-    @Override
-    public String identifier() {
-        return name.source();
+    override fun identifier(): String? {
+        return name.source
     }
 }

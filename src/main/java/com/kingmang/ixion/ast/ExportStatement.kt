@@ -1,18 +1,11 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.StatementVisitor;
-import com.kingmang.ixion.lexer.Position;
+import com.kingmang.ixion.StatementVisitor
+import com.kingmang.ixion.lexer.Position
 
 // export statement = pub (public)
-public final class ExportStatement extends Statement {
-    public final Statement stmt;
-
-    public ExportStatement(Position pos, Statement stmt) {
-        super(pos);
-        this.stmt = stmt;
-    }
-
-    public <R> R accept(StatementVisitor<R> visitor) {
-        return visitor.visitExport(this);
+class ExportStatement(pos: Position?, @JvmField val stmt: Statement?) : Statement(pos) {
+    override fun <R> accept(visitor: StatementVisitor<R?>?): R? {
+        return visitor?.visitExport(this)
     }
 }

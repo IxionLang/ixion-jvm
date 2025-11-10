@@ -1,9 +1,10 @@
-package com.kingmang.ixion.api;
+package com.kingmang.ixion.api
 
-public class IxionConstant {
-    public static final String EXT = ".ix";
-    public static final String OUT_DIR = ".out";
-    public enum Mutability {
+object IxionConstant {
+    const val EXT: String = ".ix"
+    const val OUT_DIR: String = ".out"
+
+    enum class Mutability {
         IMMUTABLE,
         MUTABLE
     }

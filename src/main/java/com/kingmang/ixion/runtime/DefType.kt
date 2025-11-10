@@ -1,121 +1,120 @@
-package com.kingmang.ixion.runtime;
+package com.kingmang.ixion.runtime
 
-import com.kingmang.ixion.api.IxFile;
-import com.kingmang.ixion.ast.Expression;
-import com.kingmang.ixion.typechecker.TypeUtils;
-import org.javatuples.Pair;
-import org.objectweb.asm.commons.GeneratorAdapter;
+import com.kingmang.ixion.api.IxFile
+import com.kingmang.ixion.ast.Expression
+import com.kingmang.ixion.typechecker.TypeUtils
+import org.javatuples.Pair
+import org.objectweb.asm.commons.GeneratorAdapter
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+class DefType : StructType {
+    val localMap: MutableMap<String?, Int?> = HashMap<String?, Int?>()
+    val argMap: MutableMap<String?, Int?> = HashMap<String?, Int?>()
+    @JvmField
+    var name: String
+    @JvmField
+    var returnType: IxType = BuiltInType.VOID
+    var ga: GeneratorAdapter? = null
+    @JvmField
+    var glue: Boolean = false
+    @JvmField
+    var hasReturn2: Boolean = false
+    @JvmField
+    var isPrefixed: Boolean = false
+    @JvmField
+    var owner: String? = null
 
-public class DefType extends StructType {
-    public final Map<String, Integer> localMap = new HashMap<>();
-    public final Map<String, Integer> argMap = new HashMap<>();
-    public String name;
-    public IxType returnType = BuiltInType.VOID;
-    public GeneratorAdapter ga = null;
-    public boolean glue = false;
-    public boolean hasReturn2 = false;
-    public boolean isPrefixed = false;
-    public String owner;
+    @JvmField
+    var specializations: MutableList<MutableMap<String?, IxType?>?> = ArrayList<MutableMap<String?, IxType?>?>()
 
-    public List<Map<String, IxType>> specializations = new ArrayList<>();
+    var currentSpecialization: MutableMap<String?, IxType?>? = null
+    @JvmField
+    var external: IxFile? = null
 
-    public Map<String, IxType> currentSpecialization = null;
-    public IxFile external;
-
-    public DefType(String name, List<Pair<String, IxType>> parameters) {
-        super(name, parameters, new ArrayList<>());
-        this.name = name;
-
+    constructor(name: String, parameters: MutableList<Pair<String?, IxType?>?>?) : super(
+        name,
+        parameters,
+        ArrayList<String?>()
+    ) {
+        this.name = name
     }
 
-    public DefType(String name, List<Pair<String, IxType>> parameters, List<String> generics) {
-        super(name, parameters, generics);
-        this.name = name;
-
+    constructor(
+        name: String,
+        parameters: MutableList<Pair<String?, IxType?>?>?,
+        generics: MutableList<String?>?
+    ) : super(name, parameters, generics) {
+        this.name = name
     }
 
-    public static IxType getSpecializedType(Map<String, IxType> specialization, String key) {
-        return specialization.get(key);
-    }
-
-    public List<Pair<String, IxType>> buildParametersFromSpecialization(Map<String, IxType> specialization) {
-        var p = new ArrayList<Pair<String, IxType>>();
-        for (Pair<String, IxType> pair : parameters) {
-            var pt = pair.getValue1();
-            if (pt instanceof GenericType gt) {
-                p.add(pair.setAt1(specialization.get(gt.key())));
+    fun buildParametersFromSpecialization(specialization: MutableMap<String?, IxType?>): MutableList<Pair<String?, IxType?>?> {
+        val p = ArrayList<Pair<String?, IxType?>?>()
+        for (pair in parameters) {
+            val pt = pair.getValue1()
+            if (pt is GenericType) {
+                p.add(pair.setAt1<IxType?>(specialization.get(pt.key)))
             } else {
-                p.add(pair);
+                p.add(pair)
             }
         }
-        return p;
+        return p
     }
 
-    public Map<String, IxType> buildSpecialization(List<Expression> arguments) {
-        var argTypes = arguments.stream().map(ex -> ex.realType).toList();
-        var specialization = new HashMap<String, IxType>();
-        for (int i = 0; i < parameters.size(); i++) {
-            var p = parameters.get(i);
-            var pt = p.getValue1();
-            if (pt instanceof GenericType gt) {
-                specialization.put(gt.key(), argTypes.get(i));
+    fun buildSpecialization(arguments: MutableList<Expression?>): MutableMap<String?, IxType?> {
+        val argTypes = arguments.stream().map<IxType> { ex: Expression? -> ex!!.realType }.toList()
+        val specialization = HashMap<String?, IxType?>()
+        for (i in parameters.indices) {
+            val p = parameters.get(i)
+            val pt = p.getValue1()
+            if (pt is GenericType) {
+                specialization.put(pt.key, argTypes.get(i))
             }
         }
-        return specialization;
+        return specialization
     }
 
-    @Override
-    public Object getDefaultValue() {
-        return null;
+    override fun getDefaultValue(): Any? {
+        return null
     }
 
-    @Override
-    public String getDescriptor() {
-        return null;
+    override fun getDescriptor(): String? {
+        return null
     }
 
-    @Override
-    public String getInternalName() {
-        return null;
+    override fun getInternalName(): String? {
+        return null
     }
 
-    @Override
-    public int getLoadVariableOpcode() {
-        return 0;
+    override fun getLoadVariableOpcode(): Int {
+        return 0
     }
 
-    @Override
-    public String getName() {
-        return null;
+    override fun getName(): String? {
+        return null
     }
 
-    @Override
-    public int getReturnOpcode() {
-        return 0;
+    override fun getReturnOpcode(): Int {
+        return 0
     }
 
-    @Override
-    public Class<?> getTypeClass() {
-        return null;
+    override fun getTypeClass(): Class<*>? {
+        return null
     }
 
-    @Override
-    public boolean isNumeric() {
-        return false;
+    override fun isNumeric(): Boolean {
+        return false
     }
 
-    @Override
-    public String kind() {
-        return "function";
+    override fun kind(): String {
+        return "function"
     }
 
-    @Override
-    public String toString() {
-        return "def " + name + "(" + TypeUtils.parameterString(parameters) + ") " + returnType;
+    override fun toString(): String {
+        return "def " + name + "(" + TypeUtils.parameterString(parameters) + ") " + returnType
+    }
+
+    companion object {
+        fun getSpecializedType(specialization: MutableMap<String?, IxType?>, key: String?): IxType? {
+            return specialization.get(key)
+        }
     }
 }

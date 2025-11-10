@@ -1,18 +1,11 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.ExprVisitor;
-import com.kingmang.ixion.lexer.Position;
-import com.kingmang.ixion.lexer.Token;
+import com.kingmang.ixion.ExprVisitor
+import com.kingmang.ixion.lexer.Position
+import com.kingmang.ixion.lexer.Token
 
-public final class LiteralExpression extends Expression {
-    public final Token literal;
-
-    public LiteralExpression(Position pos, Token literal) {
-        super(pos);
-        this.literal = literal;
-    }
-
-    public <R> R accept(ExprVisitor<R> visitor) {
-        return visitor.visitLiteralExpr(this);
+class LiteralExpression(pos: Position?, @JvmField val literal: Token?) : Expression(pos) {
+    override fun <R> accept(visitor: ExprVisitor<R>): R {
+        return visitor.visitLiteralExpr(this)
     }
 }

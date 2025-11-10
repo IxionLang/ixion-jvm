@@ -99,10 +99,10 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     @Override
     public Optional<String> visitCall(CallExpression expr) {
         if (expr.item instanceof IdentifierExpression identifier) {
-            expr.item.realType = currentContext.getVariable(identifier.identifier.source());
+            expr.item.setRealType(currentContext.getVariable(identifier.identifier.source()));
         }
 
-        if (expr.item.realType instanceof DefType callType) {
+        if (expr.item.getRealType() instanceof DefType callType) {
             if (callType.glue) {
                 String owner = callType.owner.replace('/', '.');
                 String name = callType.name;
@@ -125,7 +125,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
                 expr.arguments.get(i).accept(this);
             }
             print(")");
-        } else if (expr.item.realType instanceof StructType st) {
+        } else if (expr.item.getRealType() instanceof StructType st) {
             print("new " + st.name + "(");
             for (int i = 0; i < expr.arguments.size(); i++) {
                 if (i > 0) print(", ");
@@ -182,7 +182,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
 
     @Override
     public Optional<String> visitLiteralExpr(LiteralExpression expr) {
-        if (expr.realType instanceof BuiltInType bt) {
+        if (expr.getRealType() instanceof BuiltInType bt) {
             switch (bt) {
                 case STRING -> print("\"" + expr.literal.source().replace("\"", "\\\"") + "\"");
                 case CHAR -> {
@@ -226,7 +226,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         if (expr.entries.isEmpty()) {
             print("new java.util.ArrayList<>()");
         } else {
-            IxType elementType = expr.entries.getFirst().realType;
+            IxType elementType = expr.entries.getFirst().getRealType();
             String wrapperType = getWrapperTypeName(elementType);
 
             print("java.util.Arrays.<" + wrapperType + ">asList(");
@@ -317,7 +317,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         indent();
 
         IxType elementType = BuiltInType.ANY;
-        if (statement.expression.realType instanceof ListType(IxType contentType)) {
+        if (statement.expression.getRealType() instanceof ListType(IxType contentType)) {
             elementType = contentType;
         } else if (statement.expression instanceof IdentifierExpression idExpr) {
             var varType = currentContext.getVariable(idExpr.identifier.source());
@@ -357,7 +357,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         statement.block.accept(this);
         indentLevel--;
         println("}");
-        currentContext = currentContext.getParent();
+        currentContext = currentContext.parent;
         return Optional.empty();
     }
 
@@ -402,7 +402,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         println("}");
 
         functionStack.pop();
-        currentContext = currentContext.getParent();
+        currentContext = currentContext.parent;
         return Optional.empty();
     }
 
@@ -472,7 +472,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         }
         println("}");
 
-        currentContext = currentContext.getParent();
+        currentContext = currentContext.parent;
         return Optional.empty();
     }
 
@@ -646,7 +646,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         indentLevel--;
 
         println("}");
-        currentContext = currentContext.getParent();
+        currentContext = currentContext.parent;
         return Optional.empty();
     }
 

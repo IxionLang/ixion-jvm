@@ -76,19 +76,19 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
 
         switch (expr.left) {
             case IdentifierExpression id -> {
-                if (expr.left.realType != expr.right.realType) {
-                    new BadAssignmentException().send(ixApi, file, expr, id.identifier.source(), expr.left.realType.getName(), expr.right.realType.getName());
+                if (expr.left.getRealType() != expr.right.getRealType()) {
+                    new BadAssignmentException().send(ixApi, file, expr, id.identifier.source());
                 }
             }
             case PropertyAccessExpression pa -> {
-                var lType = expr.left.realType;
-                var rType = expr.right.realType;
+                var lType = expr.left.getRealType();
+                var rType = expr.right.getRealType();
                 if (!TypeResolver.typesMatch(lType, rType)) {
-                    new ParameterTypeMismatchException().send(ixApi, file, expr.left, rType.getName(), lType.getName());
+                    new ParameterTypeMismatchException().send(ixApi, file, expr.left, rType.getName());
                 }
 
             }
-            default -> throw new IllegalStateException("Unexpected value: " + expr.left.realType);
+            default -> throw new IllegalStateException("Unexpected value: " + expr.left.getRealType());
         }
 
         return Optional.empty();
@@ -114,7 +114,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
         }
 
         if (t1.get() == BuiltInType.ANY || t2.get() == BuiltInType.ANY) {
-            new CannotApplyOperatorException().send(ixApi, file, expr, expr.operator.source(), t1.get(), t2.get());
+            new CannotApplyOperatorException().send(ixApi, file, expr, expr.operator.source());
             return Optional.empty();
         }
 
@@ -125,16 +125,16 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
                 if (t1.get() instanceof BuiltInType bt1 && t2.get() instanceof BuiltInType bt2) {
                     totalType = BuiltInType.widen(bt1, bt2);
                 } else {
-                    new CannotApplyOperatorException().send(ixApi, file, expr, expr.operator.source(), t1.get(), t2.get());
+                    new CannotApplyOperatorException().send(ixApi, file, expr, expr.operator.source());
                 }
             }
             case EQUAL, NOTEQUAL, LT, GT, LE, GE -> {
                 if (t1.get() instanceof BuiltInType bt1 && t2.get() instanceof BuiltInType bt2) {
                     if (expr.operator.type() != TokenType.EQUAL && expr.operator.type() != TokenType.NOTEQUAL) {
                         if (bt1 == BuiltInType.STRING || bt2 == BuiltInType.STRING) {
-                            new CannotApplyOperatorException().send(ixApi, file, expr, expr.operator.source(), bt1.getName(), bt2.getName());
+                            new CannotApplyOperatorException().send(ixApi, file, expr, expr.operator.source());
                         } else if (bt1 == BuiltInType.BOOLEAN || bt2 == BuiltInType.BOOLEAN) {
-                            new CannotApplyOperatorException().send(ixApi, file, expr, expr.operator.source(), bt1.getName(), bt2.getName());
+                            new CannotApplyOperatorException().send(ixApi, file, expr, expr.operator.source());
 
                         }
                     }
@@ -144,7 +144,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
             case AND, OR, XOR -> {
                 if (t1.get() instanceof BuiltInType bt1 && t2.get() instanceof BuiltInType bt2) {
                     if (bt1 != BuiltInType.BOOLEAN || bt2 != BuiltInType.BOOLEAN) {
-                        new CannotApplyOperatorException().send(ixApi, file, expr, expr.operator.source(), bt1.getName(), bt2.getName());
+                        new CannotApplyOperatorException().send(ixApi, file, expr, expr.operator.source());
                     }
                     totalType = BuiltInType.BOOLEAN;
                 }
@@ -154,10 +154,10 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
             }
         }
 
-        expr.left.realType = t1.get();
-        expr.right.realType = t2.get();
+        expr.left.setRealType(t1.get());
+        expr.right.setRealType(t2.get());
 
-        expr.realType = totalType;
+        expr.setRealType(totalType);
 
         return Optional.of(totalType);
     }
@@ -190,7 +190,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
         if (t instanceof StructType st) {
             if (st.parameters.size() != expr.arguments.size()) {
                 var params = st.parameters.stream().map(s -> s.getValue1().getName()).collect(Collectors.joining(", "));
-                new FunctionSignatureMismatchException().send(ixApi, file, expr.item, st.name, params);
+                new FunctionSignatureMismatchException().send(ixApi, file, expr.item, st.name);
                 return Optional.empty();
             }
             updateUnknownParameters(expr, st);
@@ -214,14 +214,14 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
                 }
             }
 
-            expr.realType = rt;
+            expr.setRealType(rt);
 
             return Optional.of(rt);
         } else if (t instanceof StructType structType) {
-            expr.realType = structType;
+            expr.setRealType(structType);
             return Optional.of(structType);
         } else {
-            new MethodNotFoundException().send(ixApi, file, expr.item, expr.item);
+            new MethodNotFoundException().send(ixApi, file, expr.item, String.valueOf(expr.item));
         }
 
         return Optional.empty();
@@ -238,14 +238,14 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      */
     @Override
     public Optional<IxType> visitEmptyList(EmptyListExpression emptyList) {
-        if (emptyList.realType != null) {
-            return Optional.of(emptyList.realType);
+        if (emptyList.getRealType() != null) {
+            return Optional.of(emptyList.getRealType());
         }
         if (!functionStack.isEmpty()) {
             var functionType = functionStack.peek();
 
             if (functionType.returnType instanceof ListType) {
-                emptyList.realType = functionType.returnType;
+                emptyList.setRealType(functionType.returnType);
                 return Optional.of(functionType.returnType);
             }
         }
@@ -290,7 +290,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
         if (b.isPresent()) {
             switch (b.get()) {
                 case ExternalType et -> {
-                    if (et.foundClass().getName().equals("java.util.Iterator")) {
+                    if (et.foundClass.getName().equals("java.util.Iterator")) {
                         currentContext.setVariableType(statement.name.source(), BuiltInType.INT);
                     }
                 }
@@ -303,7 +303,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
 
         statement.block.accept(this);
 
-        currentContext = currentContext.getParent();
+        currentContext = currentContext.parent;
 
         return Optional.empty();
 
@@ -370,7 +370,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
                 statement.body.statements.add(returnStmt);
             }
 
-            currentContext = currentContext.getParent();
+            currentContext = currentContext.parent;
             functionStack.pop();
 
 
@@ -401,7 +401,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
                     t = attempt;
                 }
             }
-            expr.realType = t;
+            expr.setRealType(t);
         } else {
             new IdentifierNotFoundException().send(ixApi, file, expr, expr.identifier.source());
         }
@@ -419,7 +419,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
         statement.trueBlock.accept(this);
         if (statement.falseStatement != null) statement.falseStatement.accept(this);
 
-        currentContext = currentContext.getParent();
+        currentContext = currentContext.parent;
         return Optional.empty();
     }
 
@@ -439,7 +439,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      */
     @Override
     public Optional<IxType> visitLiteralExpr(LiteralExpression expr) {
-        var t = expr.realType;
+        var t = expr.getRealType();
         if (t == null) {
             new ImplementationException().send(ixApi, file, expr, "This should never happen. All literals should be builtin, for now.");
         }
@@ -456,20 +456,20 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
         var firstType = expr.entries.get(0).accept(this);
 
         firstType.ifPresent(type -> {
-            expr.realType = new ListType(type);
+            expr.setRealType(new ListType(type));
 
             for (int i = 0; i < expr.entries.size(); i++) {
                 var t = expr.entries.get(i).accept(this);
                 if (t.isPresent()) {
                     if (!(t.get().equals(type))) {
-                        new ListTypeException().send(ixApi, file, expr.entries.get(i), t.get().getName(), type.getName());
+                        new ListTypeException().send(ixApi, file, expr.entries.get(i), t.get().getName());
                         break;
                     }
                 }
             }
         });
 
-        return Optional.of(expr.realType);
+        return Optional.of(expr.getRealType());
     }
 
     /**
@@ -480,7 +480,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
     public Optional<IxType> visitMatch(CaseStatement statement) {
         statement.expression.accept(this);
 
-        if (statement.expression.realType instanceof UnionType ut) {
+        if (statement.expression.getRealType() instanceof UnionType ut) {
             var typesToCover = new HashSet<>(ut.types);
             statement.cases.forEach((keyTypeStmt, pair) -> {
                 String id = pair.getValue0();
@@ -496,15 +496,15 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
                 typesToCover.remove(caseType);
 
                 var childEnvironment = block.context;
-                childEnvironment.setParent(currentContext);
+                childEnvironment.parent = currentContext;
                 childEnvironment.setVariableType(id, caseType);
 
                 currentContext = childEnvironment;
                 block.accept(this);
-                currentContext = currentContext.getParent();
+                currentContext = currentContext.parent;
             });
             if (!typesToCover.isEmpty()) {
-                new MatchCoverageException().send(ixApi, file, statement, ut, CollectionUtil.joinConjunction(typesToCover));
+                new MatchCoverageException().send(ixApi, file, statement, String.valueOf(ut));
             }
 
 
@@ -532,10 +532,10 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      */
     @Override
     public Optional<IxType> visitPostfixExpr(PostfixExpression expr) {
-        expr.realType = expr.expression.accept(this).get();
+        expr.setRealType(expr.expression.accept(this).get());
 
-        if (!(expr.realType instanceof BuiltInType bt && bt.isNumeric())) {
-            new CannotPostfixException().send(ixApi, file, expr.expression, expr.operator.source(), expr.realType.getName());
+        if (!(expr.getRealType() instanceof BuiltInType bt && bt.isNumeric())) {
+            new CannotPostfixException().send(ixApi, file, expr.expression, expr.operator.source());
         }
         return Optional.empty();
     }
@@ -579,13 +579,13 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
 
                 result = getTempMSTType(expr, typeChain, pointer, result);
             }
-            expr.realType = result;
+            expr.setRealType(result);
         } else {
             new MethodNotFoundException().send(ixApi, file, expr.expression, "ree");
         }
         expr.typeChain = typeChain;
 
-        return Optional.ofNullable(expr.realType);
+        return Optional.ofNullable(expr.getRealType());
     }
 
     /**
@@ -610,16 +610,16 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
                 }
                 else if (functionType.returnType instanceof UnionType ut) {
                     if (!ut.types.contains(newType)) {
-                        new ParameterTypeMismatchException().send(ixApi, file, statement.expression, newType, functionType.returnType);
+                        new ParameterTypeMismatchException().send(ixApi, file, statement.expression, String.valueOf(newType));
                     }
                 }
                 else if (functionType.returnType == BuiltInType.VOID) {
                     if (newType != BuiltInType.VOID) {
-                        new ReturnTypeMismatchException().send(ixApi, file, statement, functionType.name, functionType.returnType, newType);
+                        new ReturnTypeMismatchException().send(ixApi, file, statement, functionType.name);
                     }
                 }
                 else {
-                    new ReturnTypeMismatchException().send(ixApi, file, statement, functionType.name, functionType.returnType, newType);
+                    new ReturnTypeMismatchException().send(ixApi, file, statement, functionType.name);
                 }
             }
         }
@@ -696,14 +696,14 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
     @Override
     public Optional<IxType> visitWhile(WhileStatement statement) {
         var childEnvironment = statement.block.context;
-        childEnvironment.setParent(currentContext);
+        childEnvironment.parent = currentContext;
 
         currentContext = childEnvironment;
         statement.condition.accept(this);
 
         statement.block.accept(this);
 
-        currentContext = currentContext.getParent();
+        currentContext = currentContext.parent;
         return Optional.empty();
     }
 
@@ -753,7 +753,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
                 }
 
             } else {
-                new FieldNotPresentException().send(ixApi, file, identifier, identifier.identifier.source(), pointer.name);
+                new FieldNotPresentException().send(ixApi, file, identifier, identifier.identifier.source());
                 break;
             }
         }
@@ -771,11 +771,11 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
             new VoidUsageException().send(ixApi, file, arg);
         }
         if (!TypeResolver.typesMatch(param.getValue1(), argType)) {
-            new ParameterTypeMismatchException().send(ixApi, file, arg, argType.getName(), param.getValue1().getName());
+            new ParameterTypeMismatchException().send(ixApi, file, arg, argType.getName());
             TypeResolver.typesMatch(param.getValue1(), argType);
             arg.accept(this);
         } else {
-            arg.realType = argType;
+            arg.setRealType(argType);
         }
     }
 

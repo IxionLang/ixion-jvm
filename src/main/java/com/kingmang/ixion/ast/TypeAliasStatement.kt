@@ -1,27 +1,18 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.StatementVisitor;
-import com.kingmang.ixion.api.PublicAccess;
-import com.kingmang.ixion.lexer.Position;
-import com.kingmang.ixion.lexer.Token;
+import com.kingmang.ixion.StatementVisitor
+import com.kingmang.ixion.api.PublicAccess
+import com.kingmang.ixion.lexer.Position
+import com.kingmang.ixion.lexer.Token
 
-public final class TypeAliasStatement extends Statement implements PublicAccess {
-    public final Token identifier;
-    public final TypeStatement typeStmt;
+class TypeAliasStatement(pos: Position?, @JvmField val identifier: Token, @JvmField val typeStmt: TypeStatement?) : Statement(pos),
+    PublicAccess {
 
-    public TypeAliasStatement(Position pos, Token identifier, TypeStatement typeStmt) {
-        super(pos);
-        this.identifier = identifier;
-        this.typeStmt = typeStmt;
+    override fun <R> accept(visitor: StatementVisitor<R?>?): R? {
+        return visitor?.visitTypeAlias(this)
     }
 
-    @Override
-    public <R> R accept(StatementVisitor<R> visitor) {
-        return visitor.visitTypeAlias(this);
-    }
-
-    @Override
-    public String identifier() {
-        return identifier.source();
+    override fun identifier(): String? {
+        return identifier.source
     }
 }

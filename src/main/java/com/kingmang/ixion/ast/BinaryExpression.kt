@@ -1,22 +1,12 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.ExprVisitor;
-import com.kingmang.ixion.lexer.Position;
-import com.kingmang.ixion.lexer.Token;
+import com.kingmang.ixion.ExprVisitor
+import com.kingmang.ixion.lexer.Position
+import com.kingmang.ixion.lexer.Token
 
-public final class BinaryExpression extends Expression {
-    public final Expression left;
-    public final Token operator;
-    public final Expression right;
-
-    public BinaryExpression(Position pos, Expression left, Token operator, Expression right) {
-        super(pos);
-        this.left = left;
-        this.operator = operator;
-        this.right = right;
-    }
-
-    public <R> R accept(ExprVisitor<R> visitor) {
-        return visitor.visitBinaryExpr(this);
+class BinaryExpression(pos: Position?, @JvmField val left: Expression?, @JvmField val operator: Token?, @JvmField val right: Expression?) :
+    Expression(pos) {
+    override fun <R> accept(visitor: ExprVisitor<R>): R {
+        return visitor.visitBinaryExpr(this)
     }
 }

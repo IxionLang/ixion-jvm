@@ -1,73 +1,75 @@
-package com.kingmang.ixion.api;
+package com.kingmang.ixion.api
 
-import com.kingmang.ixion.Visitor;
-import com.kingmang.ixion.ast.Statement;
-import com.kingmang.ixion.lexer.LexerImpl;
-import com.kingmang.ixion.parser.Parser;
-import com.kingmang.ixion.runtime.IxType;
-import org.apache.commons.collections4.map.LinkedMap;
-import org.apache.commons.io.FilenameUtils;
+import com.kingmang.ixion.Visitor
+import com.kingmang.ixion.ast.Statement
+import com.kingmang.ixion.lexer.LexerImpl
+import com.kingmang.ixion.parser.Parser
+import com.kingmang.ixion.runtime.IxType
+import org.apache.commons.collections4.map.LinkedMap
+import org.apache.commons.io.FilenameUtils
+import java.io.File
+import java.nio.file.Path
+import java.util.function.Function
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
+class IxFile(projectRoot: String, relativePath: String, name: String?) {
+    @JvmField
+    val file: File
+    @JvmField
+    val statements: MutableList<Statement>
+    @JvmField
+    val exports: LinkedMap<String?, IxType?> = LinkedMap<String?, IxType?>()
+    @JvmField
+    val rootContext: Context = Context()
+    @JvmField
+    val projectRoot: String = FilenameUtils.separatorsToUnix(projectRoot)
 
-public class IxFile {
-    public final File file;
-    public final List<Statement> stmts;
-    public final LinkedMap<String, IxType> exports = new LinkedMap<>();
-    public final Context rootContext = new Context();
-    public final String projectRoot;
-    public final String relativePath;
+    @JvmField
+    val relativePath: String = FilenameUtils.separatorsToUnix(relativePath)
 
-    public final String name;
+    @JvmField
+    val name: String? = FilenameUtils.removeExtension(FilenameUtils.removeExtension(name))
 
-    public final LinkedMap<String, IxFile> imports = new LinkedMap<>();
+    @JvmField
+    val imports: LinkedMap<String?, IxFile?> = LinkedMap<String?, IxFile?>()
 
-    public IxFile(String projectRoot, String relativePath, String name) throws FileNotFoundException {
-        this.projectRoot = FilenameUtils.separatorsToUnix(projectRoot);
-        this.relativePath = FilenameUtils.separatorsToUnix(relativePath);
-        this.name = FilenameUtils.removeExtension(FilenameUtils.removeExtension(name));
+    init {
 
-        String fullPath = FilenameUtils.separatorsToUnix(Path.of(projectRoot, relativePath, this.name + IxionConstant.EXT).toString());
-        this.file = new File(fullPath);
+        val fullPath =
+            FilenameUtils.separatorsToUnix(Path.of(projectRoot, relativePath, this.name + IxionConstant.EXT).toString())
+        this.file = File(fullPath)
 
-        LexerImpl lexer = new LexerImpl(file);
-        var parser = new Parser(lexer);
-        this.stmts = parser.parse();
+        val lexer = LexerImpl(file)
+        val parser = Parser(lexer)
+        this.statements = parser.parse()
     }
 
-    public <R> List<R> acceptVisitor(Visitor<? extends R> visitor) {
-        List<R> results = new ArrayList<>();
-        for (var s : this.stmts) {
-            var r = s.accept(visitor);
-            results.add(r);
+    fun <R> acceptVisitor(visitor: Visitor<out R?>?): MutableList<R?> {
+        val results: MutableList<R?> = ArrayList<R?>()
+        for (s in this.statements) {
+            val r: R? = s.accept(visitor)
+            results.add(r)
         }
-        return results;
+        return results
     }
 
-    public void addImport(String absolute, IxFile ixFile) {
-        absolute = FilenameUtils.separatorsToUnix(absolute);
-        imports.put(absolute, ixFile);
+    fun addImport(absolute: String?, ixFile: IxFile?) {
+        var absolute = absolute
+        absolute = FilenameUtils.separatorsToUnix(absolute)
+        imports[absolute] = ixFile
     }
 
-    public <T extends Statement, R> void filter(Class<? extends T> kind, Function<? super T, R> function) {
-        for (var s : stmts) {
+    fun <T : Statement?, R> filter(kind: Class<out T?>, function: Function<in T?, R?>) {
+        for (s in statements) {
             if (kind.isInstance(s)) {
-                function.apply(kind.cast(s));
+                function.apply(kind.cast(s))
             }
         }
     }
 
-    public String getFullRelativePath() {
-        return FilenameUtils.separatorsToUnix(Path.of(relativePath, name).toString());
-    }
+    val fullRelativePath: String
+        get() = FilenameUtils.separatorsToUnix(Path.of(relativePath, name).toString())
 
-    @Override
-    public String toString() {
-        return file.getName();
+    override fun toString(): String {
+        return file.getName()
     }
 }

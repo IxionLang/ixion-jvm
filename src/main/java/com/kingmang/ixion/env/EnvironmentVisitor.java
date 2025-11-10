@@ -169,7 +169,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
     public Optional<IxType> visitEmptyList(EmptyListExpression emptyList) {
         var bt = TypeUtils.getFromString(emptyList.tokenType.source());
         var lt = new ListType(bt);
-        emptyList.realType = lt;
+        emptyList.setRealType(lt);
         return Optional.of(lt);
     }
 
@@ -212,7 +212,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
     @Override
     public Optional<IxType> visitFor(ForStatement statement) {
         var childEnvironment = statement.block.context;
-        childEnvironment.setParent(currentContext);
+        childEnvironment.parent = currentContext;
 
         currentContext = childEnvironment;
 
@@ -222,7 +222,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
 
         statement.block.accept(this);
 
-        currentContext = currentContext.getParent();
+        currentContext = currentContext.parent;
 
         return Optional.empty();
     }
@@ -239,7 +239,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
         List<String> generics = statement.generics.stream().map(Token::source).toList();
 
         var childEnvironment = statement.body.context;
-        childEnvironment.setParent(currentContext);
+        childEnvironment.parent = currentContext;
 
         // Annotate parameters in the current scope
         List<Pair<String, IxType>> parameters = new ArrayList<>();
@@ -272,7 +272,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
         currentContext = childEnvironment;
         statement.body.accept(this);
 
-        currentContext = currentContext.getParent();
+        currentContext = currentContext.parent;
         return Optional.of(funcType);
     }
 
@@ -305,13 +305,13 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
     @Override
     public Optional<IxType> visitIf(IfStatement statement) {
         var childEnvironment = statement.trueBlock.context;
-        childEnvironment.setParent(currentContext);
+        childEnvironment.parent = currentContext;
         currentContext = childEnvironment;
         statement.condition.accept(this);
         statement.trueBlock.accept(this);
         if (statement.falseStatement != null) statement.falseStatement.accept(this);
 
-        currentContext = currentContext.getParent();
+        currentContext = currentContext.parent;
         return Optional.empty();
     }
 
@@ -355,7 +355,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
         if (t == null) {
             new ImplementationException().send(ixApi, file, expr, "This should never happen. All literals should be builtin, for now.");
         } else {
-            expr.realType = t;
+            expr.setRealType(t);
         }
         return Optional.ofNullable(t);
     }
@@ -400,11 +400,11 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
                 System.exit(783);
             }
             var childEnvironment = block.context;
-            childEnvironment.setParent(currentContext);
+            childEnvironment.parent = currentContext;
             childEnvironment.addVariable(id, statement.types.get(keyType));
             currentContext = childEnvironment;
             block.accept(this);
-            currentContext = currentContext.getParent();
+            currentContext = currentContext.parent;
         });
 
         return Optional.empty();
@@ -589,14 +589,14 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
     @Override
     public Optional<IxType> visitWhile(WhileStatement statement) {
         var childEnvironment = statement.block.context;
-        childEnvironment.setParent(currentContext);
+        childEnvironment.parent = currentContext;
 
         currentContext = childEnvironment;
         statement.condition.accept(this);
 
         statement.block.accept(this);
 
-        currentContext = currentContext.getParent();
+        currentContext = currentContext.parent;
         return Optional.empty();
     }
 }

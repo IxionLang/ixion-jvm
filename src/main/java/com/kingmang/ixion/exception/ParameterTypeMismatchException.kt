@@ -1,7 +1,4 @@
-package com.kingmang.ixion.exception;
+package com.kingmang.ixion.exception
 
-public class ParameterTypeMismatchException extends IxException {
-    public ParameterTypeMismatchException() {
-        super(16, "Argument of type `{0}` cannot supply a parameter of type `{1}`.", null);
-    }
-}
+class ParameterTypeMismatchException :
+    IxException(16, "Argument of type `{0}` cannot supply a parameter of type `{1}`.", null)

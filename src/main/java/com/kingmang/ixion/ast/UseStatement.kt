@@ -1,29 +1,24 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.StatementVisitor;
-import com.kingmang.ixion.lexer.Position;
-import com.kingmang.ixion.lexer.Token;
-import com.kingmang.ixion.lexer.TokenType;
+import com.kingmang.ixion.StatementVisitor
+import com.kingmang.ixion.ast.Statement.TopLevel
+import com.kingmang.ixion.lexer.Position
+import com.kingmang.ixion.lexer.Token
+import com.kingmang.ixion.lexer.TokenType
+import java.util.*
 
-import java.util.Optional;
+class UseStatement(pos: Position?, @JvmField val stringLiteral: Token?, val identifier: Optional<Token?>?) : Statement(pos),
+    TopLevel {
 
-public final class UseStatement extends Statement implements Statement.TopLevel {
-    public final static UseStatement instance = new UseStatement(
-            new Position(0, 0),
-            new Token(TokenType.STRING, 0, 0, "prelude"),
-            Optional.empty());
-
-    public final Token stringLiteral;
-    public final Optional<Token> identifier;
-
-    public UseStatement(Position pos, Token stringLiteral, Optional<Token> identifier) {
-        super(pos);
-        this.stringLiteral = stringLiteral;
-        this.identifier = identifier;
+    override fun <R> accept(visitor: StatementVisitor<R?>?): R? {
+        return visitor?.visitUse(this)
     }
 
-    @Override
-    public <R> R accept(StatementVisitor<R> visitor) {
-        return visitor.visitUse(this);
+    companion object {
+        val instance: UseStatement = UseStatement(
+            Position(0, 0),
+            Token(TokenType.STRING, 0, 0, "prelude"),
+            Optional.empty<Token?>() as Optional<Token?>?
+        )
     }
 }

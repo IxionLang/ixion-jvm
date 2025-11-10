@@ -1,19 +1,11 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.StatementVisitor;
-import com.kingmang.ixion.lexer.Position;
+import com.kingmang.ixion.StatementVisitor
+import com.kingmang.ixion.lexer.Position
 
-public final class WhileStatement extends Statement {
-    public final BlockStatement block;
-    public final Expression condition;
+class WhileStatement(pos: Position?, @JvmField val condition: Expression?, @JvmField val block: BlockStatement?) : Statement(pos) {
 
-    public WhileStatement(Position pos, Expression condition, BlockStatement block) {
-        super(pos);
-        this.condition = condition;
-        this.block = block;
-    }
-
-    public <R> R accept(StatementVisitor<R> visitor) {
-        return visitor.visitWhile(this);
+    override fun <R> accept(visitor: StatementVisitor<R?>?): R? {
+        return visitor?.visitWhile(this)
     }
 }

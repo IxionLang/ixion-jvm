@@ -1,18 +1,17 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.ExprVisitor;
-import com.kingmang.ixion.lexer.Position;
-import com.kingmang.ixion.lexer.Token;
+import com.kingmang.ixion.ExprVisitor
+import com.kingmang.ixion.lexer.Position
+import com.kingmang.ixion.lexer.Token
 
-public final class BadExpression extends Expression {
-    public final Token[] badTokens;
+class BadExpression(pos: Position?, vararg badTokens: Token?) : Expression(pos) {
+    val badTokens: Array<Token?>?
 
-    public BadExpression(Position pos, Token... badTokens) {
-        super(pos);
-        this.badTokens = badTokens;
+    init {
+        this.badTokens = badTokens as Array<Token?>?
     }
 
-    public <R> R accept(ExprVisitor<R> visitor) {
-        return visitor.visitBad(this);
+    override fun <R> accept(visitor: ExprVisitor<R>): R {
+        return visitor.visitBad(this)
     }
 }

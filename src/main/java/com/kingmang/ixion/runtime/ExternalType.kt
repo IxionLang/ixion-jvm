@@ -1,60 +1,50 @@
-package com.kingmang.ixion.runtime;
+package com.kingmang.ixion.runtime
 
-import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Opcodes
 
-public record ExternalType(Class<?> foundClass) implements IxType {
+@JvmRecord
+data class ExternalType(@JvmField val foundClass: Class<*>?) : IxType {
+    override fun getDefaultValue(): Any? {
+        return null
+    }
 
-	@Override
-	public Object getDefaultValue() {
-		return null;
-	}
-
-	@Override
-	public String getDescriptor() {
-		return foundClass.descriptorString();
-	}
+    override fun getDescriptor(): String {
+        return foundClass!!.descriptorString()
+    }
 
 
-	@Override
-	public String getInternalName() {
-		return getName().replace(".", "/");
-	}
+    override fun getInternalName(): String {
+        return getName().replace(".", "/")
+    }
 
-	@Override
-	public int getLoadVariableOpcode() {
-		return Opcodes.ALOAD;
-	}
+    override fun getLoadVariableOpcode(): Int {
+        return Opcodes.ALOAD
+    }
 
 
-	@Override
-	public String getName() {
-		return foundClass.getName();
-	}
+    override fun getName(): String {
+        return foundClass!!.getName()
+    }
 
 
-	@Override
-	public int getReturnOpcode() {
-		return Opcodes.ARETURN;
-	}
+    override fun getReturnOpcode(): Int {
+        return Opcodes.ARETURN
+    }
 
 
-	@Override
-	public Class<?> getTypeClass() {
-		return foundClass;
-	}
+    override fun getTypeClass(): Class<*>? {
+        return foundClass
+    }
 
-	@Override
-	public boolean isNumeric() {
-		return false;
-	}
+    override fun isNumeric(): Boolean {
+        return false
+    }
 
-	@Override
-	public String kind() {
-		return null;
-	}
+    override fun kind(): String? {
+        return null
+    }
 
-	@Override
-	public String toString() {
-		return getName();
-	}
+    override fun toString(): String {
+        return getName()
+    }
 }

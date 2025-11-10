@@ -1,23 +1,14 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.ExprVisitor;
-import com.kingmang.ixion.lexer.Position;
-import com.kingmang.ixion.lexer.Token;
+import com.kingmang.ixion.ExprVisitor
+import com.kingmang.ixion.lexer.Position
+import com.kingmang.ixion.lexer.Token
 
-import java.util.List;
+class CallExpression(pos: Position?, @JvmField val item: Expression?, @JvmField val arguments: MutableList<Expression?>?) :
+    Expression(pos) {
+    var foreign: Token? = null
 
-public final class CallExpression extends Expression {
-    public final Expression item;
-    public final List<Expression> arguments;
-    public Token foreign;
-
-    public CallExpression(Position pos, Expression item, List<Expression> arguments) {
-        super(pos);
-        this.item = item;
-        this.arguments = arguments;
-    }
-
-    public <R> R accept(ExprVisitor<R> visitor) {
-        return visitor.visitCall(this);
+    override fun <R> accept(visitor: ExprVisitor<R>): R {
+        return visitor.visitCall(this)
     }
 }

@@ -1,13 +1,14 @@
-package com.kingmang.ixion.api;
+package com.kingmang.ixion.api
 
-public class Debugger {
-    public static boolean DEBUG = false;
-    private static final String BLUE_START = "\u001B[34m";
-    private static final String RESET = "\u001B[0m";
+object Debugger {
+    var DEBUG: Boolean = false
+    private const val BLUE_START = "\u001B[34m"
+    private const val RESET = "\u001B[0m"
 
-    public static void debug(String message) {
+    @JvmStatic
+    fun debug(message: String) {
         if (DEBUG) {
-            System.out.println(BLUE_START.concat(message).concat(RESET));
+            println(BLUE_START + message + RESET)
         }
     }
 }

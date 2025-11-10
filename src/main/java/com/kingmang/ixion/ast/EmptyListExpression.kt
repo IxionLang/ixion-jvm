@@ -1,19 +1,11 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.ExprVisitor;
-import com.kingmang.ixion.lexer.Position;
-import com.kingmang.ixion.lexer.Token;
+import com.kingmang.ixion.ExprVisitor
+import com.kingmang.ixion.lexer.Position
+import com.kingmang.ixion.lexer.Token
 
-public class EmptyListExpression extends Expression {
-    public final Token tokenType;
-
-    public EmptyListExpression(Position pos, Token tokenType) {
-        super(pos);
-        this.tokenType = tokenType;
-    }
-
-    @Override
-    public <R> R accept(ExprVisitor<R> visitor) {
-        return visitor.visitEmptyList(this);
+class EmptyListExpression(pos: Position?, @JvmField val tokenType: Token?) : Expression(pos) {
+    override fun <R> accept(visitor: ExprVisitor<R>): R {
+        return visitor.visitEmptyList(this)
     }
 }

@@ -1,17 +1,10 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.StatementVisitor;
-import com.kingmang.ixion.lexer.Position;
+import com.kingmang.ixion.StatementVisitor
+import com.kingmang.ixion.lexer.Position
 
-public final class ExpressionStatement extends Statement {
-    public final Expression expression;
-
-    public ExpressionStatement(Position pos, Expression expression) {
-        super(pos);
-        this.expression = expression;
-    }
-
-    public <R> R accept(StatementVisitor<R> visitor) {
-        return visitor.visitExpressionStmt(this);
+class ExpressionStatement(pos: Position?, @JvmField val expression: Expression?) : Statement(pos) {
+    override fun <R> accept(visitor: StatementVisitor<R?>?): R? {
+        return visitor?.visitExpressionStmt(this)
     }
 }

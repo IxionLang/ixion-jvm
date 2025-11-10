@@ -1,20 +1,12 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.ExprVisitor;
-import com.kingmang.ixion.lexer.Position;
+import com.kingmang.ixion.ExprVisitor
+import com.kingmang.ixion.lexer.Position
 
-public final class ModuleAccessExpression extends Expression {
-    public final IdentifierExpression identifier;
-    public final Expression foreign;
+class ModuleAccessExpression(pos: Position?, @JvmField val identifier: IdentifierExpression?, @JvmField val foreign: Expression?) :
+    Expression(pos) {
 
-    public ModuleAccessExpression(Position pos, IdentifierExpression identifier, Expression foreign) {
-        super(pos);
-        this.identifier = identifier;
-        this.foreign = foreign;
-    }
-
-    @Override
-    public <R> R accept(ExprVisitor<R> visitor) {
-        return visitor.visitModuleAccess(this);
+    override fun <R> accept(visitor: ExprVisitor<R>): R {
+        return visitor.visitModuleAccess(this)
     }
 }

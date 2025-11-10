@@ -1,85 +1,69 @@
-package com.kingmang.ixion.api;
+package com.kingmang.ixion.api
 
-import com.kingmang.ixion.exception.*;
-import com.kingmang.ixion.parser.Node;
-import com.kingmang.ixion.runtime.IxType;
-import org.apache.commons.collections4.map.LinkedMap;
+import com.kingmang.ixion.api.IxionConstant.Mutability
+import com.kingmang.ixion.exception.RedeclarationException
+import com.kingmang.ixion.parser.Node
+import com.kingmang.ixion.runtime.IxType
+import org.apache.commons.collections4.map.LinkedMap
+import java.io.File
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+class Context {
+    private val variables = LinkedMap<String?, IxType?>()
 
-public class Context {
+    private val mutability: MutableMap<String?, Mutability?> = HashMap()
+    @JvmField
+    var parent: Context? = null
 
-	private final LinkedMap<String, IxType> variables = new LinkedMap<>();
+    fun addVariable(name: String?, type: IxType?) {
+        variables[name] = type
+        mutability[name] = Mutability.IMMUTABLE
+    }
 
-	private final Map<String, IxionConstant.Mutability> mutability = new HashMap<>();
-	private Context parent;
+    fun addVariableOrError(ixApi: IxApi?, name: String?, type: IxType?, file: File?, node: Node) {
+        if (getVariable(name) != null) {
+            RedeclarationException().send(ixApi, file, node, name)
+        } else {
+            addVariable(name, type)
+        }
+    }
 
-	public Context() {
-		this.parent = null;
-	}
+    fun getVariable(name: String?): IxType? {
+        if (variables.get(name) != null) {
+            return variables.get(name)
+        }
+        if (parent != null) {
+            return parent!!.getVariable(name)
+        }
+        return null
+    }
 
-	public void addVariable(String name, IxType type) {
-		variables.put(name, type);
-		mutability.put(name, IxionConstant.Mutability.IMMUTABLE);
-	}
+    fun getVariableMutability(name: String?): Mutability? {
+        if (mutability.get(name) != null) {
+            return mutability.get(name)
+        }
+        if (parent != null) {
+            return parent!!.getVariableMutability(name)
+        }
+        return null
+    }
 
-	public void addVariableOrError(IxApi ixApi, String name, IxType type, File file, Node node) {
-		if (getVariable(name) != null) {
-			new RedeclarationException().send(ixApi, file, node, name);
-		} else {
-			addVariable(name, type);
-		}
-	}
+    fun <T> getVariableTyped(name: String?, clazz: Class<T?>): T? {
+        val v = getVariable(name)
+        if (clazz.isInstance(v)) {
+            return v as T
+        }
+        return null
+    }
 
-	public Context getParent() {
-		return parent;
-	}
+    fun setVariableMutability(name: String?, m: Mutability?) {
+        if (mutability[name] != null) {
+            mutability[name] = m
+        }
+    }
 
-	public void setParent(Context parent) {
-		this.parent = parent;
-	}
-
-	public IxType getVariable(String name) {
-		if (variables.get(name) != null) {
-			return variables.get(name);
-		}
-		if (parent != null) {
-			return parent.getVariable(name);
-		}
-		return null;
-	}
-
-	public IxionConstant.Mutability getVariableMutability(String name) {
-		if (mutability.get(name) != null) {
-			return mutability.get(name);
-		}
-		if (parent != null) {
-			return parent.getVariableMutability(name);
-		}
-		return null;
-	}
-
-	public <T> T getVariableTyped(String name, Class<T> clazz) {
-		var v = getVariable(name);
-		if (clazz.isInstance(v)) {
-			return (T) v;
-		}
-		return null;
-	}
-
-	public void setVariableMutability(String name, IxionConstant.Mutability m) {
-		if (mutability.get(name) != null) {
-			mutability.put(name, m);
-		}
-
-	}
-
-	public void setVariableType(String name, IxType type) {
-		if (variables.get(name) != null) {
-			variables.put(name, type);
-		}
-	}
-
+    fun setVariableType(name: String?, type: IxType?) {
+        if (variables[name] != null) {
+            variables[name] = type
+        }
+    }
 }

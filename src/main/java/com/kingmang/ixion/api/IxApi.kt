@@ -1,38 +1,34 @@
-package com.kingmang.ixion.api;
+package com.kingmang.ixion.api
 
-import com.kingmang.ixion.ast.ExportStatement;
-import com.kingmang.ixion.ast.Statement;
-import com.kingmang.ixion.ast.UseStatement;
-import com.kingmang.ixion.codegen.BytecodeGenerator;
-import com.kingmang.ixion.codegen.JavaCodegenVisitor;
-import com.kingmang.ixion.env.EnvironmentVisitor;
-import com.kingmang.ixion.exception.*;
-import com.kingmang.ixion.modules.Modules;
-import com.kingmang.ixion.runtime.DefType;
-import com.kingmang.ixion.runtime.IxType;
-import com.kingmang.ixion.typechecker.TypeCheckVisitor;
-import org.apache.commons.io.FilenameUtils;
-import org.javatuples.Pair;
+import com.kingmang.ixion.api.Debugger.debug
+import com.kingmang.ixion.ast.ExportStatement
+import com.kingmang.ixion.ast.UseStatement
+import com.kingmang.ixion.codegen.JavaCodegenVisitor
+import com.kingmang.ixion.env.EnvironmentVisitor
+import com.kingmang.ixion.exception.IxException
+import com.kingmang.ixion.exception.IxException.CompilerError
+import com.kingmang.ixion.exception.ModuleNotFoundException
+import com.kingmang.ixion.modules.Modules
+import com.kingmang.ixion.runtime.DefType
+import com.kingmang.ixion.runtime.IxType
+import com.kingmang.ixion.typechecker.TypeCheckVisitor
+import org.apache.commons.io.FilenameUtils
+import org.javatuples.Pair
+import java.io.*
+import java.nio.file.Path
+import java.util.*
 
-import java.io.*;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-public record IxApi(
-        List<IxException.Data> errorData,
-        Map<String, IxFile> compilationSet,
-        boolean developmentMode
+@JvmRecord
+data class IxApi(
+    @JvmField val errorData: MutableList<IxException.Data?>?,
+    val compilationSet: MutableMap<String?, IxFile>?,
+    @JvmField val developmentMode: Boolean
 ) {
-
     /**
      * Default constructor for IxApi
      */
-    public IxApi() {
-        this(new ArrayList<>(), new HashMap<>(), true);
-    }
+    constructor() : this(ArrayList<IxException.Data?>(),
+        HashMap<String?, IxFile?>() as MutableMap<String?, IxFile>?, true)
 
     /**
      * Compiles Ixion code to JVM bytecode
@@ -42,65 +38,62 @@ public record IxApi(
      * @throws FileNotFoundException If the file is not found
      * @throws IxException.CompilerError If compilation errors occur
      */
-    public String compile(String projectRoot, String filename) throws FileNotFoundException, IxException.CompilerError {
+    @Throws(FileNotFoundException::class, CompilerError::class)
+    fun compile(projectRoot: String, filename: String?): String {
+        val relativePath = FilenameUtils.getPath(filename)
+        val name = FilenameUtils.getName(filename)
 
-        String relativePath = FilenameUtils.getPath(filename);
-        String name = FilenameUtils.getName(filename);
+        val entry = parse(projectRoot, relativePath, name)
+        IxException.killIfErrors(this, "Correct parser errors before continuing.")
 
-        var entry = parse(projectRoot, relativePath, name);
-        IxException.killIfErrors(this, "Correct parser errors before continuing.");
+        for (filePath in compilationSet!!.keys) {
+            val source: IxFile = compilationSet.get(filePath)!!
+            val environmentVisitor = EnvironmentVisitor(this, source.rootContext, source)
+            source.acceptVisitor<Optional<IxType?>?>(environmentVisitor)
 
-        for (String filePath : compilationSet.keySet()) {
-            var source = compilationSet.get(filePath);
-            EnvironmentVisitor environmentVisitor = new EnvironmentVisitor(this, source.rootContext, source);
-            source.acceptVisitor(environmentVisitor);
-
-            for (Statement stmt : source.stmts) {
-                if (stmt instanceof ExportStatement exportStmt) {
-                    if (exportStmt.stmt instanceof PublicAccess publicAccess) {
-                        String identifier = publicAccess.identifier();
-                        IxType type = source.rootContext.getVariable(identifier);
+            for (stmt in source.statements) {
+                if (stmt is ExportStatement) {
+                    if (stmt.stmt is PublicAccess) {
+                        val identifier: String? = (stmt.stmt as PublicAccess).identifier()
+                        val type = source.rootContext.getVariable(identifier)
                         if (type != null) {
-                            source.exports.put(identifier, type);
+                            source.exports.put(identifier, type)
                         }
                     }
-
                 }
             }
 
-            IxException.killIfErrors(this, "Correct syntax errors before type checking can continue.");
+            IxException.killIfErrors(this, "Correct syntax errors before type checking can continue.")
         }
 
-        for (String filePath : compilationSet.keySet()) {
-            var source = compilationSet.get(filePath);
-            for (String s : source.imports.keySet()) {
-                var sourceFile = source.imports.get(s);
-                var exportedMembers = sourceFile.exports;
-                for (String exportedName : exportedMembers.keySet()) {
-                    var exportedType = exportedMembers.get(exportedName);
-                    var qualifiedName = sourceFile.name + "::" + exportedName;
-                    if (exportedType instanceof DefType ft) {
-                        ft.external = sourceFile;
+        for (filePath in compilationSet.keys) {
+            val source: IxFile = compilationSet.get(filePath)!!
+            for (s in source.imports.keys) {
+                val sourceFile = source.imports.get(s)
+                val exportedMembers = sourceFile!!.exports
+                for (exportedName in exportedMembers.keys) {
+                    val exportedType = exportedMembers.get(exportedName)
+                    val qualifiedName = sourceFile.name + "::" + exportedName
+                    if (exportedType is DefType) {
+                        exportedType.external = sourceFile
                     }
-                    source.rootContext.addVariable(qualifiedName, exportedType);
+                    source.rootContext.addVariable(qualifiedName, exportedType)
                 }
             }
-
         }
 
-        for (String filePath : compilationSet.keySet()) {
-            var source = compilationSet.get(filePath);
-            TypeCheckVisitor typeCheckVisitor = new TypeCheckVisitor(this, source.rootContext, source);
-            source.acceptVisitor(typeCheckVisitor);
+        for (filePath in compilationSet.keys) {
+            val source: IxFile = compilationSet.get(filePath)!!
+            val typeCheckVisitor = TypeCheckVisitor(this, source.rootContext, source)
+            source.acceptVisitor<Optional<IxType?>?>(typeCheckVisitor)
 
-            IxException.killIfErrors(this, "Correct type errors before compilation can continue.");
-
+            IxException.killIfErrors(this, "Correct type errors before compilation can continue.")
         }
-        output(compilationSet);
+        //output(compilationSet)
 
-        String base = entry.getFullRelativePath();
+        val base = entry.fullRelativePath
 
-        return base.replace("/", ".");
+        return base.replace("/", ".")
     }
 
     /**
@@ -108,52 +101,52 @@ public record IxApi(
      * @param compilationSet The set of files to output
      * @throws IxException.CompilerError If output errors occur
      */
-    public void output(Map<String, ? extends IxFile> compilationSet) throws IxException.CompilerError {
+    /*
+    @Throws(CompilerError::class)
+    fun output(compilationSet: MutableMap<String?, out IxFile>) {
+        val bytecodeGenerator = BytecodeGenerator()
+        for (key in compilationSet.keys) {
+            val source: IxFile = compilationSet.get(key)!!
+            val allByteUnits = bytecodeGenerator.generate(this, source)
+            IxException.killIfErrors(this, "Correct build errors before compilation can complete.")
 
-        BytecodeGenerator bytecodeGenerator = new BytecodeGenerator();
-        for (var key : compilationSet.keySet()) {
-            var source = compilationSet.get(key);
-            var allByteUnits = bytecodeGenerator.generate(this, source);
-            IxException.killIfErrors(this, "Correct build errors before compilation can complete.");
-
-            var byteUnit = allByteUnits.getValue0().toByteArray();
-            String base = FilenameUtils.removeExtension(source.getFullRelativePath());
-            String fileName = Path.of(source.projectRoot, IxionConstant.OUT_DIR, base + ".class").toString();
-            File tmp = new File(fileName);
-            tmp.getParentFile().mkdirs();
-            OutputStream output;
+            val byteUnit = allByteUnits.getValue0()!!.toByteArray()
+            val base = FilenameUtils.removeExtension(source.fullRelativePath)
+            var fileName = Path.of(source.projectRoot, IxionConstant.OUT_DIR, base + ".class").toString()
+            var tmp = File(fileName)
+            tmp.getParentFile().mkdirs()
+            var output: OutputStream?
             try {
-                output = new FileOutputStream(fileName);
-                output.write(byteUnit);
-                output.close();
-            } catch (IOException e) {
-                System.err.println("The above call to mkdirs() should have worked.");
-                System.exit(9);
+                output = FileOutputStream(fileName)
+                output.write(byteUnit)
+                output.close()
+            } catch (e: IOException) {
+                System.err.println("The above call to mkdirs() should have worked.")
+                System.exit(9)
             }
 
-            for (var p : allByteUnits.getValue1().entrySet()) {
+            for (p in allByteUnits.getValue1()!!.entries) {
+                val st = p.key
+                val innerCw = p.value
 
-                var st = p.getKey();
-                var innerCw = p.getValue();
+                val innerName = source.fullRelativePath + "$" + st.name
 
-                String innerName = source.getFullRelativePath() + "$" + st.name;
-
-                fileName = Path.of(source.projectRoot, IxionConstant.OUT_DIR, innerName + ".class").toString();
-                tmp = new File(fileName);
-                tmp.getParentFile().mkdirs();
+                fileName = Path.of(source.projectRoot, IxionConstant.OUT_DIR, innerName + ".class").toString()
+                tmp = File(fileName)
+                tmp.getParentFile().mkdirs()
                 try {
-                    output = new FileOutputStream(fileName);
-                    output.write(innerCw.toByteArray());
-                    output.close();
-                } catch (IOException e) {
-                    System.err.println("The above call to mkdirs() should have worked.");
-                    System.exit(9);
+                    output = FileOutputStream(fileName)
+                    output.write(innerCw.toByteArray())
+                    output.close()
+                } catch (e: IOException) {
+                    System.err.println("The above call to mkdirs() should have worked.")
+                    System.exit(9)
                 }
             }
-
         }
-
     }
+
+     */
 
     /**
      * Compiles Ixion code to Java source code
@@ -163,59 +156,60 @@ public record IxApi(
      * @throws FileNotFoundException If the file is not found
      * @throws IxException.CompilerError If compilation errors occur
      */
-    public String compileToJava(String projectRoot, String filename) throws FileNotFoundException, IxException.CompilerError {
-        String relativePath = FilenameUtils.getPath(filename);
-        String name = FilenameUtils.getName(filename);
+    @Throws(FileNotFoundException::class, CompilerError::class)
+    fun compileToJava(projectRoot: String, filename: String?): String {
+        val relativePath = FilenameUtils.getPath(filename)
+        val name = FilenameUtils.getName(filename)
 
-        var entry = parse(projectRoot, relativePath, name);
-        IxException.killIfErrors(this, "Correct parser errors before continuing.");
+        val entry = parse(projectRoot, relativePath, name)
+        IxException.killIfErrors(this, "Correct parser errors before continuing.")
 
-        for (String filePath : compilationSet.keySet()) {
-            var source = compilationSet.get(filePath);
-            EnvironmentVisitor environmentVisitor = new EnvironmentVisitor(this, source.rootContext, source);
-            source.acceptVisitor(environmentVisitor);
+        for (filePath in compilationSet!!.keys) {
+            val source: IxFile = compilationSet.get(filePath)!!
+            val environmentVisitor = EnvironmentVisitor(this, source.rootContext, source)
+            source.acceptVisitor<Optional<IxType?>?>(environmentVisitor)
 
-            for (Statement stmt : source.stmts) {
-                if (stmt instanceof ExportStatement exportStmt) {
-                    if (exportStmt.stmt instanceof PublicAccess publicAccess) {
-                        String identifier = publicAccess.identifier();
-                        IxType type = source.rootContext.getVariable(identifier);
+            for (stmt in source.statements) {
+                if (stmt is ExportStatement) {
+                    if (stmt.stmt is PublicAccess) {
+                        val identifier: String? = (stmt.stmt as PublicAccess).identifier()
+                        val type = source.rootContext.getVariable(identifier)
                         if (type != null) {
-                            source.exports.put(identifier, type);
+                            source.exports.put(identifier, type)
                         }
                     }
                 }
             }
-            IxException.killIfErrors(this, "Correct syntax errors before type checking can continue.");
+            IxException.killIfErrors(this, "Correct syntax errors before type checking can continue.")
         }
 
-        for (String filePath : compilationSet.keySet()) {
-            var source = compilationSet.get(filePath);
-            for (String s : source.imports.keySet()) {
-                var sourceFile = source.imports.get(s);
-                var exportedMembers = sourceFile.exports;
-                for (String exportedName : exportedMembers.keySet()) {
-                    var exportedType = exportedMembers.get(exportedName);
-                    var qualifiedName = sourceFile.name + "::" + exportedName;
-                    if (exportedType instanceof DefType ft) {
-                        ft.external = sourceFile;
+        for (filePath in compilationSet.keys) {
+            val source: IxFile = compilationSet.get(filePath)!!
+            for (s in source.imports.keys) {
+                val sourceFile = source.imports.get(s)
+                val exportedMembers = sourceFile!!.exports
+                for (exportedName in exportedMembers.keys) {
+                    val exportedType = exportedMembers.get(exportedName)
+                    val qualifiedName = sourceFile.name + "::" + exportedName
+                    if (exportedType is DefType) {
+                        exportedType.external = sourceFile
                     }
-                    source.rootContext.addVariable(qualifiedName, exportedType);
+                    source.rootContext.addVariable(qualifiedName, exportedType)
                 }
             }
         }
 
-        for (String filePath : compilationSet.keySet()) {
-            var source = compilationSet.get(filePath);
-            TypeCheckVisitor typeCheckVisitor = new TypeCheckVisitor(this, source.rootContext, source);
-            source.acceptVisitor(typeCheckVisitor);
-            IxException.killIfErrors(this, "Correct type errors before compilation can continue.");
+        for (filePath in compilationSet.keys) {
+            val source: IxFile = compilationSet.get(filePath)!!
+            val typeCheckVisitor = TypeCheckVisitor(this, source.rootContext, source)
+            source.acceptVisitor<Optional<IxType?>?>(typeCheckVisitor)
+            IxException.killIfErrors(this, "Correct type errors before compilation can continue.")
         }
 
-        outputJava(compilationSet);
+        outputJava(compilationSet)
 
-        String base = entry.getFullRelativePath();
-        return base.replace("/", ".");
+        val base = entry.fullRelativePath
+        return base.replace("/", ".")
     }
 
     /**
@@ -223,47 +217,52 @@ public record IxApi(
      * @param compilationSet The set of files to output
      * @throws IxException.CompilerError If output errors occur
      */
-    public void outputJava(Map<String, ? extends IxFile> compilationSet) throws IxException.CompilerError {
-        for (var key : compilationSet.keySet()) {
-            var source = compilationSet.get(key);
+    @Throws(CompilerError::class)
+    fun outputJava(compilationSet: MutableMap<String?, out IxFile>) {
+        for (key in compilationSet.keys) {
+            val source: IxFile = compilationSet.get(key)!!
 
-            JavaCodegenVisitor javaGenerator = new JavaCodegenVisitor(this, source);
-            source.acceptVisitor(javaGenerator);
+            val javaGenerator = JavaCodegenVisitor(this, source)
+            source.acceptVisitor<Optional<String?>?>(javaGenerator)
 
-            String javaCode = javaGenerator.getGeneratedCode();
-            String base = FilenameUtils.removeExtension(source.getFullRelativePath());
-            String packageName = base.contains("/")
-                    ? base.substring(0, base.lastIndexOf("/")).replace("/", ".")
-                    : "";
+            val javaCode = javaGenerator.getGeneratedCode()
+            val base = FilenameUtils.removeExtension(source.fullRelativePath)
+            val packageName = if (base.contains("/"))
+                base.substring(0, base.lastIndexOf("/")).replace("/", ".")
+            else
+                ""
 
-            StringBuilder fullJavaFile = new StringBuilder();
+            val fullJavaFile = StringBuilder()
 
             if (!packageName.isEmpty()) {
-                fullJavaFile.append("package ").append(packageName).append(";\n\n");
+                fullJavaFile.append("package ").append(packageName).append(";\n\n")
             }
 
-            fullJavaFile.append("import java.util.*;\n");
-            fullJavaFile.append("import java.lang.*;\n\n");
+            fullJavaFile.append("import java.util.*;\n")
+            fullJavaFile.append("import java.lang.*;\n\n")
 
-            String className = base.contains("/")
-                    ? base.substring(base.lastIndexOf("/") + 1)
-                    : base;
-            fullJavaFile.append("public class ").append(className).append(" {\n");
-            fullJavaFile.append(javaCode);
-            fullJavaFile.append("}\n");
+            val className = if (base.contains("/"))
+                base.substring(base.lastIndexOf("/") + 1)
+            else
+                base
+            fullJavaFile.append("public class ").append(className).append(" {\n")
+            fullJavaFile.append(javaCode)
+            fullJavaFile.append("}\n")
 
-            String fileName = Path.of(source.projectRoot, IxionConstant.OUT_DIR, base + ".java").toString();
-            File javaFile = new File(fileName);
-            javaFile.getParentFile().mkdirs();
+            val fileName = Path.of(source.projectRoot, IxionConstant.OUT_DIR, base + ".java").toString()
+            val javaFile = File(fileName)
+            javaFile.getParentFile().mkdirs()
 
-            try (FileWriter writer = new FileWriter(javaFile)) {
-                writer.write(fullJavaFile.toString());
-            } catch (IOException e) {
-                System.err.println("Error writing Java file: " + e.getMessage());
-                System.exit(9);
+            try {
+                FileWriter(javaFile).use { writer ->
+                    writer.write(fullJavaFile.toString())
+                }
+            } catch (e: IOException) {
+                System.err.println("Error writing Java file: " + e.message)
+                System.exit(9)
             }
 
-            generateStructJavaFiles(source, javaGenerator.getStructClasses());
+            generateStructJavaFiles(source, javaGenerator.getStructClasses())
         }
     }
 
@@ -272,35 +271,40 @@ public record IxApi(
      * @param source The source file containing structures
      * @param structClasses Map of structure names to their generated code
      */
-    private void generateStructJavaFiles(IxFile source, Map<String, String> structClasses) {
-        String basePackage = source.getFullRelativePath().contains("/")
-                ? source.getFullRelativePath().substring(0, source.getFullRelativePath().lastIndexOf("/")).replace("/", ".")
-                : "";
+    private fun generateStructJavaFiles(source: IxFile, structClasses: MutableMap<String?, String?>) {
+        val basePackage = if (source.fullRelativePath.contains("/"))
+            source.fullRelativePath.substring(0, source.fullRelativePath.lastIndexOf("/")).replace("/", ".")
+        else
+            ""
 
-        for (var entry : structClasses.entrySet()) {
-            String structName = entry.getKey();
-            String structCode = entry.getValue();
+        for (entry in structClasses.entries) {
+            val structName = entry.key
+            val structCode = entry.value
 
-            StringBuilder fullStructFile = new StringBuilder();
+            val fullStructFile = StringBuilder()
 
             if (!basePackage.isEmpty()) {
-                fullStructFile.append("package ").append(basePackage).append(";\n\n");
+                fullStructFile.append("package ").append(basePackage).append(";\n\n")
             }
 
-            fullStructFile.append("public class ").append(structName).append(" {\n");
-            fullStructFile.append(structCode);
-            fullStructFile.append("}\n");
+            fullStructFile.append("public class ").append(structName).append(" {\n")
+            fullStructFile.append(structCode)
+            fullStructFile.append("}\n")
 
-            String fileName = Path.of(source.projectRoot, IxionConstant.OUT_DIR,
-                    basePackage.replace(".", "/"), structName + ".java").toString();
-            File structFile = new File(fileName);
-            structFile.getParentFile().mkdirs();
+            val fileName = Path.of(
+                source.projectRoot, IxionConstant.OUT_DIR,
+                basePackage.replace(".", "/"), structName + ".java"
+            ).toString()
+            val structFile = File(fileName)
+            structFile.getParentFile().mkdirs()
 
-            try (FileWriter writer = new FileWriter(structFile)) {
-                writer.write(fullStructFile.toString());
-            } catch (IOException e) {
-                System.err.println("Error writing struct Java file: " + e.getMessage());
-                System.exit(9);
+            try {
+                FileWriter(structFile).use { writer ->
+                    writer.write(fullStructFile.toString())
+                }
+            } catch (e: IOException) {
+                System.err.println("Error writing struct Java file: " + e.message)
+                System.exit(9)
             }
         }
     }
@@ -314,18 +318,18 @@ public record IxApi(
      * @throws FileNotFoundException If the file is not found
      * @throws IxException.CompilerError If compilation errors occur
      */
-    public String compile(String projectRoot, String filename, CompilationTarget target)
-            throws FileNotFoundException, IxException.CompilerError {
-        return switch (target) {
-            case JVM_BYTECODE -> compile(projectRoot, filename);
-            case JAVA_SOURCE -> compileToJava(projectRoot, filename);
-        };
+    @Throws(FileNotFoundException::class, CompilerError::class)
+    fun compile(projectRoot: String, filename: String?, target: CompilationTarget): String {
+        return when (target) {
+            CompilationTarget.JVM_BYTECODE -> compile(projectRoot, filename)
+            CompilationTarget.JAVA_SOURCE -> compileToJava(projectRoot, filename)
+        }
     }
 
     /**
      * Enum representing compilation targets
      */
-    public enum CompilationTarget {
+    enum class CompilationTarget {
         JVM_BYTECODE,
         JAVA_SOURCE
     }
@@ -338,81 +342,84 @@ public record IxApi(
      * @return The parsed IxFile object
      * @throws FileNotFoundException If the file is not found
      */
-    public IxFile parse(String projectRoot, String relativePath, String name) throws FileNotFoundException {
+    @Throws(FileNotFoundException::class)
+    fun parse(projectRoot: String, relativePath: String, name: String?): IxFile {
+        val source = IxFile(projectRoot, relativePath, name)
+        debug("Parsing `" + source.file.getName() + "`")
 
-        var source = new IxFile(projectRoot, relativePath, name);
-        Debugger.debug("Parsing `" + source.file.getName() + "`");
+        compilationSet!!.put(FilenameUtils.separatorsToUnix(source.file.getPath()), source)
 
-        compilationSet.put(FilenameUtils.separatorsToUnix(source.file.getPath()), source);
+        val imports: MutableList<Pair<String?, String?>> = ArrayList<Pair<String?, String?>>()
 
-        List<Pair<String, String>> imports = new ArrayList<>();
+        for (statement in source.statements) {
+            if (statement is UseStatement) {
+                val requestedUse = statement.stringLiteral?.source
+                debug("\tFound module `" + requestedUse + "`")
 
-        for (Statement statement : source.stmts) {
-            if (statement instanceof UseStatement useStmt) {
-                String requestedUse = useStmt.stringLiteral.source();
-                Debugger.debug("\tFound module `" + requestedUse + "`");
-
-                String relative = FilenameUtils.getPath(requestedUse);
-                String n = FilenameUtils.getName(requestedUse);
-                String filePath = Path.of(source.projectRoot, source.relativePath, relative, n + IxionConstant.EXT).toString();
-                var normalizedPath = FilenameUtils.separatorsToUnix(Path.of(filePath).normalize().toString());
-                if (new File(normalizedPath).exists()) {
-                    imports.add(Pair.with(relative, normalizedPath));
+                val relative = FilenameUtils.getPath(requestedUse)
+                val n = FilenameUtils.getName(requestedUse)
+                val filePath =
+                    Path.of(source.projectRoot, source.relativePath, relative, n + IxionConstant.EXT).toString()
+                val normalizedPath = FilenameUtils.separatorsToUnix(Path.of(filePath).normalize().toString())
+                if (File(normalizedPath).exists()) {
+                    imports.add(Pair.with<String?, String?>(relative, normalizedPath))
                 } else if (!Modules.modules.containsKey(n)) {
-                    new ModuleNotFoundException().send(this, source.file, statement, n);
+                    ModuleNotFoundException().send(this, source.file, statement, n)
                 }
-
             }
         }
 
-        for (Pair<String, String> i : imports) {
-            var relative = i.getValue0();
-            var normalizedPath = i.getValue1();
-            var n = FilenameUtils.removeExtension(FilenameUtils.getName(normalizedPath));
+        for (i in imports) {
+            val relative: String = i.getValue0()!!
+            val normalizedPath = i.getValue1()
+            val n = FilenameUtils.removeExtension(FilenameUtils.getName(normalizedPath))
             if (!compilationSet.containsKey(normalizedPath)) {
-                Debugger.debug("triggered parse, no key exists `" + normalizedPath + "`");
-                IxFile next;
+                debug("triggered parse, no key exists `" + normalizedPath + "`")
+                val next: IxFile?
                 try {
-                    next = parse(projectRoot, Path.of(source.relativePath, relative).normalize().toString(), n);
-                    source.addImport(normalizedPath, next);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                    exit("Issues with building import tree.", 67);
+                    next = parse(projectRoot, Path.of(source.relativePath, relative).normalize().toString(), n)
+                    source.addImport(normalizedPath, next)
+                } catch (e: FileNotFoundException) {
+                    e.printStackTrace()
+                    exit("Issues with building import tree.", 67)
                 }
             } else {
-                source.addImport(normalizedPath, compilationSet.get(normalizedPath));
+                source.addImport(normalizedPath, compilationSet.get(normalizedPath))
             }
-
         }
 
-        return source;
+        return source
     }
 
-    /**
-     * Extracts class name from IxFile
-     * @param file The IxFile object
-     * @return The class name
-     */
-    public static String getClassName(IxFile file) {
-        String fileName = file.getFullRelativePath();
-        int lastSlash = fileName.lastIndexOf('/');
-        if (lastSlash != -1) {
-            fileName = fileName.substring(lastSlash + 1);
+    companion object {
+        /**
+         * Extracts class name from IxFile
+         * @param file The IxFile object
+         * @return The class name
+         */
+        @JvmStatic
+        fun getClassName(file: IxFile): String {
+            var fileName = file.fullRelativePath
+            val lastSlash = fileName.lastIndexOf('/')
+            if (lastSlash != -1) {
+                fileName = fileName.substring(lastSlash + 1)
+            }
+            val dotIndex = fileName.lastIndexOf('.')
+            if (dotIndex != -1) {
+                fileName = fileName.substring(0, dotIndex)
+            }
+            return fileName
         }
-        int dotIndex = fileName.lastIndexOf('.');
-        if (dotIndex != -1) {
-            fileName = fileName.substring(0, dotIndex);
-        }
-        return fileName;
-    }
 
-    /**
-     * Exits the application with an error message and code
-     * @param message The error message to display
-     * @param code The exit code
-     */
-    public static void exit(String message, int code) {
-        System.err.println(message);
-        System.exit(code);
+        /**
+         * Exits the application with an error message and code
+         * @param message The error message to display
+         * @param code The exit code
+         */
+        @JvmStatic
+        fun exit(message: String?, code: Int) {
+            System.err.println(message)
+            System.exit(code)
+        }
     }
 }

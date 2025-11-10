@@ -1,20 +1,12 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.StatementVisitor;
-import com.kingmang.ixion.lexer.Position;
-import com.kingmang.ixion.lexer.Token;
+import com.kingmang.ixion.StatementVisitor
+import com.kingmang.ixion.lexer.Position
+import com.kingmang.ixion.lexer.Token
 
-public final class ParameterStatement extends Statement {
-    public final Token name;
-    public final TypeStatement type;
+class ParameterStatement(pos: Position?, @JvmField val name: Token?, @JvmField val type: TypeStatement?) : Statement(pos) {
 
-    public ParameterStatement(Position pos, Token name, TypeStatement type) {
-        super(pos);
-        this.name = name;
-        this.type = type;
-    }
-
-    public <R> R accept(StatementVisitor<R> visitor) {
-        return visitor.visitParameterStmt(this);
+    override fun <R> accept(visitor: StatementVisitor<R?>?): R? {
+        return visitor?.visitParameterStmt(this)
     }
 }

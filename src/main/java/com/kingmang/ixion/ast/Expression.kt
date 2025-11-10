@@ -1,23 +1,17 @@
-package com.kingmang.ixion.ast;
+package com.kingmang.ixion.ast
 
-import com.kingmang.ixion.ExprVisitor;
-import com.kingmang.ixion.lexer.Position;
-import com.kingmang.ixion.parser.Node;
-import com.kingmang.ixion.runtime.IxType;
-import com.kingmang.ixion.runtime.UnknownType;
+import com.kingmang.ixion.ExprVisitor
+import com.kingmang.ixion.lexer.Position
+import com.kingmang.ixion.parser.Node
+import com.kingmang.ixion.runtime.IxType
+import com.kingmang.ixion.runtime.UnknownType
 
-public abstract class Expression implements Node {
-    public final Position pos;
-    public IxType realType = new UnknownType("unknown");
+abstract class Expression(
+    val pos: Position?
+) : Node {
+    var realType: IxType = UnknownType("unknown")
 
-    protected Expression(Position pos) {
-        this.pos = pos;
-    }
+    abstract fun <R> accept(visitor: ExprVisitor<R>): R
 
-    public abstract <R> R accept(ExprVisitor<R> visitor);
-
-    @Override
-    public Position pos() {
-        return pos;
-    }
+    override fun pos(): Position? = pos
 }
