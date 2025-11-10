@@ -1,2 +1,2 @@
 *.ix linguist-language=Scala
-*.java linguist-language=Text
+*.java linguist-detectable=false
