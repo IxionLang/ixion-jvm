@@ -480,6 +480,12 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
         return Optional.empty();
     }
 
+    @NotNull
+    @Override
+    public Optional<IxType> visitLambda(@NotNull LambdaExpression expression) {
+        return Optional.empty();
+    }
+
     /**
      * Visits a return statement and processes the return expression
      * @param statement The return statement

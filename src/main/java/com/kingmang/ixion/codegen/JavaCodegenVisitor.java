@@ -286,6 +286,12 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         return Optional.empty();
     }
 
+    @NotNull
+    @Override
+    public Optional<String> visitLambda(@NotNull LambdaExpression expression) {
+        return Optional.empty();
+    }
+
     @Override
     public Optional<String> visitTypeAlias(TypeAliasStatement statement) {
         return Optional.empty();

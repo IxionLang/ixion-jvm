@@ -9,6 +9,6 @@ class LambdaExpression(
 ) : Expression(pos) {
 
     override fun <R> accept(visitor: ExprVisitor<R>): R {
-        return visitor.visit(this)
+        return visitor.visitLambda(this)
     }
 }

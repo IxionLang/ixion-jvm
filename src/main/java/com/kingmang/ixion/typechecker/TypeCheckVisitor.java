@@ -604,6 +604,12 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
         return Optional.ofNullable(expr.getRealType());
     }
 
+    @NotNull
+    @Override
+    public Optional<IxType> visitLambda(@NotNull LambdaExpression expression) {
+        return Optional.empty();
+    }
+
     /**
      * @param statement Return statement to type check
      * @return Empty optional as return statements don't produce values
