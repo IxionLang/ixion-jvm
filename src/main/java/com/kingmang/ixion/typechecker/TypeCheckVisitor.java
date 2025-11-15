@@ -10,6 +10,7 @@ import com.kingmang.ixion.lexer.Position;
 import com.kingmang.ixion.lexer.TokenType;
 import com.kingmang.ixion.runtime.*;
 import org.javatuples.Pair;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -69,6 +70,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @param expr Assignment expression to type check
      * @return Empty optional as assignments don't produce values
      */
+    @NotNull
     @Override
     public Optional<IxType> visitAssignExpr(AssignExpression expr) {
         expr.left.accept(this);
@@ -94,6 +96,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<IxType> visitBad(BadExpression expr) {
         return Optional.empty();
@@ -103,6 +106,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @param expr Binary expression to type check
      * @return Optional containing the result type of the binary operation
      */
+    @NotNull
     @Override
     public Optional<IxType> visitBinaryExpr(BinaryExpression expr) {
         var t1 = expr.left.accept(this);
@@ -178,6 +182,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @param expr Function call expression to type check
      * @return Optional containing the return type of the function call
      */
+    @NotNull
     @Override
     public Optional<IxType> visitCall(CallExpression expr) {
         var e = expr.item.accept(this);
@@ -227,6 +232,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<IxType> visitEmpty(EmptyExpression empty) {
         return Optional.empty();
@@ -236,6 +242,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @param emptyList Empty list expression to type check
      * @return Optional containing the type of the empty list
      */
+    @NotNull
     @Override
     public Optional<IxType> visitEmptyList(EmptyListExpression emptyList) {
         if (emptyList.getRealType() != null) {
@@ -382,6 +389,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @param expr Grouping expression to type check
      * @return Optional containing the type of the grouped expression
      */
+    @NotNull
     @Override
     public Optional<IxType> visitGroupingExpr(GroupingExpression expr) {
         return expr.expression.accept(this);
@@ -391,6 +399,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @param expr Identifier expression to resolve
      * @return Optional containing the type of the identifier
      */
+    @NotNull
     @Override
     public Optional<IxType> visitIdentifierExpr(IdentifierExpression expr) {
         var t = currentContext.getVariable(expr.identifier.source());
@@ -428,6 +437,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<IxType> visitIndexAccess(IndexAccessExpression expr) {
         return Optional.empty();
@@ -437,6 +447,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @param expr Literal expression to type check
      * @return Optional containing the type of the literal
      */
+    @NotNull
     @Override
     public Optional<IxType> visitLiteralExpr(LiteralExpression expr) {
         var t = expr.getRealType();
@@ -450,6 +461,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @param expr List literal expression to type check
      * @return Optional containing the type of the list
      */
+    @NotNull
     @Override
     public Optional<IxType> visitLiteralList(LiteralListExpression expr) {
 
@@ -515,6 +527,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<IxType> visitModuleAccess(ModuleAccessExpression expr) {
         expr.foreign.accept(this);
@@ -530,6 +543,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @param expr Postfix expression to type check
      * @return Empty optional as postfix expressions don't produce new values
      */
+    @NotNull
     @Override
     public Optional<IxType> visitPostfixExpr(PostfixExpression expr) {
         expr.setRealType(expr.expression.accept(this).get());
@@ -544,6 +558,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @param expr Prefix expression to type check
      * @return Optional containing the type of the prefixed expression
      */
+    @NotNull
     @Override
     public Optional<IxType> visitPrefix(PrefixExpression expr) {
         return expr.right.accept(this);
@@ -553,6 +568,7 @@ public class TypeCheckVisitor implements Visitor<Optional<IxType>> {
      * @param expr Property access expression to type check
      * @return Optional containing the type of the accessed property
      */
+    @NotNull
     @Override
     public Optional<IxType> visitPropertyAccess(PropertyAccessExpression expr) {
         var t = expr.expression.accept(this);

@@ -6,6 +6,7 @@ import com.kingmang.ixion.api.IxApi;
 import com.kingmang.ixion.api.IxFile;
 import com.kingmang.ixion.ast.*;
 import com.kingmang.ixion.runtime.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,6 +51,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         return statement.accept(this);
     }
 
+    @NotNull
     @Override
     public Optional<String> visitAssignExpr(AssignExpression expr) {
         if (expr.left instanceof IdentifierExpression id) {
@@ -63,12 +65,14 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<String> visitBad(BadExpression expr) {
         print("/* ERROR: Bad expression */");
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<String> visitBinaryExpr(BinaryExpression expr) {
         expr.left.accept(this);
@@ -96,6 +100,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<String> visitCall(CallExpression expr) {
         if (expr.item instanceof IdentifierExpression identifier) {
@@ -146,17 +151,20 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     }
 
 
+    @NotNull
     @Override
     public Optional<String> visitEmpty(EmptyExpression empty) {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<String> visitEmptyList(EmptyListExpression emptyList) {
         print("new java.util.ArrayList<>()");
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<String> visitGroupingExpr(GroupingExpression expr) {
         print("(");
@@ -165,12 +173,14 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<String> visitIdentifierExpr(IdentifierExpression expr) {
         print(expr.identifier.source());
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<String> visitIndexAccess(IndexAccessExpression expr) {
         expr.left.accept(this);
@@ -180,6 +190,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<String> visitLiteralExpr(LiteralExpression expr) {
         if (expr.getRealType() instanceof BuiltInType bt) {
@@ -221,6 +232,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     }
 
 
+    @NotNull
     @Override
     public Optional<String> visitLiteralList(LiteralListExpression expr) {
         if (expr.entries.isEmpty()) {
@@ -239,6 +251,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<String> visitModuleAccess(ModuleAccessExpression expr) {
         expr.foreign.accept(this);
@@ -247,6 +260,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<String> visitPostfixExpr(PostfixExpression expr) {
         expr.expression.accept(this);
@@ -254,6 +268,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<String> visitPrefix(PrefixExpression expr) {
         print(expr.operator.source());
@@ -261,6 +276,7 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
         return Optional.empty();
     }
 
+    @NotNull
     @Override
     public Optional<String> visitPropertyAccess(PropertyAccessExpression expr) {
         expr.expression.accept(this);

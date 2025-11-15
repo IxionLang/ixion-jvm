@@ -13,6 +13,7 @@ import com.kingmang.ixion.modules.Modules;
 import com.kingmang.ixion.runtime.*;
 import com.kingmang.ixion.typechecker.TypeUtils;
 import org.javatuples.Pair;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -74,6 +75,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The assignment expression
      * @return Empty optional as assignments don't produce types in environment phase
      */
+    @NotNull
     @Override
     public Optional<IxType> visitAssignExpr(AssignExpression expr) {
         expr.left.accept(this);
@@ -99,6 +101,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The bad expression
      * @return Empty optional
      */
+    @NotNull
     @Override
     public Optional<IxType> visitBad(BadExpression expr) {
         return Optional.empty();
@@ -109,6 +112,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The binary expression
      * @return Empty optional as binary expressions are type-checked later
      */
+    @NotNull
     @Override
     public Optional<IxType> visitBinaryExpr(BinaryExpression expr) {
         expr.left.accept(this);
@@ -141,6 +145,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The call expression
      * @return Empty optional as function calls are type-checked later
      */
+    @NotNull
     @Override
     public Optional<IxType> visitCall(CallExpression expr) {
         expr.item.accept(this);
@@ -155,6 +160,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param empty The empty expression
      * @return Empty optional
      */
+    @NotNull
     @Override
     public Optional<IxType> visitEmpty(EmptyExpression empty) {
         return Optional.empty();
@@ -165,6 +171,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param emptyList The empty list expression
      * @return Optional containing the list type
      */
+    @NotNull
     @Override
     public Optional<IxType> visitEmptyList(EmptyListExpression emptyList) {
         var bt = TypeUtils.getFromString(emptyList.tokenType.source());
@@ -281,6 +288,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The grouping expression
      * @return Empty optional
      */
+    @NotNull
     @Override
     public Optional<IxType> visitGroupingExpr(GroupingExpression expr) {
         expr.expression.accept(this);
@@ -292,6 +300,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The identifier expression
      * @return Optional containing the variable's type if found
      */
+    @NotNull
     @Override
     public Optional<IxType> visitIdentifierExpr(IdentifierExpression expr) {
         return Optional.ofNullable(currentContext.getVariable(expr.identifier.source()));
@@ -339,6 +348,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The index access expression
      * @return Empty optional (handled in type checking phase)
      */
+    @NotNull
     @Override
     public Optional<IxType> visitIndexAccess(IndexAccessExpression expr) {
         return Optional.empty();
@@ -349,6 +359,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The literal expression
      * @return Optional containing the literal's type
      */
+    @NotNull
     @Override
     public Optional<IxType> visitLiteralExpr(LiteralExpression expr) {
         var t = TypeUtils.getFromToken(expr.literal.type());
@@ -365,6 +376,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The list literal expression
      * @return Empty optional
      */
+    @NotNull
     @Override
     public Optional<IxType> visitLiteralList(LiteralListExpression expr) {
         if (expr.entries.isEmpty()) {
@@ -415,6 +427,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The module access expression
      * @return Empty optional
      */
+    @NotNull
     @Override
     public Optional<IxType> visitModuleAccess(ModuleAccessExpression expr) {
         expr.foreign.accept(this);
@@ -436,6 +449,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The postfix expression
      * @return Empty optional
      */
+    @NotNull
     @Override
     public Optional<IxType> visitPostfixExpr(PostfixExpression expr) {
         expr.expression.accept(this);
@@ -447,6 +461,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The prefix expression
      * @return Empty optional
      */
+    @NotNull
     @Override
     public Optional<IxType> visitPrefix(PrefixExpression expr) {
         expr.right.accept(this);
@@ -458,6 +473,7 @@ public class EnvironmentVisitor implements Visitor<Optional<IxType>> {
      * @param expr The property access expression
      * @return Empty optional
      */
+    @NotNull
     @Override
     public Optional<IxType> visitPropertyAccess(PropertyAccessExpression expr) {
         expr.expression.accept(this);

@@ -9,6 +9,6 @@ class LambdaExpression(
 ) : Expression(pos) {
 
     override fun <R> accept(visitor: ExprVisitor<R>): R {
-        TODO("Not yet implemented")
+        return visitor.visit(this)
     }
 }
