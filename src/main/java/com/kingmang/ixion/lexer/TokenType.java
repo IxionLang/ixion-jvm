@@ -22,6 +22,8 @@ public enum TokenType {
     PUB("pub"),
     USE("use"),
     NEW("new"),
+    MUT("mut"),
+    LAMBDA("lambda"),
 
     LPAREN("("),
     RPAREN(")"),
@@ -56,6 +58,7 @@ public enum TokenType {
     PIPE("|"),
     ARROW("=>"),
     WALRUS(":="),
+
 
     NOT("!"),
     PLUSPLUS("++"),

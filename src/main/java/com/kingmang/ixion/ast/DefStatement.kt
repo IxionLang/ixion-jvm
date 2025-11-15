@@ -6,9 +6,14 @@ import com.kingmang.ixion.lexer.Position
 import com.kingmang.ixion.lexer.Token
 
 class DefStatement(
-    pos: Position?, @JvmField val name: Token, @JvmField val parameters: MutableList<ParameterStatement?>?, @JvmField val returnType: TypeStatement?,
-    @JvmField val body: BlockStatement?, @JvmField val generics: MutableList<Token?>?
+    pos: Position?,
+    @JvmField val name: Token,
+    @JvmField val parameters: MutableList<ParameterStatement?>?,
+    @JvmField val returnType: TypeStatement?,
+    @JvmField val body: BlockStatement?,
+    @JvmField val generics: MutableList<Token?>?
 ) : Statement(pos), PublicAccess {
+
     override fun <R> accept(visitor: StatementVisitor<R?>?): R? {
         return visitor?.visitFunctionStmt(this)
     }

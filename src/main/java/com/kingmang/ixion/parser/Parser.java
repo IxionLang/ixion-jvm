@@ -49,6 +49,7 @@ public class Parser {
         putPrefix(STRING, new LiteralParser(false));
         putPrefix(LBRACK, new LiteralParser(true));
         putPrefix(IDENTIFIER, new IdentifierParser());
+        putPrefix(LAMBDA, new LambdaParser());
 
         // Register grouping and function call parsers
         putPrefix(LPAREN, new GroupingParser());
@@ -84,6 +85,8 @@ public class Parser {
         // Register postfix operators
         postfix(PLUSPLUS, Precedence.POSTFIX);
         postfix(MINUSMINUS, Precedence.POSTFIX);
+
+
     }
 
     /**
@@ -220,6 +223,43 @@ public class Parser {
 
         consume(RBRACE, "Expect '}' after block.");
         return new BlockStatement(pos, statements, new Context());
+    }
+
+    /**
+     * Parses a lambda function (-> expression (not implemented) or -> { block })
+     * @return The parsed lambda expression
+     *
+     * TODO: implement the design: -> expression
+     */
+
+    public LambdaExpression parseLambda() {
+        var pos = getPos();
+
+        // Parse parameters
+        List<ParameterStatement> parameters = new ArrayList<>();
+        if (match(LPAREN)) {
+            if (!check(RPAREN)) {
+                do {
+                    parameters.add(parseParameter());
+                } while (match(COMMA));
+            }
+            consume(RPAREN, "Expected closing parentheses after lambda parameters.");
+        } else {
+            // Single parameter without parentheses
+            Token name = consume(IDENTIFIER, "Expected parameter name or parentheses.");
+            parameters.add(new ParameterStatement(getPos(), name, null));
+        }
+
+        // Parse return type if specified
+        TypeStatement returnType = null;
+        if (match(COLON)) {
+            returnType = parseUnion();
+        }
+
+        // Parse lambda body - всегда блок
+        BlockStatement body = parseBlock();
+
+        return new LambdaExpression(pos, parameters, returnType, body);
     }
 
     /**

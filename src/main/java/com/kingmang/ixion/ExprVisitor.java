@@ -18,4 +18,5 @@ public interface ExprVisitor<R> {
     R visitPostfixExpr(PostfixExpression expr);
     R visitPrefix(PrefixExpression expr);
     R visitPropertyAccess(PropertyAccessExpression expr);
+    //R visit(LambdaExpression expr);
 }
