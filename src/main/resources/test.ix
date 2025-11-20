@@ -1,0 +1,6 @@
+use <prelude>
+
+def main(){
+    println("Hello World")
+    panic("panic!!")
+}
