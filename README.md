@@ -7,7 +7,7 @@ Multi-paradigm compiled programming language for the jvm platform.
 
 
 > [!IMPORTANT]
-> Before installing the language, install jdk.
+> Before installing the language, install Microsoft JDK 21.
 
 greeting in Ixion:
 ```scala
