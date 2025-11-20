@@ -5,6 +5,7 @@ import com.kingmang.ixion.api.Context;
 import com.kingmang.ixion.api.IxApi;
 import com.kingmang.ixion.api.IxFile;
 import com.kingmang.ixion.ast.*;
+import com.kingmang.ixion.exception.Panic;
 import com.kingmang.ixion.runtime.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -456,20 +457,28 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     }
 
     private String getWrapperTypeName(IxType type) {
-        if (type instanceof BuiltInType builtIn) {
-            return switch (builtIn) {
-                case CHAR -> "Character";
-                case INT -> "Integer";
-                case FLOAT -> "Float";
-                case DOUBLE -> "Double";
-                case BOOLEAN -> "Boolean";
-                case STRING -> "String";
-                case VOID -> "Void";
-                case ANY -> "Object";
-            };
-        } else if (type instanceof ListType(IxType contentType)) {
-            String elementType = getWrapperTypeName(contentType);
-            return "java.util.List<" + elementType + ">";
+        switch (type) {
+            case null -> {
+                return "Object";
+            }
+            case BuiltInType builtIn -> {
+                return switch (builtIn) {
+                    case CHAR -> "Character";
+                    case INT -> "Integer";
+                    case FLOAT -> "Float";
+                    case DOUBLE -> "Double";
+                    case BOOLEAN -> "Boolean";
+                    case STRING -> "String";
+                    case VOID -> "Void";
+                    case ANY -> "Object";
+                };
+            }
+            case ListType listType -> {
+                String elementType = getWrapperTypeName(listType.contentType());
+                return "java.util.List<" + elementType + ">";
+            }
+            default -> {
+            }
         }
         return getJavaTypeName(type);
     }
@@ -673,6 +682,10 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
     }
 
     private String getJavaTypeName(IxType type) {
+        if (type == null) {
+            return "Object";
+        }
+
         if (type instanceof BuiltInType builtIn) {
             return switch (builtIn) {
                 case CHAR -> "char";
@@ -684,8 +697,8 @@ public class JavaCodegenVisitor implements Visitor<Optional<String>> {
                 case VOID -> "void";
                 case ANY -> "Object";
             };
-        } else if (type instanceof ListType(IxType contentType)) {
-            String elementType = getWrapperTypeName(contentType);
+        } else if (type instanceof ListType listType) {
+            String elementType = getWrapperTypeName(listType.contentType());
             return "java.util.List<" + elementType + ">";
         } else if (type instanceof UnionType) {
             return "Object";

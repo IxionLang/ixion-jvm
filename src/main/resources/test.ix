@@ -1,5 +1,0 @@
-def main(){
-    var a = lambda (x : int) {
-        x * 2
-    }
-}
