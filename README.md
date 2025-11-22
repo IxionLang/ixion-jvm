@@ -1,7 +1,6 @@
 <div align="center">
-  <img src="https://github.com/IxionLang/Ixion/blob/main/assets/icon.png" width="150">
+  <img src="https://github.com/ixionlang/ixion/blob/main/assets/icon.png" width="700">
 
-<h2>The Ixion Programming Language</h2>
 Multi-paradigm compiled programming language for the jvm platform.
 </div>
 
