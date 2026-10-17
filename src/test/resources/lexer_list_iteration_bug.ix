@@ -1,0 +1,33 @@
+use <std>
+
+def first(source : string[]) : string {
+    for character : source {
+        return character
+    }
+    return ""
+}
+
+def values() : string[] {
+    return ["a", "b"]
+}
+
+pub def main() {
+    var source = values()
+    std::println(first(source))
+    std::println(first(source))
+    for left : source {
+        for right : source {
+            std::println(left + right)
+        }
+    }
+    for value : values() {
+        std::println(value)
+    }
+    var interval = std::range(0, 2)
+    for value : interval {
+        std::println(value)
+    }
+    for value : std::range(2, 4) {
+        std::println(value)
+    }
+}

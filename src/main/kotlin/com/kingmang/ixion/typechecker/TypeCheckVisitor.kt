@@ -392,7 +392,9 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
      * @return Optional containing the type of the grouped expression
      */
     override fun visitGroupingExpr(expression: GroupingExpression): Optional<IxType> {
-        return expression.expression.accept(this)
+        val type = expression.expression.accept(this)
+        type.ifPresent { expression.realType = it }
+        return type
     }
 
     /**
@@ -434,7 +436,22 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
     }
 
     override fun visitIndexAccess(expression: IndexAccessExpression): Optional<IxType> {
-        return Optional.empty()
+        val source = expression.left.accept(this)
+        val index = expression.right.accept(this)
+        if (source.isEmpty || index.isEmpty) return Optional.empty()
+        if (index.get() != BuiltInType.INT) {
+            ParameterTypeMismatchException().send(ixApi, file, expression.right, index.get().name, "int")
+        }
+        val elementType = when (val type = source.get()) {
+            BuiltInType.STRING -> BuiltInType.STRING
+            is ListType -> type.contentType
+            else -> {
+                CannotApplyOperatorException().send(ixApi, file, expression, "[]", type.name, index.get().name)
+                return Optional.empty()
+            }
+        }
+        expression.realType = elementType
+        return Optional.of(elementType)
     }
 
     /**
@@ -524,10 +541,11 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
     override fun visitPostfixExpr(expression: PostfixExpression): Optional<IxType> {
         expression.realType = expression.expression.accept(this).get()
 
-        if (!(expression.realType is BuiltInType && expression.realType.isNumeric)) {
-            CannotPostfixException().send(ixApi, file, expression.expression, expression.operator.source)
+        if (expression.expression !is IdentifierExpression ||
+            !(expression.realType is BuiltInType && expression.realType.isNumeric)) {
+            CannotPostfixException().send(ixApi, file, expression.expression, expression.operator.source, expression.realType.name)
         }
-        return Optional.empty()
+        return Optional.of(expression.realType)
     }
 
     /**
@@ -567,7 +585,11 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
 
                 result = getTempMSTType(expression, typeChain, pointer, result)
             }
-            expression.realType = result!!
+            if (result == null) {
+                FieldNotPresentException().send(ixApi, file, expression, expression.identifiers.first().identifier.source, exprType.name)
+                return Optional.empty()
+            }
+            expression.realType = result
         } else {
             MethodNotFoundException().send(ixApi, file, expression.expression, "ree")
         }
@@ -845,7 +867,7 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
                     typeChain.add(pointerCandidate)
                 }
             } else {
-                FieldNotPresentException().send(ixApi, file, identifier, identifier.identifier.source)
+                FieldNotPresentException().send(ixApi, file, identifier, identifier.identifier.source, pointer.name)
                 break
             }
         }

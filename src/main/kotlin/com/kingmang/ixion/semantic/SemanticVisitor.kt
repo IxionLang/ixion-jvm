@@ -315,6 +315,8 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @return Empty optional (handled in type checking phase)
      */
     override fun visitIndexAccess(expression: IndexAccessExpression): Optional<IxType> {
+        expression.left.accept(this)
+        expression.right.accept(this)
         return Optional.empty()
     }
 

@@ -2,23 +2,17 @@ package com.kingmang.ixion.typechecker
 
 import com.kingmang.ixion.runtime.*
 import com.kingmang.ixion.runtime.CollectionUtil.IxListWrapper
-import org.apache.commons.lang3.StringUtils
-import org.apache.commons.lang3.Strings
 
 object TypeResolver {
     fun getValueFromString(value: String, t: BuiltInType): Any? {
-        var value = value
         val result: Any?
         when (t) {
             BuiltInType.BOOLEAN -> result = value.toBoolean()
             BuiltInType.INT -> result = value.toInt()
             BuiltInType.FLOAT -> result = value.toFloat()
             BuiltInType.DOUBLE -> result = value.toDouble()
-            BuiltInType.STRING -> {
-                value = Strings.CS.removeStart(value, "\"")
-                value = Strings.CS.removeEnd(value, "\"")
-                result = value
-            }
+            // LexerImpl already removed delimiters and decoded escapes.
+            BuiltInType.STRING -> result = value
 
             else -> throw AssertionError("Objects not yet implemented!")
         }

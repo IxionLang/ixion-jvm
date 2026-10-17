@@ -223,10 +223,10 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
                     val opcode = when (expression.operator.type) {
                         TokenType.EQUAL -> GeneratorAdapter.NE
                         TokenType.NOTEQUAL -> GeneratorAdapter.EQ
-                        TokenType.LT -> GeneratorAdapter.GT
-                        TokenType.GT -> GeneratorAdapter.LT
-                        TokenType.LE -> GeneratorAdapter.GE
-                        TokenType.GE -> GeneratorAdapter.LE
+                        TokenType.LT -> GeneratorAdapter.GE
+                        TokenType.GT -> GeneratorAdapter.LE
+                        TokenType.LE -> GeneratorAdapter.GT
+                        TokenType.GE -> GeneratorAdapter.LT
                         else -> throw IllegalStateException("Unexpected value: " + expression.operator.type)
                     }
                     ga.ifCmp(cmpType, opcode, falseLabel)
@@ -472,6 +472,11 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
      */
     override fun visitExpressionStmt(statement: ExpressionStatement): Optional<ClassWriter> {
         statement.expression.accept(this)
+        val type = statement.expression.realType
+        if (statement.expression !is AssignExpression && type !is UnknownType && type != BuiltInType.VOID) {
+            val ga = functionStack.peek().ga!!
+            if (Type.getType(type.descriptor).size == 2) ga.pop2() else ga.pop()
+        }
         return Optional.empty()
     }
 
@@ -487,37 +492,33 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
         val startLabel = Label()
         val endLabel = Label()
 
-        if (statement.expression is IdentifierExpression) {
-            ga!!.mark(startLabel)
-            statement.expression.accept(this)
-        } else {
-            statement.expression.accept(this)
-            statement.localExprIndex = ga!!.newLocal(IteratorType)
-            funcType.localMap["______"] = statement.localExprIndex
-            ga.storeLocal(statement.localExprIndex, IteratorType)
-            ga.mark(startLabel)
-            ga.loadLocal(statement.localExprIndex)
+        // Evaluate the iterable once and keep a distinct iterator for every loop.
+        statement.expression.accept(this)
+        if (statement.expression.realType is ListType) {
+            ga!!.checkCast(ListWrapperType)
+            ga.invokeVirtual(ListWrapperType, Method("iterator", "()Ljava/util/Iterator;"))
         }
-
+        val iteratorIndex = ga!!.newLocal(IteratorType)
+        ga.storeLocal(iteratorIndex, IteratorType)
+        ga.mark(startLabel)
+        ga.loadLocal(iteratorIndex, IteratorType)
         ga.invokeInterface(IteratorType, Method("hasNext", "()Z"))
         ga.visitJumpInsn(Opcodes.IFEQ, endLabel)
-
-        if (statement.expression is IdentifierExpression) {
-            statement.expression.accept(this)
-        } else {
-            ga.loadLocal(statement.localExprIndex)
-        }
+        ga.loadLocal(iteratorIndex, IteratorType)
         ga.invokeInterface(IteratorType, Method("next", "()Ljava/lang/Object;"))
 
-        val elementType: BuiltInType = when (val exprType = statement.expression.realType) {
-            is ListType -> exprType.contentType as BuiltInType
+        val elementType = when (val exprType = statement.expression.realType) {
+            is ListType -> exprType.contentType
             else -> BuiltInType.INT
         }
-
-        elementType.doUnboxing(ga)
+        if (elementType is BuiltInType) {
+            elementType.doUnboxing(ga)
+        } else {
+            ga.checkCast(Type.getType(elementType.descriptor))
+        }
         statement.localExprIndex = ga.newLocal(Type.getType(elementType.descriptor))
         funcType.localMap[statement.name.source] = statement.localExprIndex
-        funcType.ga!!.storeLocal(statement.localExprIndex, Type.getType(elementType.descriptor))
+        ga.storeLocal(statement.localExprIndex, Type.getType(elementType.descriptor))
 
         statement.block.accept(this)
 
@@ -664,12 +665,28 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
     }
 
     /**
-     * Обрабатывает доступ по индексу. В данный момент не реализовано.
+     * Генерирует чтение элемента списка или односимвольной строки по индексу.
      * @param expression Выражение доступа по индексу
-     * @return Выбрасывает NotImplementedException
+     * @return Пустой Optional
      */
     override fun visitIndexAccess(expression: IndexAccessExpression): Optional<ClassWriter> {
-        throw NotImplementedException("method not implemented")
+        val ga = functionStack.peek().ga!!
+        expression.left.accept(this)
+        if (expression.left.realType == BuiltInType.STRING) {
+            expression.right.accept(this)
+            ga.dup()
+            ga.push(1)
+            ga.math(GeneratorAdapter.ADD, Type.INT_TYPE)
+            ga.invokeVirtual(Type.getType(String::class.java), Method("substring", "(II)Ljava/lang/String;"))
+        } else {
+            ga.checkCast(ListWrapperType)
+            ga.invokeVirtual(ListWrapperType, Method("list", "()Ljava/util/ArrayList;"))
+            expression.right.accept(this)
+            ga.invokeVirtual(ArrayListType, Method("get", "(I)Ljava/lang/Object;"))
+            val type = expression.realType
+            if (type is BuiltInType) type.doUnboxing(ga) else ga.checkCast(Type.getType(type.descriptor))
+        }
+        return Optional.empty()
     }
 
     /**
@@ -853,7 +870,7 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
         val ga = functionStack.peek().ga!!
         expression.expression.accept(this)
         if (expression.realType is BuiltInType) {
-            ga.visitInsn(Opcodes.DUP)
+            if (Type.getType(expression.realType.descriptor).size == 2) ga.dup2() else ga.dup()
             (expression.realType as BuiltInType).pushOne(ga)
             val op: Int = when (expression.operator.type) {
                 TokenType.PLUSPLUS -> (expression.realType as BuiltInType).addOpcode
@@ -863,7 +880,10 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
 
             ga.visitInsn(op)
             if (expression.expression is IdentifierExpression) {
-                ga.storeLocal(functionStack.peek().localMap[expression.expression.identifier.source]!!)
+                val function = functionStack.peek()
+                val name = expression.expression.identifier.source
+                val local = function.localMap[name]
+                if (local != null) ga.storeLocal(local) else ga.storeArg(function.argMap[name]!!)
             }
         } else {
             exit("postfix only works with builtin types", 49)

@@ -1,0 +1,21 @@
+use <std>
+
+type Token = struct {
+    kind : int
+}
+
+type Wrapper = struct {
+    token : Token
+}
+
+pub def main() {
+    var token = Token(1)
+    if token.kind == 1 {
+        std::println("OK")
+    }
+    token.kind = 2
+    var wrapper = Wrapper(token)
+    std::println(wrapper.token.kind)
+    var tokens = [token]
+    std::println(tokens[0].kind)
+}

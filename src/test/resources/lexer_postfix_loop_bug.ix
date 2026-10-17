@@ -1,0 +1,28 @@
+use <std>
+
+def increment(value : int) : int {
+    var before = value++
+    return before + value
+}
+
+pub def main() {
+    var cursor = 0
+    while cursor < 2 {
+        cursor++
+    }
+    std::println(cursor)
+    var before = cursor--
+    std::println(before)
+    while cursor > 0 {
+        cursor--
+    }
+    std::println(cursor)
+    var decimal = 0.0d
+    while decimal < 2.0d {
+        decimal++
+    }
+    std::println(decimal)
+    std::println(decimal--)
+    std::println(decimal)
+    std::println(increment(3))
+}

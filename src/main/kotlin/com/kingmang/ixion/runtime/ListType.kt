@@ -16,7 +16,7 @@ data class ListType(val contentType: IxType) : IxType {
         get() = null
 
     override val descriptor: String?
-        get() = "Ljava/util/List;"
+        get() = "Lcom/kingmang/ixion/runtime/CollectionUtil\$IxListWrapper;"
 
     override val internalName: String?
         get() = null
@@ -31,7 +31,7 @@ data class ListType(val contentType: IxType) : IxType {
         get() = Opcodes.ARETURN
 
     override val typeClass: Class<*>
-        get() = MutableList::class.java
+        get() = CollectionUtil.IxListWrapper::class.java
 
     override fun hashCode(): Int {
         return Objects.hash(contentType)

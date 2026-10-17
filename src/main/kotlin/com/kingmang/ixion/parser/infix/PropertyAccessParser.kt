@@ -1,6 +1,5 @@
 package com.kingmang.ixion.parser.infix
 
-import com.kingmang.ixion.ast.EnumAccessExpression
 import com.kingmang.ixion.ast.Expression
 import com.kingmang.ixion.ast.IdentifierExpression
 import com.kingmang.ixion.ast.PropertyAccessExpression
@@ -13,17 +12,8 @@ class PropertyAccessParser : InfixParselet {
     override fun parse(parser: Parser, left: Expression, token: Token): Expression {
         val pos = parser.pos
 
-        if (left is IdentifierExpression) {
-            val enumValueToken = parser.consume(TokenType.IDENTIFIER, "Expected enum value after '.'")
-            return EnumAccessExpression(
-                pos,
-                left,
-                IdentifierExpression(parser.pos, enumValueToken)
-            )
-        }
-
         val identifiers = ArrayList<IdentifierExpression>()
-        var i = parser.consume()
+        var i = parser.consume(TokenType.IDENTIFIER, "Expected field name after dot.")
         identifiers.add(IdentifierExpression(parser.pos, i))
 
         while (parser.peek().type == TokenType.DOT) {

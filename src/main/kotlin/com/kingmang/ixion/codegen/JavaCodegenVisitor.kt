@@ -165,10 +165,13 @@ class JavaCodegenVisitor(private val ixApi: IxApi, private val source: IxFile) :
     }
 
     override fun visitIndexAccess(expression: IndexAccessExpression): Optional<String> {
+        val stringIndex = expression.left.realType == BuiltInType.STRING
+        if (stringIndex) print("String.valueOf(")
         expression.left.accept(this)
-        print(".get(")
+        print(if (stringIndex) ".charAt(" else ".get(")
         expression.right.accept(this)
         print(")")
+        if (stringIndex) print(")")
         return Optional.empty()
     }
 

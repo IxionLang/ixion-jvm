@@ -17,7 +17,7 @@ class IdentifierParser : PrefixParselet {
             token = Token(TokenType.IDENTIFIER, pos.line, pos.col, token.source + "::" + nextToken.source)
         }
 
-        if (parser.peek().type == TokenType.LBRACK) {
+        if (parser.peek().type == TokenType.LBRACK && parser.lookAhead(1).type == TokenType.RBRACK) {
             parser.consume()
             parser.consume(TokenType.RBRACK, "Expect ']' to close list constructor.")
             return EmptyListExpression(pos, token)

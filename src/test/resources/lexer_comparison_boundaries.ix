@@ -1,0 +1,14 @@
+use <std>
+
+pub def main() {
+    std::println(0 < 0)
+    std::println(0 <= 0)
+    std::println(0 > 0)
+    std::println(0 >= 0)
+    std::println(1 < 2)
+    std::println(2 > 1)
+    std::println(2 <= 1)
+    std::println(1 >= 2)
+    std::println(2.0d < 2.0d)
+    std::println(2.0d >= 2.0d)
+}

@@ -1,0 +1,6 @@
+use <std>
+
+pub def main() {
+    std::println("\u0022a\u0022")
+    std::println("\u0022")
+}

@@ -1,6 +1,5 @@
 package com.kingmang.ixion.runtime
 
-import com.kingmang.ixion.exception.Panic
 import kotlin.Pair
 import java.util.*
 import java.util.function.BiConsumer
@@ -90,26 +89,12 @@ class CollectionUtil private constructor() {
         val list: ArrayList<*>,
         @get:JvmName("name")
         val name: String
-    ) : Iterable<Any?>, Iterator<Any?> {
-
-        private var currentIndex = 0
+    ) : Iterable<Any?> {
 
         constructor(name: String) : this(ArrayList<Any?>(), name)
 
         @Nonnull
-        override fun iterator(): Iterator<Any?> {
-            currentIndex = 0
-            return this
-        }
-
-        override fun hasNext(): Boolean = currentIndex < list.size
-
-        override fun next(): Any? {
-            if (!hasNext()) {
-                Panic("no such element").send()
-            }
-            return list[currentIndex++]
-        }
+        override fun iterator(): Iterator<Any?> = list.iterator()
 
         override fun toString(): String = list.toString()
     }

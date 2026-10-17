@@ -1,0 +1,20 @@
+use <std>
+
+def numbers() : int[] {
+    return [10, 20, 30]
+}
+
+pub def main() {
+    var source = "abc"
+    std::println(source[0])
+    std::println(source[1 + 1])
+    std::println(("xyz")[1])
+    std::println(numbers()[1])
+    var matrix = [[1, 2], [3, 4]]
+    std::println(matrix[1][0])
+    var cursor = 0
+    std::println(source[cursor++])
+    std::println(cursor)
+    var empty = int[]
+    std::println(empty)
+}
