@@ -1,0 +1,169 @@
+use <std>
+use <strings>
+
+type TokenType = int
+
+type Token = struct {
+    typo : TokenType
+    name : string
+    start : int
+    end : int
+}
+
+def char_at(source : string, index : int) : string {
+    if index < 0 || index >= std::len(source) {
+        return ""
+    }
+    return source[index]
+}
+
+def contains(value : string, choices : string[]) : bool {
+    for choice : choices {
+        if strings::equals(value, choice) {
+            return true
+        }
+    }
+    return false
+}
+
+def is_digit(value : string) : bool {
+    return contains(value, ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"])
+}
+
+def is_alpha(value : string) : bool {
+    return contains(strings::toLowerCase(value), ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "_"])
+}
+
+def next_token(source : string, start : int) : Token {
+    var cursor = start
+    var current = char_at(source, cursor)
+    var next = char_at(source, cursor + 1)
+    var text = ""
+
+    if strings::equals(current, "") {
+        return Token(9, "", start, start)
+    }
+
+    if contains(current, [" ", "\t", "\r", "\n"]) {
+        return Token(0, current, start, start + 1)
+    }
+
+    if strings::equals(current + next, "//") {
+        cursor = cursor + 2
+        current = char_at(source, cursor)
+        while strings::equals(current, "") == false && strings::equals(current, "\n") == false {
+            cursor++
+            current = char_at(source, cursor)
+        }
+        return Token(0, "", start, cursor)
+    }
+
+    if strings::equals(current + next, "/*") {
+        cursor = cursor + 2
+        current = char_at(source, cursor)
+        while strings::equals(current, "") == false {
+            if strings::equals(current + char_at(source, cursor + 1), "*/") {
+                return Token(0, "", start, cursor + 2)
+            }
+            cursor++
+            current = char_at(source, cursor)
+        }
+        return Token(8, "Unterminated comment", start, cursor)
+    }
+
+    if is_alpha(current) {
+        while is_alpha(current) || is_digit(current) {
+            text = text + current
+            cursor++
+            current = char_at(source, cursor)
+        }
+        if contains(text, ["case", "for", "while", "if", "else", "return", "struct", "enum", "def", "type", "const", "var", "pub", "use", "new", "lambda", "true", "false"]) {
+            return Token(2, text, start, cursor)
+        }
+        return Token(1, text, start, cursor)
+    }
+
+    if is_digit(current) {
+        while is_digit(current) {
+            text = text + current
+            cursor++
+            current = char_at(source, cursor)
+        }
+        var kind = 3
+        if strings::equals(current, ".") && is_digit(char_at(source, cursor + 1)) {
+            kind = 4
+            text = text + current
+            cursor++
+            current = char_at(source, cursor)
+            while is_digit(current) {
+                text = text + current
+                cursor++
+                current = char_at(source, cursor)
+            }
+        }
+        return Token(kind, text, start, cursor)
+    }
+
+    if strings::equals(current, "\u0022") {
+        cursor++
+        current = char_at(source, cursor)
+        while strings::equals(current, "") == false {
+            if strings::equals(current, "\u0022") {
+                return Token(5, text, start, cursor + 1)
+            }
+            if strings::equals(current, "\n") || strings::equals(current, "\r") {
+                return Token(8, "Newline in string", start, cursor)
+            }
+            if strings::equals(current, "\u005c") {
+                cursor++
+                current = char_at(source, cursor)
+                if strings::equals(current, "n") {
+                    current = "\n"
+                } else if strings::equals(current, "t") {
+                    current = "\t"
+                } else if strings::equals(current, "r") {
+                    current = "\r"
+                } else if contains(current, ["\u0022", "\u005c"]) == false {
+                    return Token(8, "Invalid string escape", start, cursor)
+                }
+            }
+            text = text + current
+            cursor++
+            current = char_at(source, cursor)
+        }
+        return Token(8, "Unterminated string", start, cursor)
+    }
+
+    if strings::equals(current + next + char_at(source, cursor + 2), "...") {
+        return Token(7, "...", start, start + 3)
+    }
+    if contains(current + next, ["==", "!=", "<=", ">=", "&&", "||", "++", "--", "+=", "-=", "*=", "/=", "%=", "^=", "**", "=>", "::", ".."]) {
+        return Token(6, current + next, start, start + 2)
+    }
+    if contains(current, ["+", "-", "*", "/", "%", "=", "<", ">", "!", "|", "^"]) {
+        return Token(6, current, start, start + 1)
+    }
+    if contains(current, ["(", ")", "{", "}", "[", "]", ",", ":", "."]) {
+        return Token(7, current, start, start + 1)
+    }
+    return Token(8, "Unexpected character: " + current, start, start + 1)
+}
+
+def lex(source : string) {
+    var cursor = 0
+    var running = true
+    while running {
+        var token = next_token(source, cursor)
+        if token.typo != 0 {
+            std::println(token)
+        }
+        if token.typo == 8 || token.typo == 9 {
+            running = false
+        }
+        cursor = token.end
+    }
+}
+
+pub def main() {
+    lex("var x = 42 + 3.5 // ok\nx >= 2")
+}

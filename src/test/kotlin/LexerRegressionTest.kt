@@ -41,7 +41,7 @@ class LexerRegressionTest {
 
     @Test
     fun lexer_demo() {
-        val actual = runProgram("src/main/resources/test.ix")
+        val actual = runProgram("src/test/resources/lexer.ix")
         assertEquals("""
             Token[typo=2, name=var, start=0, end=3]
             Token[typo=1, name=x, start=4, end=5]

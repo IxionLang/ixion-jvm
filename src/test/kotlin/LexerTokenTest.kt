@@ -16,7 +16,7 @@ class LexerTokenTest {
 
     @BeforeAll
     fun compileLexer() {
-        val name = IxApi().compile(System.getProperty("user.dir"), "src/main/resources/test.ix")
+        val name = IxApi().compile(System.getProperty("user.dir"), "src/test/resources/lexer.ix")
         loader = URLClassLoader(arrayOf(File(".out").toURI().toURL()), javaClass.classLoader)
         nextToken = loader.loadClass(name).getMethod("_next_token", String::class.java, Int::class.javaPrimitiveType)
     }
