@@ -5,8 +5,7 @@ Multi-paradigm compiled programming language for the jvm platform.
 </div>
 
 
-Русская документация: [руководство для начинающих](docs/ru.md),
-[ADT и сопоставление](docs/adt.ru.md), [неизменяемые списки](docs/lists.ru.md).
+Русская документация: [руководство для начинающих](docs/ru.md)
 
 > [!IMPORTANT]
 > Before installing the language, install JDK.
