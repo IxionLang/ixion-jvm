@@ -68,7 +68,7 @@ abstract class IxException protected constructor(
                 buffer.append(logSource)
             }
 
-            ixApi.errorData!!.add(Data(code, buffer.toString(), line, pos.col))
+            ixApi.errorData!!.add(Data(code, buffer.toString(), pos.line, pos.col))
         } catch (e: IOException) {
             e.printStackTrace()
         }

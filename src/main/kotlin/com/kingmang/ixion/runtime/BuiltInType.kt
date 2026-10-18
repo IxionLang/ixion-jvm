@@ -266,9 +266,9 @@ enum class BuiltInType(
         init {
             widenings[BOOLEAN]  = -1
             widenings[CHAR]     = 0
-            widenings[INT]      = 0
-            widenings[FLOAT]    = 1
-            widenings[DOUBLE]   = 2
+            widenings[INT]      = 1
+            widenings[FLOAT]    = 2
+            widenings[DOUBLE]   = 3
             widenings[STRING]   = 10
         }
 

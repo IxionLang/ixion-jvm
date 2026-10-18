@@ -1,0 +1,13 @@
+// Documentation helper: ./gradlew -I docs/run-ixion.gradle runIxion --args="hello.ix"
+gradle.projectsEvaluated {
+    def project = gradle.rootProject
+    project.tasks.register('runIxion', JavaExec) {
+        group = 'application'
+        description = 'Compile and run an Ixion source file (see docs/ru.md).'
+        dependsOn project.tasks.named('classes')
+        classpath = project.sourceSets.main.runtimeClasspath
+        mainClass = 'com.kingmang.ixion.Ixion'
+        standardInput = System.in
+        workingDir = project.projectDir
+    }
+}

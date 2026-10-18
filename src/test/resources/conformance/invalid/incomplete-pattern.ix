@@ -1,0 +1,6 @@
+def describe(value: Option[bool]): string {
+    return case value {
+        Option::Some(true) => "yes",
+        Option::None => "absent",
+    }
+}

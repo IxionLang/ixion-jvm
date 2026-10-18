@@ -57,6 +57,7 @@ tasks.withType(KotlinCompile).configureEach {
 }
 
 test {
+    inputs.file("docs/ru.md")
     useJUnitPlatform()
 }
 

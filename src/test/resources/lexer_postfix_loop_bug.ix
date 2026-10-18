@@ -1,8 +1,9 @@
 use <std>
 
 def increment(value : int) : int {
-    var before = value++
-    return before + value
+    var local = value
+    var before = local++
+    return before + local
 }
 
 pub def main() {

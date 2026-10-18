@@ -32,6 +32,7 @@ data class LambdaType(
         get() = false
 
     fun erasedApplyDescriptor(): String {
+        if (parameters.size > 4) return "([Ljava/lang/Object;)Ljava/lang/Object;"
         val args = "Ljava/lang/Object;".repeat(parameters.size)
         return "($args)Ljava/lang/Object;"
     }

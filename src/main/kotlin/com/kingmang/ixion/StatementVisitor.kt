@@ -13,7 +13,6 @@ interface StatementVisitor<R> {
     fun visitFunctionStmt(statement: DefStatement): R
     fun visitIf(statement: IfStatement): R
     fun visitUse(statement: UseStatement): R
-    fun visitMatch(statement: CaseStatement): R
     fun visitParameterStmt(statement: ParameterStatement): R
     fun visitReturnStmt(statement: ReturnStatement): R
     fun visitStruct(statement: StructStatement): R

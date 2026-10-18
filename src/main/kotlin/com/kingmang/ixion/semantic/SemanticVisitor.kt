@@ -13,6 +13,8 @@ import com.kingmang.ixion.lexer.TokenType.Companion.isKeyword
 import com.kingmang.ixion.modules.Modules.getExports
 import com.kingmang.ixion.modules.Modules.modules
 import com.kingmang.ixion.runtime.*
+import com.kingmang.ixion.types.DeclarationId
+import com.kingmang.ixion.types.DeclarationKind
 import com.kingmang.ixion.runtime.ixfunction.IxFunction0
 import com.kingmang.ixion.runtime.ixfunction.IxFunction1
 import com.kingmang.ixion.runtime.ixfunction.IxFunction2
@@ -43,6 +45,44 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @param statement The statement to visit
      * @return Optional containing the type if applicable, empty otherwise
      */
+    override fun visitUnit(expression: UnitExpression): Optional<IxType> {
+        expression.realType = UnitType
+        return Optional.of(UnitType)
+    }
+    override fun visitTuple(expression: TupleExpression): Optional<IxType> {
+        expression.elements.forEach { it.accept(this) }
+        return Optional.empty()
+    }
+    override fun visitTypeApplication(expression: TypeApplicationExpression): Optional<IxType> = Optional.empty()
+    override fun visitUpdate(expression: UpdateExpression): Optional<IxType> {
+        expression.base.accept(this)
+        expression.fields.forEach { it.second.accept(this) }
+        return Optional.empty()
+    }
+    override fun visitBlockExpression(expression: BlockExpression): Optional<IxType> {
+        val previous = currentContext
+        expression.block.context.parent = previous
+        currentContext = expression.block.context
+        expression.block.accept(this)
+        expression.result?.accept(this)
+        currentContext = previous
+        return Optional.empty()
+    }
+    override fun visitCaseExpression(expression: CaseExpression): Optional<IxType> {
+        expression.subject.accept(this)
+        val previous = currentContext
+        for (branch in expression.branches) {
+            branch.context.parent = previous
+            for (binding in branch.pattern.bindings()) branch.context.addVariable(binding.source, UnknownType())
+            currentContext = branch.context
+            branch.guard?.accept(this)
+            branch.body.block.accept(this)
+            branch.body.result?.accept(this)
+        }
+        currentContext = previous
+        return Optional.empty()
+    }
+
     override fun visit(statement: Statement): Optional<IxType> {
         return statement.accept(this)
     }
@@ -53,8 +93,10 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @return Empty optional as type aliases don't produce values
      */
     override fun visitTypeAlias(statement: TypeAliasStatement): Optional<IxType> {
-        val type: Optional<IxType> = statement.typeStmt.accept(this)
-        currentContext!!.addVariable(statement.identifier.source, type.orElseThrow())
+        if (currentContext !== rootContext) {
+            val type = statement.typeStmt.accept(this).orElseThrow()
+            currentContext!!.addType(statement.identifier.source, type)
+        }
         return Optional.empty()
     }
 
@@ -72,8 +114,8 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
             if (mut == Mutability.IMMUTABLE) {
                 MutabilityException().send(ixApi, file, expression.left, expression.left.identifier.source)
             }
-        } else if (expression.left is PropertyAccessExpression) {
-            // Property assignment - handled in type checking phase
+        } else if (expression.left is PropertyAccessExpression || expression.left is IndexAccessExpression) {
+            // Data mutation is diagnosed in the type checking phase.
         } else {
             ImplementationException().send(
                 ixApi,
@@ -113,15 +155,17 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @return Empty optional
      */
     override fun visitBlockStmt(statement: BlockStatement): Optional<IxType> {
-        var returned = false
-        for (stmt in statement.statements) {
-            stmt!!.accept(this)
-            if (!returned) {
+        val previous = currentContext
+        if (statement.context !== previous) statement.context.parent = previous
+        currentContext = statement.context
+        try {
+            var returned = false
+            for (stmt in statement.statements.filterNotNull()) {
+                if (returned) UnreachableException().send(ixApi, file, stmt)
+                stmt.accept(this)
                 if (stmt is ReturnStatement) returned = true
-            } else {
-                UnreachableException().send(ixApi, file, stmt)
             }
-        }
+        } finally { currentContext = previous }
         return Optional.empty()
     }
 
@@ -216,43 +260,21 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @return Optional containing the function type definition
      */
     override fun visitFunctionStmt(statement: DefStatement): Optional<IxType> {
-        val name = statement.name.source
-        val generics = statement.generics!!.stream().map { it.source }.toList()
-
-        val childEnvironment = statement.body!!.context
-        childEnvironment.parent = currentContext
-
-        // Annotate parameters in the current scope
-        val parameters: MutableList<Pair<String, IxType>> = ArrayList()
-        for (param in statement.parameters!!) {
-            val pt: Optional<IxType> = param.type!!.accept(this)
-            if (pt.isPresent) {
-                val t = pt.get()
-                if (t is UnknownType && generics.contains(t.typeName)) {
-                    val gt = GenericType(t.typeName)
-                    parameters.add(Pair(param.name.source, gt))
-                    childEnvironment.addVariable(param.name.source, gt)
-                } else {
-                    childEnvironment.addVariable(param.name.source, t)
-                    parameters.add(Pair(param.name.source, t))
-                }
-            } else {
-                exit("pt not present", 783)
-            }
+        if (currentContext !== rootContext) {
+            ImplementationException().send(ixApi, file, statement, "Nested function declarations are not supported.")
+            return Optional.empty()
         }
-
-        val funcType = DefType(name, parameters, generics)
-        if (statement.returnType != null) {
-            val ttt: Optional<IxType> = statement.returnType.accept(this)
-            funcType.returnType = ttt.get()
+        val function = rootContext!!.getVariableTyped<DefType>(statement.name.source) ?: return Optional.empty()
+        val child = statement.body!!.context
+        child.parent = rootContext
+        function.generics.forEachIndexed { index, name ->
+            child.addType(name, GenericType(name, function.declarationId, index))
         }
-        currentContext!!.addVariableOrError(ixApi, name, funcType, file, statement)
-
-        currentContext = childEnvironment
+        for ((name, type) in function.parameters) child.addVariableOrError(ixApi, name, type, file, statement)
+        currentContext = child
         statement.body.accept(this)
-
-        currentContext = currentContext!!.parent
-        return Optional.of(funcType)
+        currentContext = rootContext
+        return Optional.of(function)
     }
 
     /**
@@ -280,14 +302,11 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @return Empty optional
      */
     override fun visitIf(statement: IfStatement): Optional<IxType> {
-        val childEnvironment = statement.trueBlock.context
-        childEnvironment.parent = currentContext
-        currentContext = childEnvironment
+        val previous = currentContext
         statement.condition.accept(this)
         statement.trueBlock.accept(this)
         statement.falseStatement?.accept(this)
-
-        currentContext = currentContext!!.parent
+        currentContext = previous
         return Optional.empty()
     }
 
@@ -297,15 +316,7 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @return Empty optional
      */
     override fun visitUse(statement: UseStatement): Optional<IxType> {
-        val requestedImport = statement.stringLiteral.source
-        if (modules.containsKey(requestedImport)) {
-            val ree = getExports(requestedImport)
-            for (ft in ree) {
-                val typeName = ft!!.name
-                this.currentContext!!.addVariableOrError(ixApi, "$requestedImport::$typeName", ft, file, statement)
-            }
-        }
-
+        // Built-in imports and module signatures are registered by DeclarationCollector.
         return Optional.empty()
     }
 
@@ -337,10 +348,6 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @return Empty optional
      */
     override fun visitLiteralList(expression: LiteralListExpression): Optional<IxType> {
-        if (expression.entries.isEmpty()) {
-            ListLiteralIncompleteException().send(ixApi, file, expression)
-        }
-
         for (entry in expression.entries) {
             entry.accept(this)
         }
@@ -352,31 +359,7 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @param statement The match statement
      * @return Empty optional
      */
-    override fun visitMatch(statement: CaseStatement): Optional<IxType> {
-        statement.expression.accept(this)
-        statement.cases.forEach { (keyType: TypeStatement?, pair: Pair<String, BlockStatement>) ->
-            val id: String = pair.first
-            val block: BlockStatement = pair.second
-            keyType!!.accept(this)
 
-            // create environment for case
-            val pt: Optional<IxType> = keyType.accept(this)
-            if (pt.isPresent) {
-                val t = pt.get()
-                statement.types[keyType] = t
-            } else {
-                exit("pt not present", 783)
-            }
-            val childEnvironment = block.context
-            childEnvironment.parent = currentContext
-            childEnvironment.addVariable(id, statement.types[keyType])
-            currentContext = childEnvironment
-            block.accept(this)
-            currentContext = currentContext!!.parent
-        }
-
-        return Optional.empty()
-    }
 
     /**
      * Visits a module access expression (qualified name access)
@@ -474,33 +457,7 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @return Optional containing the struct type definition
      */
     override fun visitStruct(statement: StructStatement): Optional<IxType> {
-        val fieldNames = arrayOfNulls<String>(statement.fields.size)
-        val fieldTypes = arrayOfNulls<IxType>(statement.fields.size)
-
-        val parameters: MutableList<Pair<String, IxType>> = ArrayList()
-        for (i in fieldNames.indices) {
-            val field = statement.fields[i]
-            fieldNames[i] = field.name.source
-            if (isKeyword(fieldNames[i])) {
-                ReservedWordException().send(ixApi, file, statement.fields[i], fieldNames[i])
-            }
-            val fieldT: Optional<IxType> = field.type!!.accept(this)
-            if (fieldT.isPresent) {
-                fieldTypes[i] = fieldT.get()
-                parameters.add(Pair(fieldNames[i]!!, fieldTypes[i]!!))
-            } else {
-                exit("fieldT not present", 429)
-            }
-        }
-        val name = statement.name.source
-        val generics = statement.generics!!.stream().map { it.source }.toList()
-
-        val structType = StructType(name, parameters, generics)
-        structType.qualifiedName = source.fullRelativePath + "$" + name
-        structType.parentName = source.fullRelativePath
-        currentContext!!.addVariableOrError(ixApi, name, structType, file, statement)
-
-        return Optional.of(structType)
+        return Optional.ofNullable(currentContext!!.getType(statement.name.source))
     }
 
     /**
@@ -510,31 +467,8 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @return Optional containing the resolved type
      */
     override fun visitTypeAlias(statement: TypeStatement): Optional<IxType> {
-        var type: IxType?
-        if (statement.next.isEmpty) {
-            val bt = TypeUtils.getFromString(statement.identifier!!.source)
-            type = if (bt != null) {
-                bt
-            } else {
-                currentContext!!.getVariable(statement.identifier.source)
-                    ?: UnknownType(statement.identifier.source)
-            }
-            if (statement.listType) {
-                type = ListType(type!!)
-            }
-        } else {
-            val path = StringBuilder(statement.identifier!!.source)
-            var ptr: Optional<TypeStatement> = statement.next
-            while (ptr.isPresent) {
-                path.append(".").append(ptr.get().identifier!!.source)
-                ptr = ptr.get().next
-            }
-            type = Objects.requireNonNullElse(
-                currentContext!!.getVariableTyped<StructType>(path.toString()),
-                UnknownType(path.toString())
-            )
-        }
-        return Optional.of(type!!)
+        return Optional.of(com.kingmang.ixion.typechecker.TypeSyntax.resolve(statement,
+            { name, _ -> currentContext!!.getType(name) ?: UnknownType(name) }, {}))
     }
 
     /**
@@ -543,7 +477,7 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @return Optional containing the union type definition
      */
     override fun visitUnionType(statement: UnionTypeStatement): Optional<IxType> {
-        val union = UnionType(
+        val union = UnionType.of(
             statement.types.stream()
                 .map<IxType?> { type: TypeStatement? -> type!!.accept(this).orElseThrow() }
                 .collect(Collectors.toSet())
@@ -558,11 +492,14 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @return Empty optional
      */
     override fun visitVariable(statement: VariableStatement): Optional<IxType> {
+        if (currentContext === rootContext && statement.mutability.type == TokenType.VARIABLE) {
+            FeatureException().send(ixApi, file, statement, "mutation.module_var: use const at module scope")
+        }
         val t: Optional<IxType> = statement.expression.accept(this)
         val exprType: IxType = t.orElseGet(Supplier { UnknownType() })
 
         val type: IxType = if (statement.type.isPresent) {
-            visitTypeAlias(statement.type.get()).orElseGet(Supplier { UnknownType() })
+            statement.type.get().accept(this).orElseGet(Supplier { UnknownType() })
         } else {
             exprType
         }
@@ -602,10 +539,7 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
             2 -> IxFunction2::class.java
             3 -> IxFunction3::class.java
             4 -> IxFunction4::class.java
-            else -> {
-                ImplementationException().send(ixApi, file, expression, "Lambdas support up to 4 parameters.")
-                IxFunction4::class.java
-            }
+            else -> com.kingmang.ixion.runtime.ixfunction.IxFunctionN::class.java
         }
     }
 }

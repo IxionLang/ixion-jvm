@@ -23,13 +23,9 @@ object TypeUtils {
     }
 
     fun getMethodDescriptor(parameters: MutableCollection<Pair<String?, IxType?>?>, returnType: IxType): String {
-        val parametersDescriptor =
-            parameters
-                .stream()
-                .map<String?> { parameter: Pair<String?, IxType?>? -> parameter!!.second!!.descriptor }
-                .collect(Collectors.joining("", "(", ")"))
-        val returnDescriptor = returnType.descriptor
-        return parametersDescriptor + returnDescriptor
+        return com.kingmang.ixion.codegen.JvmTypeLayout.methodDescriptor(
+            parameters.map { SemanticTypes.of(it!!.second!!) }, SemanticTypes.of(returnType)
+        )
     }
 
     fun getFromToken(tokenType: TokenType): BuiltInType {

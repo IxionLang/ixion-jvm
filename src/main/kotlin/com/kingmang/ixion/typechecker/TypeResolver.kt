@@ -7,6 +7,7 @@ object TypeResolver {
     fun getValueFromString(value: String, t: BuiltInType): Any? {
         val result: Any?
         when (t) {
+            BuiltInType.CHAR -> result = value.single()
             BuiltInType.BOOLEAN -> result = value.toBoolean()
             BuiltInType.INT -> result = value.toInt()
             BuiltInType.FLOAT -> result = value.toFloat()
@@ -21,80 +22,21 @@ object TypeResolver {
 
     @JvmStatic
     fun typesMatch(par: IxType, arg: IxType): Boolean {
-        // union
-        when {
-            par is UnionType && arg is UnionType -> return par.types.containsAll(arg.types) && arg.types.containsAll(par.types)
-            par is UnionType && par.types.contains(arg) -> return true
+        // Reflection compatibility belongs to the external boundary, not language types.
+        if (par is ExternalType && arg is ExternalType) {
+            val expected = par.foundClass ?: return false
+            val actual = arg.foundClass ?: return false
+            return expected.isAssignableFrom(actual)
         }
-
-        // any
-        val parTypeClass = par.typeClass
-        val argTypeClass = arg.typeClass
-        if ((parTypeClass != null && parTypeClass == Any::class.java) ||
-            (argTypeClass != null && argTypeClass == Any::class.java)
-        ) {
-            return true
+        if (par is ExternalType && arg is LambdaType) {
+            return par.foundClass?.isAssignableFrom(arg.functionalInterface) == true
         }
-
-        // builtin
-        if (par is BuiltInType && arg is BuiltInType) {
-            if (par == arg) return true
-            if (par.isNumeric && arg.isNumeric) {
-                return BuiltInType.widen(par, arg) == par
-            }
-            return false
+        // Lists cross native boundaries only as the immutable wrapper or an opaque Object.
+        if (par is ExternalType && arg is ListType) {
+            return par.foundClass == IxListWrapper::class.java ||
+                par.foundClass == Any::class.java
         }
-
-        // list
-        if (isList(par) && isList(arg)) {
-            val parContentType = getContentType(par)
-            if (parContentType === BuiltInType.ANY)
-                return true
-            val argContentType = getContentType(arg)
-            if (argContentType === BuiltInType.ANY)
-                return true
-            return typesMatch(parContentType, argContentType)
-        }
-
-        return when {
-            // struct
-            arg is StructType   && par is StructType      -> arg.parameters == par.parameters && arg.name == par.name
-            par is LambdaType   && arg is LambdaType      -> {
-                if (par.parameters.size != arg.parameters.size) {
-                    return false
-                }
-                for (i in par.parameters.indices) {
-                    if (!typesMatch(par.parameters[i].second, arg.parameters[i].second)) {
-                        return false
-                    }
-                }
-                typesMatch(par.returnType, arg.returnType)
-            }
-            par is ExternalType && arg is LambdaType      -> par.typeClass!!.isAssignableFrom(arg.functionalInterface)
-            par is LambdaType   && arg is ExternalType    -> arg.typeClass!!.isAssignableFrom(par.functionalInterface)
-            // external
-            par is ExternalType && arg is ExternalType    -> {
-                val parClass = par.typeClass
-                val argClass = arg.typeClass
-                when {
-                    parClass == null || argClass == null -> par.name == arg.name
-                    else -> parClass.isAssignableFrom(argClass)
-                }
-            }
-            // other
-            isList(arg)     && par is ExternalType -> par.typeClass == IxListWrapper::class.java
-            isList(par)     && arg is ExternalType -> arg.typeClass == IxListWrapper::class.java
-            else -> false
-        }
-    }
-
-    private fun isList(type: IxType): Boolean {
-        return type.name == "java.util.List" || type is ListType
-    }
-
-    private fun getContentType(type: IxType): IxType {
-        if (type is ListType)
-            return type.contentType
-        return BuiltInType.ANY
+        if (par is ExternalType && par.foundClass == Any::class.java) return arg !== BuiltInType.VOID
+        return com.kingmang.ixion.types.TypeRelations.isAssignable(SemanticTypes.of(par), SemanticTypes.of(arg))
     }
 }

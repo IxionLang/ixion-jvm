@@ -3,6 +3,12 @@ package com.kingmang.ixion
 import com.kingmang.ixion.ast.*
 
 interface ExprVisitor<R> {
+    fun visitUnit(expression: UnitExpression): R
+    fun visitTuple(expression: TupleExpression): R
+    fun visitTypeApplication(expression: TypeApplicationExpression): R
+    fun visitUpdate(expression: UpdateExpression): R
+    fun visitBlockExpression(expression: BlockExpression): R
+    fun visitCaseExpression(expression: CaseExpression): R
     fun visitAssignExpr(expression: AssignExpression): R
     fun visitBad(expression: BadExpression): R
     fun visitBinaryExpr(expression: BinaryExpression): R

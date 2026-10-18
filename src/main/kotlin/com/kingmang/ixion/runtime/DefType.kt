@@ -1,7 +1,8 @@
 package com.kingmang.ixion.runtime
 
 import com.kingmang.ixion.api.IxFile
-import com.kingmang.ixion.ast.Expression
+import com.kingmang.ixion.types.DeclarationId
+import com.kingmang.ixion.types.DeclarationKind
 import com.kingmang.ixion.typechecker.TypeUtils
 import org.objectweb.asm.commons.GeneratorAdapter
 
@@ -12,21 +13,25 @@ class DefType : StructType {
     var returnType: IxType = BuiltInType.VOID
     var ga: GeneratorAdapter? = null
     var glue: Boolean = false
+    var jvmDescriptor: String? = null
+    var reifiedNative: Boolean = false
     var hasReturn2: Boolean = false
     var isPrefixed: Boolean = false
     var owner: String? = null
     var bridgeVoidToObject: Boolean = false
+    var reifiedArgumentIndex: Int = -1
 
-    var specializations: MutableList<MutableMap<String, IxType>> = ArrayList()
-
-    var currentSpecialization: MutableMap<String, IxType>? = null
     @JvmField
     var external: IxFile? = null
 
-    constructor(name: String, parameters: MutableList<Pair<String, IxType>>) : super(
+    constructor(
+        name: String, parameters: MutableList<Pair<String, IxType>>,
+        declarationId: DeclarationId = DeclarationId("", name, DeclarationKind.FUNCTION)
+    ) : super(
         name,
         parameters,
-        ArrayList<String>()
+        ArrayList<String>(),
+        declarationId
     ) {
         this.name = name
     }
@@ -34,35 +39,10 @@ class DefType : StructType {
     constructor(
         name: String,
         parameters: MutableList<Pair<String, IxType>>,
-        generics: MutableList<String>
-    ) : super(name, parameters, generics) {
+        generics: MutableList<String>,
+        declarationId: DeclarationId = DeclarationId("", name, DeclarationKind.FUNCTION)
+    ) : super(name, parameters, generics, declarationId) {
         this.name = name
-    }
-
-    fun buildParametersFromSpecialization(specialization: MutableMap<String, IxType>): MutableList<Pair<String, IxType>> {
-        val p = ArrayList<Pair<String, IxType>>()
-        for (pair in parameters) {
-            val pt = pair.second
-            if (pt is GenericType) {
-                p.add(Pair(pair.first, specialization[pt.key]!!))
-            } else {
-                p.add(pair)
-            }
-        }
-        return p
-    }
-
-    fun buildSpecialization(arguments: MutableList<Expression>): MutableMap<String, IxType> {
-        val argTypes = arguments.map { ex: Expression? -> ex!!.realType }
-        val specialization = HashMap<String, IxType>()
-        for (i in parameters.indices) {
-            val p = parameters[i]
-            val pt = p.second
-            if (pt is GenericType) {
-                specialization[pt.key] = argTypes[i]
-            }
-        }
-        return specialization
     }
 
     override val defaultValue: Any?
@@ -94,9 +74,4 @@ class DefType : StructType {
         return "def $name(${TypeUtils.parameterString(parameters)}) $returnType"
     }
 
-    companion object {
-        fun getSpecializedType(specialization: MutableMap<String, IxType>, key: String?): IxType? {
-            return specialization[key]
-        }
-    }
 }

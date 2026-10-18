@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Tag
 import java.io.File
 import java.net.URLClassLoader
 
@@ -20,6 +21,7 @@ class LexerRegressionTest {
     }
 
     @Test
+    @Tag("legacy-expression-assignment")
     fun postfix_values_and_loop_stack_balance() {
         assertOutput("lexer_postfix_loop_bug.ix", "2\n2\n0\n2.0\n2.0\n1.0\n7")
     }

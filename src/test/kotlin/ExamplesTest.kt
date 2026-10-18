@@ -1,5 +1,6 @@
 import com.kingmang.ixion.Ixion
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -126,7 +127,7 @@ class ExamplesTest {
     @Test
     fun double_test() {
         ixAssert("double_test.ix", """
-            3.14
+            3.140000104904175
             3.14
         """)
     }

@@ -9,6 +9,7 @@ import java.io.File
 
 class Context {
     private val variables = LinkedMap<String?, IxType?>()
+    private val types = LinkedMap<String, IxType>()
     private val mutability: MutableMap<String?, Mutability?> = HashMap()
 
     @JvmField
@@ -26,6 +27,14 @@ class Context {
             addVariable(name, type)
         }
     }
+
+    fun addType(name: String, type: IxType) {
+        types[name] = type
+    }
+
+    fun getType(name: String): IxType? = types[name] ?: parent?.getType(name)
+
+    fun hasLocalVariable(name: String): Boolean = variables.containsKey(name)
 
     fun getVariable(name: String): IxType? {
         return when {

@@ -1,24 +1,21 @@
 package com.kingmang.ixion.runtime
 
+import com.kingmang.ixion.types.DeclarationId
+import com.kingmang.ixion.types.DeclarationKind
 import org.objectweb.asm.Opcodes
 import java.io.Serializable
-import java.util.stream.Collectors
 
 open class StructType(
     override var name: String,
     open val parameters: MutableList<Pair<String, IxType>>,
-    open val generics: MutableList<String>
+    open val generics: MutableList<String>,
+    val declarationId: DeclarationId = DeclarationId("", name, DeclarationKind.STRUCT)
 ) : IxType, Serializable {
     open var qualifiedName: String? = null
     open var parentName: String? = null
 
-    override fun equals(other: Any?): Boolean {
-        return when (other) {
-            null -> false
-            is StructType -> this.name == other.name
-            else -> false
-        }
-    }
+    override fun equals(other: Any?): Boolean =
+        other is StructType && other !is AppliedStructType && this !is AppliedStructType && declarationId == other.declarationId
 
     override val defaultValue: Any?
         get() = null
@@ -49,20 +46,9 @@ open class StructType(
         return "struct"
     }
 
-    override fun toString(): String {
-        return "type $name= struct {" +
-                parameters
-                    .stream()
-                    .map<String?> { m: Pair<String?, IxType?>? -> m!!.second!!.name }
-                    .collect(Collectors.joining(", ")) + "}"
-    }
+    // Printing a recursive declaration must not expand its fields recursively.
+    override fun toString(): String =
+        (if (declarationId.module.isEmpty()) "" else "${declarationId.module}::") + declarationId.name
 
-    override fun hashCode(): Int {
-        var result = name.hashCode()
-        result = 31 * result + parameters.hashCode()
-        result = 31 * result + generics.hashCode()
-        result = 31 * result + (qualifiedName?.hashCode() ?: 0)
-        result = 31 * result + (parentName?.hashCode() ?: 0)
-        return result
-    }
+    override fun hashCode(): Int = declarationId.hashCode()
 }

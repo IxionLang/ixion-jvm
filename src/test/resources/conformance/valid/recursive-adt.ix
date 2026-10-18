@@ -1,0 +1,17 @@
+use <std>
+
+type Expr = enum {
+    Number(value: int),
+    Add(left: Expr, right: Expr),
+}
+
+def eval(value: Expr): int {
+    return case value {
+        Expr::Number(number) => number,
+        Expr::Add(left, right) => eval(left) + eval(right),
+    }
+}
+
+def main() {
+    std::println(eval(Expr::Add(Expr::Number(1), Expr::Number(2))))
+}

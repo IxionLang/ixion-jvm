@@ -88,9 +88,9 @@ class LexerTokenTest {
         var cursor = 0
         repeat(source.length + 2) {
             val value = nextToken.invoke(null, source, cursor)
-            val type = value.javaClass
-            val token = Token(type.getField("typo").getInt(value), type.getField("name").get(value) as String,
-                type.getField("start").getInt(value), type.getField("end").getInt(value))
+            val product = value as com.kingmang.ixion.runtime.IxDataValue
+            val token = Token(product.ixField(0) as Int, product.ixField(1) as String,
+                product.ixField(2) as Int, product.ixField(3) as Int)
             assertEquals(cursor, token.start)
             assertTrue(token.end in cursor..source.length)
             if (token.kind != 0) result.add(token)

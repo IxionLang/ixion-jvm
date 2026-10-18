@@ -8,7 +8,8 @@ import com.kingmang.ixion.lexer.Token
 class TypeAliasStatement(
     pos: Position?,
     val identifier: Token,
-    val typeStmt: TypeStatement
+    val typeStmt: TypeStatement,
+    val generics: List<Token> = emptyList()
 ) : Statement(pos),
     PublicAccess {
 

@@ -8,7 +8,9 @@ import com.kingmang.ixion.lexer.Token
 class EnumStatement(
     pos: Position?,
     val name: Token,
-    val values: MutableList<Token?>?
+    val values: MutableList<Token?>?,
+    val generics: List<Token> = emptyList(),
+    val variants: List<VariantDeclaration> = values.orEmpty().filterNotNull().map { VariantDeclaration(it, emptyList()) }
 ) : Statement(pos), PublicAccess {
     override fun <R> accept(visitor: StatementVisitor<R>): R {
         return visitor.visitEnum(this)
@@ -18,3 +20,4 @@ class EnumStatement(
         return name.source
     }
 }
+data class VariantDeclaration(val name: Token, val fields: List<ParameterStatement>)

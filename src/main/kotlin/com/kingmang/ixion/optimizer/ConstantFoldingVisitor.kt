@@ -9,6 +9,13 @@ import com.kingmang.ixion.runtime.BuiltInType
 import kotlin.math.pow
 
 class ConstantFoldingVisitor : Visitor<Any> {
+    // Match plans refer to checked syntax; retain these nodes and their annotations.
+    override fun visitUnit(expression: UnitExpression): Any = expression
+    override fun visitTuple(expression: TupleExpression): Any = expression
+    override fun visitTypeApplication(expression: TypeApplicationExpression): Any = expression
+    override fun visitUpdate(expression: UpdateExpression): Any = expression
+    override fun visitBlockExpression(expression: BlockExpression): Any = expression
+    override fun visitCaseExpression(expression: CaseExpression): Any = expression
     fun optimize(file: IxFile) {
         for (i in file.statements.indices) {
             file.statements[i] = rewriteStatement(file.statements[i])
@@ -76,19 +83,7 @@ class ConstantFoldingVisitor : Visitor<Any> {
 
     override fun visitUse(statement: UseStatement): Any = statement
 
-    override fun visitMatch(statement: CaseStatement): Any {
-        val rewrittenCases = LinkedHashMap<TypeStatement, Pair<String, BlockStatement>>()
-        for ((typeStmt, pair) in statement.cases) {
-            rewrittenCases[typeStmt] = Pair(pair.first, rewriteStatement(pair.second) as BlockStatement)
-        }
-        val rewritten = CaseStatement(
-            statement.position,
-            rewriteExpression(statement.expression),
-            rewrittenCases
-        )
-        rewritten.types.putAll(statement.types)
-        return rewritten
-    }
+
 
     override fun visitParameterStmt(statement: ParameterStatement): Any = statement
 
@@ -151,6 +146,7 @@ class ConstantFoldingVisitor : Visitor<Any> {
         val rewritten = CallExpression(expression.position, item, args)
         rewritten.foreign = expression.foreign
         rewritten.realType = expression.realType
+        rewritten.specialization = expression.specialization
         return rewritten
     }
 
@@ -228,16 +224,7 @@ class ConstantFoldingVisitor : Visitor<Any> {
         return rewritten
     }
 
-    override fun visitLambda(expression: LambdaExpression): Any {
-        val rewritten = LambdaExpression(
-            expression.position,
-            expression.parameters,
-            expression.returnType,
-            rewriteStatement(expression.body) as BlockStatement
-        )
-        rewritten.realType = expression.realType
-        return rewritten
-    }
+    override fun visitLambda(expression: LambdaExpression): Any = expression
 
     override fun visitEnumAccess(expression: EnumAccessExpression): Any {
         val rewritten = EnumAccessExpression(

@@ -12,7 +12,7 @@ class IdentifierParser : PrefixParselet {
         var token = token
         val pos = parser.pos
 
-        if (parser.match(TokenType.MODULE)) {
+        while (parser.match(TokenType.MODULE)) {
             val nextToken = parser.consume(TokenType.IDENTIFIER, "Expected identifier after module separator `::`.")
             token = Token(TokenType.IDENTIFIER, pos.line, pos.col, token.source + "::" + nextToken.source)
         }

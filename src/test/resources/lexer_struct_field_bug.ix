@@ -13,9 +13,9 @@ pub def main() {
     if token.kind == 1 {
         std::println("OK")
     }
-    token.kind = 2
+    token = token with { kind = 2 }
     var wrapper = Wrapper(token)
     std::println(wrapper.token.kind)
     var tokens = [token]
-    std::println(tokens[0].kind)
+    std::println(case tokens[0] { Option::Some(value) => value.kind, Option::None => -1, })
 }

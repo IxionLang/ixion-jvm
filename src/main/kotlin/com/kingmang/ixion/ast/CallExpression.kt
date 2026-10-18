@@ -10,6 +10,7 @@ class CallExpression(
     val arguments: MutableList<Expression>
 ) : Expression(pos) {
     var foreign: Token? = null
+    var specialization: Map<String, com.kingmang.ixion.runtime.IxType> = emptyMap()
 
     override fun <R> accept(visitor: ExprVisitor<R>): R {
         return visitor.visitCall(this)

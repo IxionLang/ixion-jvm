@@ -70,10 +70,10 @@ class Ixion {
     @Throws(IOException::class, InterruptedException::class)
     fun compileJavaToBytecode(projectRoot: String, basePath: String?) {
         val javaFile = Path.of(projectRoot, IxionConstant.OUT_DIR, "$basePath.java").toString()
-        val classpath = IxionConstant.OUT_DIR + File.pathSeparator + "target/classes"
+        val classpath = IxionConstant.OUT_DIR + File.pathSeparator + System.getProperty("java.class.path")
 
         val command: MutableList<String?> = ArrayList()
-        command.add("javac")
+        command.add(Path.of(System.getProperty("java.home"), "bin", "javac").toString())
         command.add("-d")
         command.add(IxionConstant.OUT_DIR)
         command.add("-cp")
@@ -93,9 +93,9 @@ class Ixion {
     @Throws(IOException::class, InterruptedException::class)
     fun executeJava(className: String?) {
         val processBuilder = ProcessBuilder(
-            "java",
+            Path.of(System.getProperty("java.home"), "bin", "java").toString(),
             "-cp",
-            IxionConstant.OUT_DIR + File.pathSeparator + "target/classes",
+            IxionConstant.OUT_DIR + File.pathSeparator + System.getProperty("java.class.path"),
             className
         )
         processBuilder.inheritIO()
@@ -123,11 +123,11 @@ class Ixion {
 
         if (javaFiles != null) {
             val command: MutableList<String?> = ArrayList()
-            command.add("javac")
+            command.add(Path.of(System.getProperty("java.home"), "bin", "javac").toString())
             command.add("-d")
             command.add(IxionConstant.OUT_DIR)
             command.add("-cp")
-            command.add("${IxionConstant.OUT_DIR}${File.pathSeparator}target/classes")
+            command.add(IxionConstant.OUT_DIR + File.pathSeparator + System.getProperty("java.class.path"))
 
             for (javaFile in javaFiles) {
                 command.add(javaFile.absolutePath)
@@ -233,7 +233,7 @@ class Ixion {
 
     @Throws(Exception::class)
     private fun executeBytecodeAndGetOutput(className: String?): String? {
-//        var classpath = new URL[]{new File(IxionConstant.OUT_DIR + File.pathSeparator + "target/classes").toURI().toURL()};
+//        var classpath = new URL[]{new File(IxionConstant.OUT_DIR + File.pathSeparator + System.getProperty("java.class.path")).toURI().toURL()};
         val classpath: Array<URL?> = arrayOf(File(IxionConstant.OUT_DIR).toURI().toURL())
         URLClassLoader(classpath).use { loader ->
             var output: String? = ""

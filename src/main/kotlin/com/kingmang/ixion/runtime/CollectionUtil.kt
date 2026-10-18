@@ -78,24 +78,26 @@ class CollectionUtil private constructor() {
 
         @JvmStatic
         fun getMethodDescriptor(parameters: List<Pair<String, IxType>>, returnType: IxType): String {
-            val parametersDescriptor = parameters.joinToString("", "(", ")") { it.second.descriptor.toString() }
-            val returnDescriptor = returnType.descriptor
-            return parametersDescriptor + returnDescriptor
+            return com.kingmang.ixion.codegen.JvmTypeLayout.methodDescriptor(
+                parameters.map { com.kingmang.ixion.typechecker.SemanticTypes.of(it.second) },
+                com.kingmang.ixion.typechecker.SemanticTypes.of(returnType)
+            )
         }
     }
 
-    data class IxListWrapper(
-        @get:JvmName("list")
-        val list: ArrayList<*>,
-        @get:JvmName("name")
-        val name: String
-    ) : Iterable<Any?> {
+    /** Copies incoming storage and never exposes a mutable collection or iterator. */
+    class IxListWrapper(elements: Collection<*>, val name: String) : Iterable<Any?> {
+        private val storage: List<Any?> = Collections.unmodifiableList(ArrayList(elements))
 
-        constructor(name: String) : this(ArrayList<Any?>(), name)
+        constructor(name: String) : this(emptyList<Any?>(), name)
+
+        fun size(): Int = storage.size
+        fun element(index: Int): Any? = storage[index]
+        fun tail(index: Int): IxListWrapper = IxListWrapper(storage.drop(index), name)
 
         @Nonnull
-        override fun iterator(): Iterator<Any?> = list.iterator()
+        override fun iterator(): Iterator<Any?> = storage.iterator()
 
-        override fun toString(): String = list.toString()
+        override fun toString(): String = storage.toString()
     }
 }

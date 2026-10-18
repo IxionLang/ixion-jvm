@@ -1,18 +1,16 @@
 package com.kingmang.ixion.api
 
 import com.kingmang.ixion.api.Debugger.debug
-import com.kingmang.ixion.ast.ExportStatement
 import com.kingmang.ixion.ast.UseStatement
 import com.kingmang.ixion.codegen.BytecodeGenerator
 import com.kingmang.ixion.codegen.JavaCodegenVisitor
-import com.kingmang.ixion.api.PublicAccess
 import com.kingmang.ixion.semantic.SemanticVisitor
+import com.kingmang.ixion.semantic.DeclarationCollector
 import com.kingmang.ixion.exception.IxException
 import com.kingmang.ixion.exception.IxException.CompilerError
 import com.kingmang.ixion.exception.ModuleNotFoundException
 import com.kingmang.ixion.modules.Modules
 import com.kingmang.ixion.optimizer.ConstantFoldingVisitor
-import com.kingmang.ixion.runtime.DefType
 import com.kingmang.ixion.runtime.IxionExitException
 import com.kingmang.ixion.typechecker.TypeCheckVisitor
 import org.apache.commons.io.FilenameUtils
@@ -54,61 +52,34 @@ data class IxApi(
         val entry = parse(projectRoot, relativePath, name)
         IxException.killIfErrors(this, "Correct parser errors before continuing.")
 
-        for (filePath in compilationSet!!.keys) {
-            val source: IxFile = compilationSet[filePath]!!
-            val semanticVisitor = SemanticVisitor(this, source.rootContext, source)
-            source.acceptVisitor(semanticVisitor)
+        analyze(optimize)
 
-            for (stmt in source.statements) {
-                if (stmt is ExportStatement) {
-                    val stmt = stmt.stmt;
-                    if (stmt is PublicAccess) {
-                        val identifier = stmt.identifier()
-                        val type = source.rootContext.getVariable(identifier)
-                        if (type != null) {
-                            source.exports[identifier] = type
-                        }
-                    }
-                }
-            }
-
-            IxException.killIfErrors(this, "Correct syntax errors before type checking can continue.")
-        }
-
-        for (filePath in compilationSet.keys) {
-            val source: IxFile = compilationSet[filePath]!!
-            for (s in source.imports.keys) {
-                val sourceFile = source.imports[s]
-                val exportedMembers = sourceFile!!.exports
-                for (exportedName in exportedMembers.keys) {
-                    val exportedType = exportedMembers[exportedName]
-                    val qualifiedName = sourceFile.name + "::" + exportedName
-                    if (exportedType is DefType) {
-                        exportedType.external = sourceFile
-                    }
-                    source.rootContext.addVariable(qualifiedName, exportedType)
-                }
-            }
-        }
-
-        for (filePath in compilationSet.keys) {
-            val source: IxFile = compilationSet[filePath]!!
-            val typeCheckVisitor = TypeCheckVisitor(this, source.rootContext, source)
-            source.acceptVisitor(typeCheckVisitor)
-
-            IxException.killIfErrors(this, "Correct type errors before compilation can continue.")
-        }
-        if (optimize) {
-            val optimizer = ConstantFoldingVisitor()
-            for (source in compilationSet.values) {
-                optimizer.optimize(source)
-            }
-        }
-        output(compilationSet)
+        output(compilationSet!!)
 
         val base = entry.fullRelativePath
 
         return base.replace("/", ".")
+    }
+
+    /** Shared semantic pipeline for JVM bytecode, Java source and diagnostics. */
+    fun analyze(optimize: Boolean = false) {
+        val sources = compilationSet!!.values.toList()
+        val declarations = DeclarationCollector(this, sources)
+        declarations.collect()
+        IxException.killIfErrors(this, "Correct declaration errors before checking bodies.")
+        for (source in sources) {
+            source.acceptVisitor(SemanticVisitor(this, source.rootContext, source))
+        }
+        IxException.killIfErrors(this, "Correct semantic errors before type checking.")
+        declarations.bindExports()
+        declarations.validatePublicSignatures()
+        IxException.killIfErrors(this, "Correct exported signature errors before type checking.")
+        for (source in sources) {
+            val checker = TypeCheckVisitor(this, source.rootContext, source)
+            source.statements.forEach { checker.visit(it) }
+        }
+        IxException.killIfErrors(this, "Correct type errors before compilation can complete.")
+        if (optimize) sources.forEach { ConstantFoldingVisitor().optimize(it) }
     }
 
     /**
@@ -177,56 +148,9 @@ data class IxApi(
         val entry = parse(projectRoot, relativePath, name)
         IxException.killIfErrors(this, "Correct parser errors before continuing.")
 
-        for (filePath in compilationSet!!.keys) {
-            val source: IxFile = compilationSet[filePath]!!
-            val semanticVisitor = SemanticVisitor(this, source.rootContext, source)
-            source.acceptVisitor(semanticVisitor)
+        analyze(optimize)
 
-            for (stmt in source.statements) {
-                if (stmt is ExportStatement) {
-                    val stmt = stmt.stmt;
-                    if (stmt is PublicAccess) {
-                        val identifier = stmt.identifier()
-                        val type = source.rootContext.getVariable(identifier)
-                        if (type != null) {
-                            source.exports[identifier] = type
-                        }
-                    }
-                }
-            }
-            IxException.killIfErrors(this, "Correct syntax errors before type checking can continue.")
-        }
-
-        for (filePath in compilationSet.keys) {
-            val source: IxFile = compilationSet[filePath]!!
-            for (s in source.imports.keys) {
-                val sourceFile = source.imports[s]
-                val exportedMembers = sourceFile!!.exports
-                for (exportedName in exportedMembers.keys) {
-                    val exportedType = exportedMembers[exportedName]
-                    val qualifiedName = sourceFile.name + "::" + exportedName
-                    if (exportedType is DefType) {
-                        exportedType.external = sourceFile
-                    }
-                    source.rootContext.addVariable(qualifiedName, exportedType)
-                }
-            }
-        }
-
-        for (filePath in compilationSet.keys) {
-            val source: IxFile = compilationSet[filePath]!!
-            val typeCheckVisitor = TypeCheckVisitor(this, source.rootContext, source)
-            source.acceptVisitor(typeCheckVisitor)
-            IxException.killIfErrors(this, "Correct type errors before compilation can continue.")
-        }
-        if (optimize) {
-            val optimizer = ConstantFoldingVisitor()
-            for (source in compilationSet.values) {
-                optimizer.optimize(source)
-            }
-        }
-
-        outputJava(compilationSet)
+        outputJava(compilationSet!!)
 
         val base = entry.fullRelativePath
         return base.replace("/", ".")
@@ -298,55 +222,7 @@ data class IxApi(
         val entry = parse(projectRoot, relativePath, name)
         IxException.killIfErrors(this, "Correct parser errors before continuing.")
 
-        for (filePath in compilationSet!!.keys) {
-            val source: IxFile = compilationSet[filePath]!!
-            val semanticVisitor = SemanticVisitor(this, source.rootContext, source)
-            source.acceptVisitor(semanticVisitor)
-
-            for (stmt in source.statements) {
-                if (stmt is ExportStatement) {
-                    val exportedStatement = stmt.stmt
-                    if (exportedStatement is PublicAccess) {
-                        val identifier = exportedStatement.identifier()
-                        val type = source.rootContext.getVariable(identifier)
-                        if (type != null) {
-                            source.exports[identifier] = type
-                        }
-                    }
-                }
-            }
-            IxException.killIfErrors(this, "Correct syntax errors before type checking can continue.")
-        }
-
-        for (filePath in compilationSet.keys) {
-            val source: IxFile = compilationSet[filePath]!!
-            for (s in source.imports.keys) {
-                val sourceFile = source.imports[s]
-                val exportedMembers = sourceFile!!.exports
-                for (exportedName in exportedMembers.keys) {
-                    val exportedType = exportedMembers[exportedName]
-                    val qualifiedName = sourceFile.name + "::" + exportedName
-                    if (exportedType is DefType) {
-                        exportedType.external = sourceFile
-                    }
-                    source.rootContext.addVariable(qualifiedName, exportedType)
-                }
-            }
-        }
-
-        for (filePath in compilationSet.keys) {
-            val source: IxFile = compilationSet[filePath]!!
-            val typeCheckVisitor = TypeCheckVisitor(this, source.rootContext, source)
-            source.acceptVisitor(typeCheckVisitor)
-            IxException.killIfErrors(this, "Correct type errors before compilation can continue.")
-        }
-        if (optimize) {
-            val optimizer = ConstantFoldingVisitor()
-            for (source in compilationSet.values) {
-                optimizer.optimize(source)
-            }
-        }
-
+        analyze(optimize)
         val base = entry.fullRelativePath
         return base.replace("/", ".")
     }

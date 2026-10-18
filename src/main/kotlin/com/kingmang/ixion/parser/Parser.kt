@@ -20,6 +20,7 @@ class Parser(private val lexer: Lexer) {
     val prefixParselets: MutableMap<TokenType?, PrefixParselet?> = HashMap()
     val infixParselets: MutableMap<TokenType?, InfixParselet> = HashMap()
     private val mRead: MutableList<Token> = ArrayList<Token>()
+    private var speculativeTokens: MutableList<Token>? = null
 
     /**
      * Constructor for Parser
@@ -48,6 +49,24 @@ class Parser(private val lexer: Lexer) {
         putPrefix(TokenType.LBRACK, LiteralParser(true))
         putPrefix(TokenType.IDENTIFIER, IdentifierParser())
         putPrefix(TokenType.LAMBDA, LambdaParser())
+        putPrefix(TokenType.CASE, object : PrefixParselet {
+            override fun parse(parser: Parser, token: Token): Expression = parser.parseCaseExpression(Position(token.line, token.col))
+        })
+        putInfix(TokenType.WITH, object : InfixParselet {
+            override val precedence: Int get() = 1
+            override fun parse(parser: Parser, left: Expression, token: Token): Expression {
+                parser.consume(TokenType.LBRACE, "Expected '{' after with.")
+                val fields = arrayListOf<Pair<Token, Expression>>()
+                while (!parser.check(TokenType.RBRACE)) {
+                    val name = parser.consume(TokenType.IDENTIFIER, "Expected field name.")
+                    parser.consume(TokenType.ASSIGN, "Expected '=' in update.")
+                    fields.add(name to parser.expression())
+                    if (!parser.match(TokenType.COMMA)) break
+                }
+                parser.consume(TokenType.RBRACE, "Expected '}' after update.")
+                return UpdateExpression(Position(token.line, token.col), left, fields)
+            }
+        })
 
         // Register grouping and function call parsers
         putPrefix(TokenType.LPAREN, GroupingParser())
@@ -126,16 +145,9 @@ class Parser(private val lexer: Lexer) {
      * @return The parsed return statement
      */
     fun parseReturn(): ReturnStatement {
-        val pos = this.pos
-
-        // Handle return with or without expression on same line
-        val expression =
-            if (peek().type != TokenType.RBRACE && peek().line == pos.line) {
-                expression()
-            } else {
-                EmptyExpression(pos)
-            }
-        return ReturnStatement(pos, expression)
+        val pos = Position(peek().line, peek().col)
+        if (check(TokenType.RBRACE) || check(TokenType.EOF)) error(peek(), "Return requires an expression; use return ().")
+        return ReturnStatement(pos, expression())
     }
 
     /**
@@ -145,50 +157,51 @@ class Parser(private val lexer: Lexer) {
     private fun parseTypeAlias(): Statement {
         val pos = this.pos
         val name = consume(TokenType.IDENTIFIER, "Expected type name.")
+        val declaredGenerics = parseTypeParameters()
         consume(TokenType.ASSIGN, "Expected assignment operator.")
-
         if (match(TokenType.STRUCT)) {
-            val generics = ArrayList<Token>()
-            if (match(TokenType.LBRACK)) {
-                var t = consume()
-                generics.add(t)
-                while (check(TokenType.COMMA)) {
-                    consume()
-                    t = consume()
-                    generics.add(t)
-                }
-                consume(TokenType.RBRACK, "Expected closing bracket after struct generics.")
-            }
-
-            consume(TokenType.LBRACE, "Expected opening curly braces before struct body.")
-
-            val parameters: MutableList<ParameterStatement> = ArrayList()
+            // The legacy spelling remains parseable during the staged migration.
+            val generics = if (check(TokenType.LBRACK)) parseTypeParameters() else declaredGenerics
+            consume(TokenType.LBRACE, "Expected '{' before struct fields.")
+            val fields = arrayListOf<ParameterStatement>()
             while (!check(TokenType.RBRACE)) {
-                val parameter = parseParameter()
+                fields.add(parseParameter())
                 optional(TokenType.COMMA)
-                parameters.add(parameter)
             }
-
-            consume(TokenType.RBRACE, "Expected closing curly braces after struct body.")
-
-            return StructStatement(pos, name, parameters, generics)
-        } else if (match(TokenType.ENUM)) {
-            consume(TokenType.LBRACE, "Expected opening curly braces before struct body.")
-
-            val values: MutableList<Token?> = ArrayList<Token?>()
-            while (!check(TokenType.RBRACE)) {
-                val value = consume(TokenType.IDENTIFIER, "Expected enum value.")
-                optional(TokenType.COMMA)
-                values.add(value)
-            }
-
-            consume(TokenType.RBRACE, "Expected opening curly braces before struct body.")
-
-            return EnumStatement(pos, name, values)
+            consume(TokenType.RBRACE, "Expected '}' after struct fields.")
+            return StructStatement(pos, name, fields, generics.toMutableList())
         }
-        val union = parseUnion()
+        if (match(TokenType.ENUM)) {
+            consume(TokenType.LBRACE, "Expected '{' before enum variants.")
+            val variants = arrayListOf<VariantDeclaration>()
+            while (!check(TokenType.RBRACE)) {
+                val variant = consume(TokenType.IDENTIFIER, "Expected variant name.")
+                val fields = arrayListOf<ParameterStatement>()
+                if (match(TokenType.LPAREN)) {
+                    if (check(TokenType.RPAREN)) error(peek(), "Declare a nullary variant without parentheses.")
+                    while (!check(TokenType.RPAREN)) {
+                        fields.add(parseParameter())
+                        if (!match(TokenType.COMMA)) break
+                    }
+                    consume(TokenType.RPAREN, "Expected ')' after variant fields.")
+                }
+                variants.add(VariantDeclaration(variant, fields))
+                if (!match(TokenType.COMMA)) break
+            }
+            consume(TokenType.RBRACE, "Expected '}' after enum variants.")
+            if (variants.isEmpty()) error(name, "An enum must declare at least one variant.")
+            return EnumStatement(pos, name, variants.map { it.name }.toMutableList(), declaredGenerics, variants)
+        }
+        return TypeAliasStatement(pos, name, parseUnion(), declaredGenerics)
+    }
 
-        return TypeAliasStatement(pos, name, union)
+    private fun parseTypeParameters(): List<Token> {
+        if (!match(TokenType.LBRACK)) return emptyList()
+        val names = arrayListOf<Token>()
+        do { names.add(consume(TokenType.IDENTIFIER, "Expected type parameter.")) }
+        while (match(TokenType.COMMA) && !check(TokenType.RBRACK))
+        consume(TokenType.RBRACK, "Expected ']' after type parameters.")
+        return names
     }
 
     /**
@@ -222,8 +235,11 @@ class Parser(private val lexer: Lexer) {
         if (match(TokenType.LPAREN)) {
             if (!check(TokenType.RPAREN)) {
                 do {
-                    parameters.add(parseParameter())
-                } while (match(TokenType.COMMA))
+                    val start = peek()
+                    val name = consume(TokenType.IDENTIFIER, "Expected lambda parameter.")
+                    val type = if (match(TokenType.COLON)) parseUnion() else null
+                    parameters.add(ParameterStatement(Position(start.line, start.col), name, type))
+                } while (match(TokenType.COMMA) && !check(TokenType.RPAREN))
             }
             consume(TokenType.RPAREN, "Expected closing parentheses after lambda parameters.")
         } else {
@@ -241,7 +257,7 @@ class Parser(private val lexer: Lexer) {
         // Parse lambda body - всегда блок
         val body = parseBlock()
 
-        return LambdaExpression(pos, parameters, returnType!!, body)
+        return LambdaExpression(pos, parameters, returnType ?: TypeStatement.voidInstance(pos), body, returnType == null)
     }
 
     /**
@@ -264,17 +280,7 @@ class Parser(private val lexer: Lexer) {
         val pos = this.pos
         val name = consume(TokenType.IDENTIFIER, "Expected function name.")
 
-        val generics = ArrayList<Token>()
-        if (match(TokenType.LBRACK)) {
-            var t = consume()
-            generics.add(t)
-            while (check(TokenType.COMMA)) {
-                consume()
-                t = consume()
-                generics.add(t)
-            }
-            consume(TokenType.RBRACK, "Expected closing bracket after function generics.")
-        }
+        val generics = parseTypeParameters().toMutableList()
 
         consume(TokenType.LPAREN, "Expected opening parentheses after function name.")
 
@@ -282,7 +288,7 @@ class Parser(private val lexer: Lexer) {
         if (!check(TokenType.RPAREN)) {
             do {
                 parameters.add(parseParameter())
-            } while (match(TokenType.COMMA))
+            } while (match(TokenType.COMMA) && !check(TokenType.RPAREN))
         }
 
         consume(TokenType.RPAREN, "Expected closing parentheses after function parameters.")
@@ -294,44 +300,7 @@ class Parser(private val lexer: Lexer) {
 
         val block = parseBlock()
 
-        val func = DefStatement(pos, name, parameters, returnType, block, generics)
-        if (!hasReturnStatement(func.body) && returnType != null) {
-            error(
-                name,
-                "Function must return a value of type '${func.returnType!!.identifier!!.source}'"
-            )
-        }
-        return func
-    }
-
-    private fun hasReturnStatement(stmt: Statement?): Boolean {
-        return when (stmt) {
-            is BlockStatement -> {
-                for (s in stmt.statements) {
-                    if (hasReturnStatement(s)) {
-                        return true
-                    }
-                }
-                false
-            }
-
-            is ReturnStatement -> true
-
-            is IfStatement -> {
-                val thenHasReturn = hasReturnStatement(stmt.trueBlock)
-                val elseHasReturn = stmt.falseStatement != null &&
-                        hasReturnStatement(stmt.falseStatement)
-                thenHasReturn && elseHasReturn
-            }
-
-            is CaseStatement -> {
-                stmt.cases.isNotEmpty() && stmt.cases.values.all { (_, body) ->
-                    hasReturnStatement(body)
-                }
-            }
-
-            else -> false
-        }
+        return DefStatement(pos, name, parameters, returnType, block, generics)
     }
 
     /**
@@ -372,32 +341,150 @@ class Parser(private val lexer: Lexer) {
      * Parses a case (pattern matching) statement
      * @return The parsed case statement
      */
-    private fun parseCase(): Statement {
-        val pos = this.pos
-
-        val expr = expression()
-
-        consume(TokenType.LBRACE, "Expected opening curly braces before case body.")
-        val cases: MutableMap<TypeStatement, kotlin.Pair<String, BlockStatement>> = HashMap()
-
-        while (!check(TokenType.RBRACE)) {
-            val type = parseUnion()
-            val s = consume(TokenType.IDENTIFIER, "Expected name for reified value before `=>` in case statement.")
-
-            consume(TokenType.ARROW, "Expected `=>` after type before expression in case statement.")
-            val caseBody: BlockStatement?
-            if (check(TokenType.LBRACE)) {
-                caseBody = parseBlock()
+    fun parseCaseExpression(pos: Position): CaseExpression {
+        val subject = expression()
+        consume(TokenType.LBRACE, "Expected '{' before case branches.")
+        val branches = arrayListOf<CaseBranch>()
+        while (!check(TokenType.RBRACE) && notAtEnd()) {
+            val pattern = parsePattern()
+            val guard = if (match(TokenType.IF)) expression() else null
+            consume(TokenType.ARROW, "Expected '=>' after pattern.")
+            val body = if (check(TokenType.LBRACE)) {
+                val block = parseBlock()
+                val last = block.statements.lastOrNull()
+                val result = if (last is ExpressionStatement && last.expression !is AssignExpression) {
+                    block.statements.removeAt(block.statements.lastIndex)
+                    last.expression
+                } else null
+                BlockExpression(block.position!!, block, result)
+            } else if (match(TokenType.RETURN)) {
+                BlockExpression(pos, BlockStatement(pos, mutableListOf(parseReturn()), Context()), null)
             } else {
-                val stmt = statement()
-                caseBody = BlockStatement(this.pos, mutableListOf(stmt), Context())
+                val value = expression()
+                if (value is AssignExpression) BlockExpression(pos, BlockStatement(pos, mutableListOf(ExpressionStatement(value.position, value)), Context()), null)
+                else BlockExpression(pos, BlockStatement(pos, arrayListOf(), Context()), value)
             }
-            cases[type] = kotlin.Pair(s.source!!, caseBody)
+            branches.add(CaseBranch(pattern, guard, body))
+            // Existing type-match fixtures omit commas; new source should use commas.
+            optional(TokenType.COMMA)
         }
+        consume(TokenType.RBRACE, "Expected '}' after case branches.")
+        return CaseExpression(pos, subject, branches)
+    }
 
-        consume(TokenType.RBRACE, "Expected closing curly braces after case body.")
+    private fun parenthesizedTypePattern(): Pattern? {
+        val consumed = arrayListOf<Token>()
+        val start = peek()
+        var result: Pattern? = null
+        speculativeTokens = consumed
+        try {
+            val type = parseUnion()
+            if (check(TokenType.IDENTIFIER)) {
+                val binding = consume()
+                if (check(TokenType.ARROW) || check(TokenType.IF)) result = TypePattern(Position(start.line, start.col), type, binding)
+            }
+        } catch (_: com.kingmang.ixion.runtime.IxionExitException) {
+            // The same tokens are retried as a tuple/grouping pattern.
+        } finally {
+            speculativeTokens = null
+            if (result == null) mRead.addAll(0, consumed)
+        }
+        return result
+    }
 
-        return CaseStatement(pos, expr, cases)
+    private fun parsePattern(): Pattern {
+        val start = peek()
+        val pos = Position(start.line, start.col)
+        if (check(TokenType.LPAREN) || check(TokenType.NEVER)) parenthesizedTypePattern()?.let {
+            it.end = Position(peek().line, peek().col)
+            return it
+        }
+        val pattern: Pattern = when {
+            match(TokenType.DEFAULT) -> WildcardPattern(pos)
+            match(TokenType.LBRACK) -> {
+                val elements = arrayListOf<Pattern>()
+                var rest: Pattern? = null
+                while (!check(TokenType.RBRACK)) {
+                    if (match(TokenType.RANGE)) {
+                        rest = if (match(TokenType.DEFAULT)) WildcardPattern(pos)
+                            else BindingPattern(consume(TokenType.IDENTIFIER, "Expected rest binding."))
+                        optional(TokenType.COMMA)
+                        break
+                    }
+                    elements.add(parsePattern())
+                    if (!match(TokenType.COMMA)) break
+                }
+                consume(TokenType.RBRACK, "A rest pattern must be last in a list pattern.")
+                ListPattern(pos, elements, rest)
+            }
+            match(TokenType.LPAREN) -> {
+                if (match(TokenType.RPAREN)) LiteralPattern(pos, UnitExpression(pos))
+                else {
+                    val first = parsePattern()
+                    if (!match(TokenType.COMMA)) {
+                        consume(TokenType.RPAREN, "Expected ')'.")
+                        first
+                    } else {
+                        val elements = arrayListOf(first)
+                        while (!check(TokenType.RPAREN)) {
+                            elements.add(parsePattern())
+                            if (!match(TokenType.COMMA)) break
+                        }
+                        consume(TokenType.RPAREN, "Expected ')' after tuple pattern.")
+                        TuplePattern(pos, elements)
+                    }
+                }
+            }
+            start.type in setOf(TokenType.INT, TokenType.FLOAT, TokenType.DOUBLE, TokenType.STRING, TokenType.CHAR, TokenType.TRUE, TokenType.FALSE) || check(TokenType.SUB) -> {
+                val negative = match(TokenType.SUB)
+                val token = consume()
+                if (negative && token.type !in setOf(TokenType.INT, TokenType.FLOAT, TokenType.DOUBLE)) error(token, "Expected negative numeric literal.")
+                LiteralPattern(pos, LiteralExpression(pos, if (negative) Token(token.type, token.line, token.col, "-" + token.source) else token))
+            }
+            else -> {
+                val names = arrayListOf(consume(TokenType.IDENTIFIER, "Expected pattern."))
+                while (match(TokenType.MODULE) || match(TokenType.DOT)) names.add(consume(TokenType.IDENTIFIER, "Expected qualified name."))
+                val args = if (check(TokenType.LBRACK) && lookAhead(1).type != TokenType.RBRACK) parseTypeArguments() else emptyList()
+                var listDepth = 0
+                while (check(TokenType.LBRACK) && lookAhead(1).type == TokenType.RBRACK) { consume(); consume(); listDepth++ }
+                if (match(TokenType.MODULE)) names.add(consume(TokenType.IDENTIFIER, "Expected variant name."))
+                fun named(parts: List<Token>): TypeStatement {
+                    var type = TypeStatement(pos, Token(TokenType.IDENTIFIER, pos.line, pos.col, parts.joinToString("::") { it.source }), Optional.empty(), false, args)
+                    repeat(listDepth) { type = TypeStatement(pos, null, Optional.empty(), false, form = TypeForm.LIST, components = listOf(type)) }
+                    return type
+                }
+                when {
+                    check(TokenType.IDENTIFIER) -> TypePattern(pos, named(names), consume())
+                    match(TokenType.LBRACE) -> {
+                        val fields = arrayListOf<Pair<Token, Pattern>>()
+                        while (!check(TokenType.RBRACE)) {
+                            val field = consume(TokenType.IDENTIFIER, "Expected field name.")
+                            consume(TokenType.COLON, "Expected ':' in field pattern.")
+                            fields.add(field to parsePattern())
+                            if (!match(TokenType.COMMA)) break
+                        }
+                        consume(TokenType.RBRACE, "Expected '}' after struct pattern.")
+                        StructPattern(pos, named(names), fields)
+                    }
+                    names.size > 1 -> {
+                        val fields = arrayListOf<Pattern>()
+                        if (match(TokenType.LPAREN)) {
+                            if (!check(TokenType.RPAREN)) do { fields.add(parsePattern()) }
+                            while (match(TokenType.COMMA) && !check(TokenType.RPAREN))
+                            consume(TokenType.RPAREN, "Expected ')' after constructor pattern.")
+                        }
+                        ConstructorPattern(pos, named(names.dropLast(1)), names.last(), fields)
+                    }
+                    else -> {
+                        if (names.single().source in setOf("int", "float", "double", "string", "char", "bool", "any"))
+                            error(start, "Expected name for reified value before `=>` in case statement.")
+                        BindingPattern(names.single())
+                    }
+                }
+            }
+        }
+        pattern.end = Position(peek().line, peek().col)
+        return pattern
     }
 
     /**
@@ -464,7 +551,6 @@ class Parser(private val lexer: Lexer) {
             match(TokenType.USE) -> parseUse()
             match(TokenType.PUB) -> parsePublic()
             match(TokenType.TYPEALIAS) -> parseTypeAlias()
-            match(TokenType.CASE) -> parseCase()
             match(TokenType.DEF) -> parseFunction()
             match(TokenType.IF) -> parseIf()
             check(TokenType.VARIABLE) || check(TokenType.CONSTANT) -> parseVariable()
@@ -480,48 +566,62 @@ class Parser(private val lexer: Lexer) {
      * Parses a type reference
      * @return The parsed type statement
      */
-    private fun parseType(): TypeStatement {
-        val pos = this.pos
-        val identifier = consume(TokenType.IDENTIFIER, "Expected type name.")
-
-        var listType = false
-        if (match(TokenType.LBRACK)) {
-            listType = true
-            consume(TokenType.RBRACK, "Expected ']' in list type.")
+    fun parseType(): TypeStatement {
+        val token = peek()
+        val pos = Position(token.line, token.col)
+        var type: TypeStatement
+        if (match(TokenType.LPAREN)) {
+            val parts = arrayListOf<TypeStatement>()
+            var tuple = false
+            if (!check(TokenType.RPAREN)) {
+                parts.add(parseUnion())
+                while (match(TokenType.COMMA)) {
+                    tuple = true
+                    if (check(TokenType.RPAREN)) break
+                    parts.add(parseUnion())
+                }
+            }
+            consume(TokenType.RPAREN, "Expected ')' in type.")
+            type = if (match(TokenType.ARROW)) TypeStatement(pos, null, Optional.empty(), false, form = TypeForm.FUNCTION, components = parts, result = parseUnion())
+                else if (parts.size == 1 && !tuple) parts.single()
+                else TypeStatement(pos, null, Optional.empty(), false, form = TypeForm.TUPLE, components = parts)
+        } else {
+            val names = arrayListOf(if (match(TokenType.NEVER)) Token(TokenType.IDENTIFIER, token.line, token.col, "never")
+                else consume(TokenType.IDENTIFIER, "Expected type name."))
+            while (match(TokenType.MODULE) || match(TokenType.DOT)) names.add(consume(TokenType.IDENTIFIER, "Expected qualified type name."))
+            val args = if (check(TokenType.LBRACK) && lookAhead(1).type != TokenType.RBRACK) parseTypeArguments() else emptyList()
+            type = TypeStatement(pos, Token(TokenType.IDENTIFIER, pos.line, pos.col, names.joinToString("::") { it.source }), Optional.empty(), false, args)
         }
-
-        var t: Optional<TypeStatement> = Optional.empty()
-        if (match(TokenType.DOT)) {
-            t = Optional.of(parseType())
+        while (check(TokenType.LBRACK) && lookAhead(1).type == TokenType.RBRACK) {
+            consume(); consume()
+            type = TypeStatement(pos, null, Optional.empty(), false, form = TypeForm.LIST, components = listOf(type))
         }
-
-        return TypeStatement(pos, identifier, t, listType)
+        return type
     }
 
-    /**
-     * Parses a union type (multiple types separated by pipes)
-     * @return The parsed union type statement
-     */
-    private fun parseUnion(): TypeStatement {
-        val pos = this.pos
-        val types: MutableList<TypeStatement> = ArrayList()
-        do {
-            if (check(TokenType.PIPE)) consume()
-            val type = parseType()
-            types.add(type)
-        } while (check(TokenType.PIPE))
+    fun parseUnion(): TypeStatement {
+        val pos = Position(peek().line, peek().col)
+        val types = arrayListOf(parseType())
+        while (match(TokenType.PIPE)) types.add(parseType())
+        return if (types.size == 1) types.single() else UnionTypeStatement(pos, types)
+    }
 
-        var t: TypeStatement = UnionTypeStatement(pos, types)
-        if (types.size == 1) {
-            t = TypeStatement(
-                pos,
-                types.first().identifier,
-                Optional.empty<TypeStatement>(),
-                types.first().listType
-            )
+    fun parseTypeArguments(): List<TypeStatement> {
+        consume(TokenType.LBRACK, "Expected '[' before type arguments.")
+        val types = arrayListOf<TypeStatement>()
+        do { types.add(parseUnion()) } while (match(TokenType.COMMA) && !check(TokenType.RBRACK))
+        consume(TokenType.RBRACK, "Expected ']' after type arguments.")
+        return types
+    }
+
+    fun isTypeApplication(): Boolean {
+        var depth = 1
+        var offset = 0
+        while (depth > 0 && lookAhead(offset).type != TokenType.EOF) {
+            when (lookAhead(offset).type) { TokenType.LBRACK -> depth++; TokenType.RBRACK -> depth--; else -> Unit }
+            offset++
         }
-
-        return t
+        return depth == 0 && lookAhead(offset).type in setOf(TokenType.LPAREN, TokenType.MODULE)
     }
 
     /**
@@ -549,7 +649,7 @@ class Parser(private val lexer: Lexer) {
      */
     fun consume(): Token {
         lookAhead()
-        return mRead.removeFirst()
+        return mRead.removeFirst().also { speculativeTokens?.add(it) }
     }
 
     /**

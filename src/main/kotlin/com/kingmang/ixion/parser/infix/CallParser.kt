@@ -15,7 +15,7 @@ class CallParser : InfixParselet {
         if (!parser.match(TokenType.RPAREN)) {
             do {
                 args.add(parser.expression())
-            } while (parser.match(TokenType.COMMA))
+            } while (parser.match(TokenType.COMMA) && !parser.check(TokenType.RPAREN))
             parser.optional(TokenType.COMMA)
             parser.consume(TokenType.RPAREN, "Expected closing ')' after function call.")
         }

@@ -1,0 +1,10 @@
+use <std>
+
+type Point = struct { x: int, y: int }
+
+def main() {
+    const before = Point(1, 2)
+    const after = before with { x = 10 }
+    std::println(before.x)
+    std::println(after.x)
+}

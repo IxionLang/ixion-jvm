@@ -1,6 +1,12 @@
 package com.kingmang.ixion.runtime
 
-data class GenericType(val key: String) : IxType {
+data class GenericType(
+    val key: String,
+    val owner: com.kingmang.ixion.types.DeclarationId = com.kingmang.ixion.types.DeclarationId(
+        "", "<unscoped>", com.kingmang.ixion.types.DeclarationKind.FUNCTION
+    ),
+    val index: Int = 0
+) : IxType {
     override val defaultValue: Any?
         get() = null
 
@@ -11,13 +17,13 @@ data class GenericType(val key: String) : IxType {
         get() = key
 
     override val loadVariableOpcode: Int
-        get() = throw IllegalCallerException("Don't use ALOAD on Generic Types directly. Specialization required.")
+        get() = org.objectweb.asm.Opcodes.ALOAD
 
     override val name: String?
-        get() = null
+        get() = key
 
     override val returnOpcode: Int
-        get() = throw IllegalCallerException("Don't use ARETURN on Generic Types directly. Specialization required.")
+        get() = org.objectweb.asm.Opcodes.ARETURN
 
     override val typeClass: Class<*>
         get() = Any::class.java

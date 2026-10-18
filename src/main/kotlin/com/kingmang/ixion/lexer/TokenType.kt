@@ -4,6 +4,8 @@ import java.util.*
 
 enum class TokenType {
     CASE("case"),
+    WITH("with"),
+    NEVER("never"),
     FOR("for"),
     WHILE("while"),
     IF("if"),
@@ -104,6 +106,9 @@ enum class TokenType {
         private val matcher = HashMap<String?, TokenType>()
         private val KEYWORD_TYPES: MutableSet<TokenType> = EnumSet.of(
             CASE,
+            WITH,
+            NEVER,
+            LAMBDA,
             FOR,
             WHILE,
             IF,

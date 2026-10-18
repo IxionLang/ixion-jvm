@@ -1,0 +1,13 @@
+use <std>
+
+def map[A, B](value: A, f: (A) => B): B {
+    return f(value)
+}
+
+def main() {
+    const doubl: (int) => int =
+        lambda (n) { return n * 2 }
+
+    const answer = map(21, doubl)
+    std::println(answer)
+}

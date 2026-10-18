@@ -10,7 +10,11 @@ open class TypeStatement(
     pos: Position?,
     val identifier: Token?,
     val next: Optional<TypeStatement>,
-    val listType: Boolean
+    val listType: Boolean,
+    val arguments: List<TypeStatement> = emptyList(),
+    val form: TypeForm = TypeForm.NAME,
+    val components: List<TypeStatement> = emptyList(),
+    val result: TypeStatement? = null
 ) : Statement(pos) {
     override fun <R> accept(visitor: StatementVisitor<R>): R {
         return visitor.visitTypeAlias(this)
@@ -27,3 +31,4 @@ open class TypeStatement(
         }
     }
 }
+enum class TypeForm { NAME, LIST, TUPLE, FUNCTION }

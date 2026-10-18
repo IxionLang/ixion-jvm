@@ -1,0 +1,52 @@
+[
+  {
+    "file": "valid/recursive-adt.ix",
+    "stages": [
+      4,
+      5
+    ],
+    "stdout": "3\n"
+  },
+  {
+    "file": "valid/immutable-update.ix",
+    "stages": [
+      2,
+      3
+    ],
+    "stdout": "1\n10\n"
+  },
+  {
+    "file": "invalid/incomplete-pattern.ix",
+    "stages": [
+      5
+    ],
+    "error": {
+      "category": "match.non_exhaustive",
+      "line": 2
+    }
+  },
+  {
+    "file": "valid/list-aliasing.ix",
+    "stages": [
+      6
+    ],
+    "stdout": "2\n3\n"
+  },
+  {
+    "file": "invalid/field-assignment.ix",
+    "stages": [
+      3
+    ],
+    "error": {
+      "category": "mutation.field",
+      "line": 5
+    }
+  },
+  {
+    "file": "valid/functional-lists.ix",
+    "stages": [
+      6
+    ],
+    "stdout": "10\n4\nabsent\n104\n[1, 2, 3]\n"
+  }
+]
