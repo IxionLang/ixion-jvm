@@ -4,7 +4,7 @@ import org.objectweb.asm.Opcodes
 import java.io.Serializable
 
 class UnknownType : IxType, Serializable {
-	val typeName: String
+    val typeName: String
 
     constructor(typeName: String) {
         this.typeName = typeName

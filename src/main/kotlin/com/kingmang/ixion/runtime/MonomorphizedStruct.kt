@@ -3,7 +3,7 @@ package com.kingmang.ixion.runtime
 import java.util.stream.Collectors
 
 class MonomorphizedStruct(val struct: StructType) : IxType {
-	val resolved: MutableMap<String?, IxType?> = HashMap()
+    val resolved: MutableMap<String?, IxType?> = HashMap()
 
     override val defaultValue: Any?
         get() = struct.defaultValue
