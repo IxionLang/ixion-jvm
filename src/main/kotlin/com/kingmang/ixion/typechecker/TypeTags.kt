@@ -9,6 +9,7 @@ sealed interface TagExpression {
     data class Join(val parts: List<TagExpression>) : TagExpression
     data class Union(val alternatives: List<TagExpression>) : TagExpression
 }
+
 object TypeTags {
     fun expression(type: IxType): TagExpression {
         fun combine(prefix: String, args: List<IxType>, suffix: String) = TagExpression.Join(
@@ -17,20 +18,42 @@ object TypeTags {
             } + TagExpression.Text(suffix))
         return when (type) {
             is GenericType -> TagExpression.Parameter(type.key)
-            is AdtType -> combine("${type.declaration.id.module}::${type.declaration.id.name}" + if (type.arguments.isEmpty()) "" else "[", type.arguments, if (type.arguments.isEmpty()) "" else "]")
-            is AppliedStructType -> combine("${type.declarationId.module}::${type.declarationId.name}[", type.arguments, "]")
+            is AdtType -> combine(
+                "${type.declaration.id.module}::${type.declaration.id.name}" + if (type.arguments.isEmpty()) "" else "[",
+                type.arguments,
+                if (type.arguments.isEmpty()) "" else "]"
+            )
+
+            is AppliedStructType -> combine(
+                "${type.declarationId.module}::${type.declarationId.name}[",
+                type.arguments,
+                "]"
+            )
+
             is StructType -> TagExpression.Text("${type.declarationId.module}::${type.declarationId.name}")
             is TupleType -> combine("(", type.elements, ")")
             is ListType -> TagExpression.Join(listOf(expression(type.contentType), TagExpression.Text("[]")))
-            is LambdaType -> TagExpression.Join(listOf(combine("(", type.parameters.map { it.second }, ")=>"), expression(type.returnType)))
+            is LambdaType -> TagExpression.Join(
+                listOf(
+                    combine("(", type.parameters.map { it.second }, ")=>"),
+                    expression(type.returnType)
+                )
+            )
+
             is UnionType -> TagExpression.Union(type.types.map(::expression))
             is ExternalType -> TagExpression.Text(if (type.foundClass == Any::class.java) "any" else type.name)
-            is BuiltInType -> TagExpression.Text(when (type) { BuiltInType.BOOLEAN -> "bool"; BuiltInType.VOID -> "unit"; else -> type.name.lowercase() })
+            is BuiltInType -> TagExpression.Text(
+                when (type) {
+                    BuiltInType.BOOLEAN -> "bool"; BuiltInType.VOID -> "unit"; else -> type.name.lowercase()
+                }
+            )
+
             UnitType -> TagExpression.Text("unit")
             NeverType -> TagExpression.Text("never")
             else -> TagExpression.Text(type.name ?: "unknown")
         }
     }
+
     fun constant(type: IxType): String {
         fun render(tag: TagExpression): String = when (tag) {
             is TagExpression.Text -> tag.value

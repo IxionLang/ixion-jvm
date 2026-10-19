@@ -10,7 +10,7 @@ object Coercions {
         val type = SemanticTypes.of(expected)
         val source = SemanticTypes.of(actual)
         val target = if (type is com.kingmang.ixion.types.UnionType) TypeRelations.injectionTarget(type, source)
-            else type.takeIf { TypeRelations.isAssignable(it, source) }
+        else type.takeIf { TypeRelations.isAssignable(it, source) }
         requireNotNull(target) { "No unique union injection from $actual to $expected" }
         return expected.types.first { SemanticTypes.of(it) == target }
     }

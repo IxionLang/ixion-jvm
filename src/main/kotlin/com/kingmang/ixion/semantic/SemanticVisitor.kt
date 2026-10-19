@@ -49,16 +49,19 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
         expression.realType = UnitType
         return Optional.of(UnitType)
     }
+
     override fun visitTuple(expression: TupleExpression): Optional<IxType> {
         expression.elements.forEach { it.accept(this) }
         return Optional.empty()
     }
+
     override fun visitTypeApplication(expression: TypeApplicationExpression): Optional<IxType> = Optional.empty()
     override fun visitUpdate(expression: UpdateExpression): Optional<IxType> {
         expression.base.accept(this)
         expression.fields.forEach { it.second.accept(this) }
         return Optional.empty()
     }
+
     override fun visitBlockExpression(expression: BlockExpression): Optional<IxType> {
         val previous = currentContext
         expression.block.context.parent = previous
@@ -68,6 +71,7 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
         currentContext = previous
         return Optional.empty()
     }
+
     override fun visitCaseExpression(expression: CaseExpression): Optional<IxType> {
         expression.subject.accept(this)
         val previous = currentContext
@@ -165,7 +169,9 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
                 stmt.accept(this)
                 if (stmt is ReturnStatement) returned = true
             }
-        } finally { currentContext = previous }
+        } finally {
+            currentContext = previous
+        }
         return Optional.empty()
     }
 
@@ -426,7 +432,11 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
         }
 
         val resolvedReturnType = expression.returnType.accept(this).orElseGet(Supplier { UnknownType() })
-        val lambdaType = LambdaType(parameters, resolvedReturnType, functionalInterfaceByArity(expression.parameters.size, expression))
+        val lambdaType = LambdaType(
+            parameters,
+            resolvedReturnType,
+            functionalInterfaceByArity(expression.parameters.size, expression)
+        )
         expression.realType = lambdaType
 
         currentContext = childEnvironment
@@ -467,8 +477,11 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
      * @return Optional containing the resolved type
      */
     override fun visitTypeAlias(statement: TypeStatement): Optional<IxType> {
-        return Optional.of(com.kingmang.ixion.typechecker.TypeSyntax.resolve(statement,
-            { name, _ -> currentContext!!.getType(name) ?: UnknownType(name) }, {}))
+        return Optional.of(
+            com.kingmang.ixion.typechecker.TypeSyntax.resolve(
+                statement,
+                { name, _ -> currentContext!!.getType(name) ?: UnknownType(name) }, {})
+        )
     }
 
     /**

@@ -35,7 +35,8 @@ import kotlin.Pair
  * Visitor for type checking and validation of AST nodes
  * Ensures type safety and resolves type information throughout the program
  */
-class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Context, ixFile: IxFile) : Visitor<Optional<IxType>> {
+class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Context, ixFile: IxFile) :
+    Visitor<Optional<IxType>> {
     private val file: File = ixFile.file
     private val functionStack = Stack<DefType>()
     private val inferredLambdaReturns = IdentityHashMap<DefType, MutableList<IxType>>()
@@ -51,95 +52,158 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
     }
 
     private var expectedType: IxType? = null
+
     private class CheckFailure : RuntimeException(null, null, false, false)
+
     private fun fail(node: Node, message: kotlin.String): Nothing {
         FeatureException().send(ixApi, file, node, message)
         throw CheckFailure()
     }
+
     private fun check(expression: Expression, expected: IxType? = null): IxType {
-        if (expression is AssignExpression) fail(expression, "assignment.expression: assignment is a statement and has no result")
+        if (expression is AssignExpression) fail(
+            expression,
+            "assignment.expression: assignment is a statement and has no result"
+        )
         val previous = expectedType
         expectedType = expected
-        return try { expression.accept(this).orElseGet { UnknownType() } }
-        catch (_: CheckFailure) { UnknownType() }
-        finally { expectedType = previous }
+        return try {
+            expression.accept(this).orElseGet { UnknownType() }
+        } catch (_: CheckFailure) {
+            UnknownType()
+        } finally {
+            expectedType = previous
+        }
     }
-    private fun resolve(node: TypeStatement): IxType = TypeSyntax.resolve(node,
+
+    private fun resolve(node: TypeStatement): IxType = TypeSyntax.resolve(
+        node,
         { name, syntax -> currentContext.getType(name) ?: fail(syntax, "type.unknown: $name") },
         { message -> fail(node, "type.invalid: $message") })
+
     private fun result(expression: Expression, type: IxType): Optional<IxType> {
         expression.realType = type
         return Optional.of(type)
     }
+
     private fun substitute(type: IxType, parameters: List<GenericType>, arguments: Map<kotlin.String, IxType>): IxType =
         TypeSubstitution.apply(type, parameters.associateWith { arguments[it.key] ?: it })
-    private fun infer(template: IxType, actual: IxType, parameters: List<GenericType>, arguments: MutableMap<kotlin.String, IxType>, fixed: Set<kotlin.String> = emptySet()) {
+
+    private fun infer(
+        template: IxType,
+        actual: IxType,
+        parameters: List<GenericType>,
+        arguments: MutableMap<kotlin.String, IxType>,
+        fixed: Set<kotlin.String> = emptySet()
+    ) {
         when {
             template is GenericType && template in parameters -> {
                 val old = arguments[template.key]
                 if (old == null) arguments[template.key] = actual
-                else if (template.key !in fixed && SemanticTypes.of(old) != SemanticTypes.of(actual)) arguments[template.key] = common(listOf(old, actual))
+                else if (template.key !in fixed && SemanticTypes.of(old) != SemanticTypes.of(actual)) arguments[template.key] =
+                    common(listOf(old, actual))
             }
+
             template is AdtType && actual is AdtType && template.declaration.id == actual.declaration.id ->
-                template.arguments.zip(actual.arguments).forEach { infer(it.first, it.second, parameters, arguments, fixed) }
+                template.arguments.zip(actual.arguments)
+                    .forEach { infer(it.first, it.second, parameters, arguments, fixed) }
+
             template is AppliedStructType && actual is AppliedStructType && template.declarationId == actual.declarationId ->
-                template.arguments.zip(actual.arguments).forEach { infer(it.first, it.second, parameters, arguments, fixed) }
-            template is ListType && actual is ListType -> infer(template.contentType, actual.contentType, parameters, arguments, fixed)
-            template is TupleType && actual is TupleType -> template.elements.zip(actual.elements).forEach { infer(it.first, it.second, parameters, arguments, fixed) }
+                template.arguments.zip(actual.arguments)
+                    .forEach { infer(it.first, it.second, parameters, arguments, fixed) }
+
+            template is ListType && actual is ListType -> infer(
+                template.contentType,
+                actual.contentType,
+                parameters,
+                arguments,
+                fixed
+            )
+
+            template is TupleType && actual is TupleType -> template.elements.zip(actual.elements)
+                .forEach { infer(it.first, it.second, parameters, arguments, fixed) }
+
             template is LambdaType && actual is LambdaType -> {
-                template.parameters.zip(actual.parameters).forEach { infer(it.first.second, it.second.second, parameters, arguments, fixed) }
+                template.parameters.zip(actual.parameters)
+                    .forEach { infer(it.first.second, it.second.second, parameters, arguments, fixed) }
                 infer(template.returnType, actual.returnType, parameters, arguments, fixed)
             }
         }
     }
+
     private fun containsParameter(type: IxType, parameters: List<GenericType>): Boolean = when (type) {
         is GenericType -> type in parameters
         is AdtType -> type.arguments.any { containsParameter(it, parameters) }
         is AppliedStructType -> type.arguments.any { containsParameter(it, parameters) }
         is ListType -> containsParameter(type.contentType, parameters)
         is TupleType -> type.elements.any { containsParameter(it, parameters) }
-        is LambdaType -> type.parameters.any { containsParameter(it.second, parameters) } || containsParameter(type.returnType, parameters)
+        is LambdaType -> type.parameters.any {
+            containsParameter(
+                it.second,
+                parameters
+            )
+        } || containsParameter(type.returnType, parameters)
+
         is UnionType -> type.types.any { containsParameter(it, parameters) }
         else -> false
     }
+
     private fun contextual(expression: Expression): Boolean = when (expression) {
         is LiteralListExpression -> expression.entries.isEmpty()
         is LambdaExpression -> expression.parameters.any { it.type == null }
         is IdentifierExpression -> (currentContext.getVariable(expression.identifier.source) as? ConstructorType)?.variant?.fields?.isEmpty() == true
         else -> false
     }
+
     private fun common(types: List<IxType>): IxType {
         val values = types.filter { it !== NeverType }.distinctBy { SemanticTypes.of(it) }
         if (values.isEmpty()) return NeverType
         if (values.size == 1) return if (values.single() === BuiltInType.VOID) UnitType else values.single()
-        if (values.all { it is BuiltInType && it.isNumeric }) return values.reduce { a, b -> widen(a as BuiltInType, b as BuiltInType)!! }
+        if (values.all { it is BuiltInType && it.isNumeric }) return values.reduce { a, b ->
+            widen(
+                a as BuiltInType,
+                b as BuiltInType
+            )!!
+        }
         return UnionType.of(values)
     }
+
     override fun visitUnit(expression: UnitExpression): Optional<IxType> = result(expression, UnitType)
     override fun visitTuple(expression: TupleExpression): Optional<IxType> {
         val expected = expectedType as? TupleType
-        return result(expression, TupleType(expression.elements.mapIndexed { i, item -> check(item, expected?.elements?.getOrNull(i)) }))
+        return result(
+            expression,
+            TupleType(expression.elements.mapIndexed { i, item -> check(item, expected?.elements?.getOrNull(i)) })
+        )
     }
+
     private fun appliedReference(expression: TypeApplicationExpression): IxType {
-        val base = currentContext.getVariable(expression.name.source) ?: fail(expression, "name.unknown: ${expression.name.source}")
+        val base = currentContext.getVariable(expression.name.source) ?: fail(
+            expression,
+            "name.unknown: ${expression.name.source}"
+        )
         val args = expression.types.map(::resolve)
         return when (base) {
             is ConstructorType -> {
                 if (base.owner.parameters.size != args.size) fail(expression, "type.arity: ${base.name}")
                 ConstructorType(base.owner, base.variant, args)
             }
+
             is DefType -> {
                 if (base.generics.size != args.size) fail(expression, "type.arity: ${base.name}")
                 expression.resolvedTypes = args
                 base
             }
+
             is StructType -> {
                 if (base.generics.size != args.size) fail(expression, "type.arity: ${base.name}")
                 AppliedStructType(base, args)
             }
+
             else -> fail(expression, "type.not_generic: ${expression.name.source}")
         }
     }
+
     override fun visitTypeApplication(expression: TypeApplicationExpression): Optional<IxType> {
         val type = appliedReference(expression)
         return if (type is ConstructorType) {
@@ -147,8 +211,12 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
             result(expression, construct(expression, type, emptyList()))
         } else result(expression, type)
     }
+
     private fun construct(node: Expression, constructor: ConstructorType, args: List<Expression>): AdtType {
-        if (args.size != constructor.variant.fields.size) fail(node, "constructor.arity: ${constructor.name} expects ${constructor.variant.fields.size} fields")
+        if (args.size != constructor.variant.fields.size) fail(
+            node,
+            "constructor.arity: ${constructor.name} expects ${constructor.variant.fields.size} fields"
+        )
         val parameters = constructor.owner.parameters
         val arguments = linkedMapOf<kotlin.String, IxType>()
         constructor.arguments?.let { parameters.zip(it).forEach { (p, t) -> arguments[p.key] = t } }
@@ -162,52 +230,90 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
             val actual = check(args[i], anticipated.takeUnless { containsParameter(it, parameters) })
             infer(template, actual, parameters, arguments, fixed)
         }
-        if (parameters.any { arguments[it.key] == null || arguments[it.key] is UnknownType || containsParameter(arguments.getValue(it.key), parameters) }) fail(node, "type.cannot_infer: ${constructor.name}; provide type arguments or an expected type")
+        if (parameters.any {
+                arguments[it.key] == null || arguments[it.key] is UnknownType || containsParameter(
+                    arguments.getValue(it.key),
+                    parameters
+                )
+            }) fail(node, "type.cannot_infer: ${constructor.name}; provide type arguments or an expected type")
         val type = constructor.owner.applied(parameters.map { arguments.getValue(it.key) })
         for ((i, field) in type.fields(constructor.variant).withIndex()) {
             val actual = check(args[i], field.second)
-            if (!typesMatch(field.second, actual)) fail(args[i], "constructor.field_type: expected ${field.second}, got $actual")
+            if (!typesMatch(field.second, actual)) fail(
+                args[i],
+                "constructor.field_type: expected ${field.second}, got $actual"
+            )
         }
         return type
     }
+
     override fun visitUpdate(expression: UpdateExpression): Optional<IxType> {
         val type = check(expression.base) as? StructType ?: fail(expression, "update.expected_struct")
         val names = hashSetOf<kotlin.String>()
         for ((name, value) in expression.fields) {
             if (!names.add(name.source)) fail(expression, "update.duplicate_field: ${name.source}")
-            val field = type.parameters.find { it.first == name.source } ?: fail(expression, "update.unknown_field: ${name.source}")
+            val field = type.parameters.find { it.first == name.source } ?: fail(
+                expression,
+                "update.unknown_field: ${name.source}"
+            )
             if (!typesMatch(field.second, check(value, field.second))) fail(value, "update.field_type: ${name.source}")
         }
         return result(expression, type)
     }
+
     override fun visitBlockExpression(expression: BlockExpression): Optional<IxType> {
         val previous = currentContext
         currentContext = expression.block.context
         try {
             expression.block.accept(this)
-            val type = if (ControlFlow.exits(expression.block)) NeverType else expression.result?.let { check(it, expectedType) } ?: UnitType
+            val type = if (ControlFlow.exits(expression.block)) NeverType else expression.result?.let {
+                check(
+                    it,
+                    expectedType
+                )
+            } ?: UnitType
             return result(expression, type)
-        } finally { currentContext = previous }
+        } finally {
+            currentContext = previous
+        }
     }
+
     override fun visitCaseExpression(expression: CaseExpression): Optional<IxType> {
         val expected = expectedType
         val subject = check(expression.subject)
         val rows = arrayListOf<List<CoverPattern>>()
         val results = arrayListOf<IxType>()
         val previous = currentContext
-        if (expression.branches.isEmpty() && subject !== NeverType) fail(expression, "match.empty: only never permits an empty case")
+        if (expression.branches.isEmpty() && subject !== NeverType) fail(
+            expression,
+            "match.empty: only never permits an empty case"
+        )
         try {
             for (branch in expression.branches) {
                 currentContext = previous
-                val plan = PatternChecker(::resolve, { previous.getType(it) }) { p, message -> fail(p, message) }.check(branch.pattern, subject)
+                val plan = PatternChecker(::resolve, { previous.getType(it) }) { p, message ->
+                    fail(
+                        p,
+                        message
+                    )
+                }.check(branch.pattern, subject)
                 branch.plan = plan
                 val witness = PatternCoverage().witness(rows, listOf(plan.coverage), listOf(subject))
-                if (witness == null) fail(branch.pattern, "match.unreachable: branch is covered by preceding unguarded patterns")
+                if (witness == null) fail(
+                    branch.pattern,
+                    "match.unreachable: branch is covered by preceding unguarded patterns"
+                )
                 for (binding in plan.bindings) branch.context.setVariableType(binding.name, binding.type)
                 currentContext = branch.context
-                if (branch.guard != null && check(branch.guard) !== BuiltInType.BOOLEAN) fail(branch.guard, "match.guard_type: expected bool")
+                if (branch.guard != null && check(branch.guard) !== BuiltInType.BOOLEAN) fail(
+                    branch.guard,
+                    "match.guard_type: expected bool"
+                )
                 val type = check(branch.body, expected)
-                if (expected != null && type !is UnknownType && !typesMatch(expected, type)) fail(branch.body, "match.branch_type: expected $expected, got $type")
+                if (expected != null && type !is UnknownType && !typesMatch(expected, type)) fail(
+                    branch.body,
+                    "match.branch_type: expected $expected, got $type"
+                )
                 results.add(type)
                 if (branch.guard == null) rows.add(listOf(plan.coverage))
             }
@@ -215,14 +321,22 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
             if (missing != null) fail(expression, "match.non_exhaustive: missing ${missing.single()}")
         } catch (limit: IllegalStateException) {
             fail(expression, limit.message ?: "match.analysis_limit")
-        } finally { currentContext = previous }
-        return result(expression, if (expected != null && results.any { it !== NeverType }) {
-            if (expected === BuiltInType.VOID) UnitType else expected
-        } else common(results))
+        } finally {
+            currentContext = previous
+        }
+        return result(
+            expression, if (expected != null && results.any { it !== NeverType }) {
+                if (expected === BuiltInType.VOID) UnitType else expected
+            } else common(results)
+        )
     }
 
     override fun visit(statement: Statement): Optional<IxType> {
-        return try { statement.accept(this) } catch (_: CheckFailure) { Optional.empty() }
+        return try {
+            statement.accept(this)
+        } catch (_: CheckFailure) {
+            Optional.empty()
+        }
     }
 
     /**
@@ -296,7 +410,10 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
             }
 
             TokenType.EQUAL, TokenType.NOTEQUAL, TokenType.LT, TokenType.GT, TokenType.LE, TokenType.GE -> {
-                if (t1.get() !is BuiltInType || t2.get() !is BuiltInType) fail(expression, "operator.data_comparison: structural equality is not implemented yet")
+                if (t1.get() !is BuiltInType || t2.get() !is BuiltInType) fail(
+                    expression,
+                    "operator.data_comparison: structural equality is not implemented yet"
+                )
                 if (t1.get() is BuiltInType && t2.get() is BuiltInType) {
                     if (expression.operator.type != TokenType.EQUAL && expression.operator.type != TokenType.NOTEQUAL) {
                         val bt1 = t1.get() as BuiltInType
@@ -340,9 +457,14 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
         currentContext = statement.context
         try {
             for (stmt in statement.statements.filterNotNull()) {
-                try { stmt.accept(this) } catch (_: CheckFailure) { }
+                try {
+                    stmt.accept(this)
+                } catch (_: CheckFailure) {
+                }
             }
-        } finally { currentContext = previous }
+        } finally {
+            currentContext = previous
+        }
         return Optional.empty()
     }
 
@@ -352,7 +474,11 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
      */
     override fun visitCall(expression: CallExpression): Optional<IxType> {
         var callee = when (val item = expression.item) {
-            is IdentifierExpression -> currentContext.getVariable(item.identifier.source) ?: fail(item, "name.unknown: ${item.identifier.source}")
+            is IdentifierExpression -> currentContext.getVariable(item.identifier.source) ?: fail(
+                item,
+                "name.unknown: ${item.identifier.source}"
+            )
+
             is TypeApplicationExpression -> appliedReference(item)
             else -> check(item)
         }
@@ -360,7 +486,8 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
         // language-level inputs. Explicit len[T] always selects the list signature.
         if (callee is DefType && callee.owner == "com/kingmang/ixion/modules/Prelude" &&
             callee.name == "len" && expression.item !is TypeApplicationExpression && expression.arguments.size == 1 &&
-            check(expression.arguments.single()) === BuiltInType.STRING) {
+            check(expression.arguments.single()) === BuiltInType.STRING
+        ) {
             val original = callee
             callee = DefType("len", arrayListOf("text" to BuiltInType.STRING), original.declarationId).also {
                 it.returnType = BuiltInType.INT
@@ -371,7 +498,11 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
         }
         expression.item.realType = callee
         if (callee is ConstructorType) return result(expression, construct(expression, callee, expression.arguments))
-        if (callee is DefType && callee.owner == "com/kingmang/ixion/modules/Prelude" && callee.name in setOf("push", "pop"))
+        if (callee is DefType && callee.owner == "com/kingmang/ixion/modules/Prelude" && callee.name in setOf(
+                "push",
+                "pop"
+            )
+        )
             fail(expression, "list.immutable: use std::append or pattern matching instead of ${callee.name}")
         val parameters: List<Pair<kotlin.String, IxType>>
         val returnType: IxType
@@ -382,39 +513,61 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
                 returnType = callee.returnType
                 generic = callee.generics.mapIndexed { i, name -> GenericType(name, callee.declarationId, i) }
             }
+
             is StructType -> {
                 parameters = callee.parameters
                 returnType = callee
                 generic = callee.generics.mapIndexed { i, name -> GenericType(name, callee.declarationId, i) }
             }
-            is LambdaType -> { parameters = callee.parameters; returnType = callee.returnType; generic = emptyList() }
+
+            is LambdaType -> {
+                parameters = callee.parameters; returnType = callee.returnType; generic = emptyList()
+            }
+
             else -> fail(expression, "call.not_callable: ${callee.name}")
         }
-        if (parameters.size != expression.arguments.size) fail(expression, "call.arity: expected ${parameters.size} arguments")
+        if (parameters.size != expression.arguments.size) fail(
+            expression,
+            "call.arity: expected ${parameters.size} arguments"
+        )
         val arguments = linkedMapOf<kotlin.String, IxType>()
-        (expression.item as? TypeApplicationExpression)?.resolvedTypes?.let { generic.zip(it).forEach { (p, t) -> arguments[p.key] = t } }
-        expectedType?.takeIf { SemanticTypes.of(it) != com.kingmang.ixion.types.PrimitiveType.ANY }?.let { infer(returnType, it, generic, arguments) }
+        (expression.item as? TypeApplicationExpression)?.resolvedTypes?.let {
+            generic.zip(it).forEach { (p, t) -> arguments[p.key] = t }
+        }
+        expectedType?.takeIf { SemanticTypes.of(it) != com.kingmang.ixion.types.PrimitiveType.ANY }
+            ?.let { infer(returnType, it, generic, arguments) }
         val fixed = arguments.keys.toSet()
         for (i in parameters.indices.sortedBy { if (contextual(expression.arguments[it])) 1 else 0 }) {
             val anticipated = substitute(parameters[i].second, generic, arguments)
             val argument = expression.arguments[i]
             val expectation = if (argument is LambdaExpression && anticipated is LambdaType &&
-                anticipated.parameters.none { containsParameter(it.second, generic) }) {
+                anticipated.parameters.none { containsParameter(it.second, generic) }
+            ) {
                 if (containsParameter(anticipated.returnType, generic))
                     anticipated.copy(returnType = UnknownType("<lambda-result>")) else anticipated
             } else anticipated.takeUnless { containsParameter(it, generic) }
             val type = check(argument, expectation)
             infer(parameters[i].second, type, generic, arguments, fixed)
         }
-        if (generic.any { arguments[it.key] == null || arguments[it.key] is UnknownType }) fail(expression, "type.cannot_infer: ${callee.name}")
+        if (generic.any { arguments[it.key] == null || arguments[it.key] is UnknownType }) fail(
+            expression,
+            "type.cannot_infer: ${callee.name}"
+        )
         expression.specialization = arguments.toMap()
         for (i in parameters.indices) {
             val expected = substitute(parameters[i].second, generic, arguments)
             val actual = check(expression.arguments[i], expected)
-            if (!typesMatch(expected, actual)) fail(expression.arguments[i], "call.argument_type: expected $expected, got $actual")
+            if (!typesMatch(expected, actual)) fail(
+                expression.arguments[i],
+                "call.argument_type: expected $expected, got $actual"
+            )
         }
         val resolved = if (callee is StructType && callee !is DefType && generic.isNotEmpty())
-            AppliedStructType(callee, generic.map { arguments.getValue(it.key) }) else substitute(returnType, generic, arguments)
+            AppliedStructType(callee, generic.map { arguments.getValue(it.key) }) else substitute(
+            returnType,
+            generic,
+            arguments
+        )
         return result(expression, if (resolved === BuiltInType.VOID) UnitType else resolved)
     }
 
@@ -469,7 +622,7 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
                     }
                 }
 
-                is ListType-> {
+                is ListType -> {
                     currentContext.setVariableType(statement.name.source, (b.get() as ListType).contentType)
                 }
 
@@ -527,7 +680,10 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
      * @return Optional containing the type of the identifier
      */
     override fun visitIdentifierExpr(expression: IdentifierExpression): Optional<IxType> {
-        val type = currentContext.getVariable(expression.identifier.source) ?: fail(expression, "name.unknown: ${expression.identifier.source}")
+        val type = currentContext.getVariable(expression.identifier.source) ?: fail(
+            expression,
+            "name.unknown: ${expression.identifier.source}"
+        )
         return if (type is ConstructorType) {
             if (type.variant.fields.isNotEmpty()) fail(expression, "constructor.requires_arguments: ${type.name}")
             result(expression, construct(expression, type, emptyList()))
@@ -581,10 +737,16 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
      */
     override fun visitLiteralList(expression: LiteralListExpression): Optional<IxType> {
         val expected = expectedType as? ListType
-        if (expression.entries.isEmpty() && expected == null) fail(expression, "type.empty_list: provide an element type")
+        if (expression.entries.isEmpty() && expected == null) fail(
+            expression,
+            "type.empty_list: provide an element type"
+        )
         val elements = expression.entries.map { check(it, expected?.contentType) }
         val content = expected?.contentType ?: common(elements)
-        for ((index, type) in elements.withIndex()) if (!typesMatch(content, type)) fail(expression.entries[index], "list.element_type")
+        for ((index, type) in elements.withIndex()) if (!typesMatch(content, type)) fail(
+            expression.entries[index],
+            "list.element_type"
+        )
         return result(expression, ListType(content))
     }
 
@@ -614,8 +776,15 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
             fail(expression, "mutation.immutable_binding: ${target.identifier.source}")
 
         if (expression.expression !is IdentifierExpression ||
-            !(expression.realType is BuiltInType && expression.realType.isNumeric)) {
-            CannotPostfixException().send(ixApi, file, expression.expression, expression.operator.source, expression.realType.name)
+            !(expression.realType is BuiltInType && expression.realType.isNumeric)
+        ) {
+            CannotPostfixException().send(
+                ixApi,
+                file,
+                expression.expression,
+                expression.operator.source,
+                expression.realType.name
+            )
         }
         return Optional.of(expression.realType)
     }
@@ -627,7 +796,8 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
     override fun visitPrefix(expression: PrefixExpression): Optional<IxType> {
         val type = check(expression.right)
         if (expression.operator.type == TokenType.NOT && type !== BuiltInType.BOOLEAN ||
-            expression.operator.type != TokenType.NOT && !type.isNumeric) fail(expression, "operator.prefix_type")
+            expression.operator.type != TokenType.NOT && !type.isNumeric
+        ) fail(expression, "operator.prefix_type")
         return result(expression, type)
     }
 
@@ -661,7 +831,13 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
                 result = getTempMSTType(expression, typeChain, pointer, result)
             }
             if (result == null) {
-                FieldNotPresentException().send(ixApi, file, expression, expression.identifiers.first().identifier.source, exprType.name)
+                FieldNotPresentException().send(
+                    ixApi,
+                    file,
+                    expression,
+                    expression.identifiers.first().identifier.source,
+                    exprType.name
+                )
                 return Optional.empty()
             }
             expression.realType = result
@@ -680,16 +856,19 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
         context.parent = previous
         val parameters = expression.parameters.mapIndexed { index, param ->
             val type = param.type?.let(::resolve) ?: expected?.parameters?.getOrNull(index)?.second
-                ?: fail(expression, "lambda.parameter_type: ${param.name.source}")
+            ?: fail(expression, "lambda.parameter_type: ${param.name.source}")
             context.setVariableType(param.name.source, type)
             param.name.source to type
         }.toMutableList()
         val inferResult = expression.inferredReturn && (expected == null || expected.returnType is UnknownType)
         var returnType = if (inferResult) UnknownType("<lambda-result>")
-            else if (expression.inferredReturn && expected != null) expected.returnType else resolve(expression.returnType)
+        else if (expression.inferredReturn && expected != null) expected.returnType else resolve(expression.returnType)
         expression.captures = FreeVariables.of(expression).mapNotNull { name ->
             val type = previous.getVariable(name)
-            if (type == null || type is DefType || type is ConstructorType || type is StructType && previous.getType(name) === type) null
+            if (type == null || type is DefType || type is ConstructorType || type is StructType && previous.getType(
+                    name
+                ) === type
+            ) null
             else name to type
         }
         for ((name, type) in expression.captures) context.addVariable(name, type)
@@ -710,8 +889,16 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
                 expression.body.accept(this)
             }
             if (!ControlFlow.exits(expression.body)) {
-                if (SemanticTypes.of(returnType) != com.kingmang.ixion.types.PrimitiveType.UNIT) fail(expression, "lambda.missing_return")
-                expression.body.statements.add(ReturnStatement(expression.position, UnitExpression(expression.position!!)))
+                if (SemanticTypes.of(returnType) != com.kingmang.ixion.types.PrimitiveType.UNIT) fail(
+                    expression,
+                    "lambda.missing_return"
+                )
+                expression.body.statements.add(
+                    ReturnStatement(
+                        expression.position,
+                        UnitExpression(expression.position!!)
+                    )
+                )
             }
         } finally {
             inferredLambdaReturns.remove(function)
@@ -735,7 +922,12 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
         val inferred = inferredLambdaReturns[function]
         val actual = check(statement.expression!!, if (inferred == null) function.returnType else null)
         if (inferred != null) inferred.add(actual)
-        else if (!typesMatch(function.returnType, actual)) ReturnTypeMismatchException().send(ixApi, file, statement, function.name)
+        else if (!typesMatch(function.returnType, actual)) ReturnTypeMismatchException().send(
+            ixApi,
+            file,
+            statement,
+            function.name
+        )
         function.hasReturn2 = true
         return Optional.empty()
     }

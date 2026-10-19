@@ -33,7 +33,8 @@ import java.io.File
 import java.util.*
 import java.util.function.BiConsumer
 
-class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFile, cw: ClassWriter) : Visitor<Optional<ClassWriter>> {
+class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFile, cw: ClassWriter) :
+    Visitor<Optional<ClassWriter>> {
     private val file: File
     private val cw: ClassWriter
     private val structWriters: MutableMap<StructType, ClassWriter> = HashMap()
@@ -53,7 +54,9 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
     }
 
     private fun specialized(type: IxType): IxType = type
-    private fun tagArgument(function: DefType): Int = if (function.reifiedArgumentIndex >= 0) function.reifiedArgumentIndex else function.parameters.size
+    private fun tagArgument(function: DefType): Int =
+        if (function.reifiedArgumentIndex >= 0) function.reifiedArgumentIndex else function.parameters.size
+
     private fun emitTag(tag: TagExpression) {
         val ga = functionStack.peek().ga!!
         when (tag) {
@@ -64,29 +67,50 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
                 require(index >= 0) { "Unbound runtime type parameter ${tag.name}" }
                 ga.loadArg(tagArgument(function)); ga.push(index); ga.arrayLoad(Type.getType(String::class.java))
             }
+
             is TagExpression.Union -> {
                 ga.push(tag.alternatives.size); ga.newArray(Type.getType(String::class.java))
-                for ((index, part) in tag.alternatives.withIndex()) { ga.dup(); ga.push(index); emitTag(part); ga.arrayStore(Type.getType(String::class.java)) }
-                ga.invokeStatic(Type.getType(RuntimeTypeTags::class.java), Method("union", "([Ljava/lang/String;)Ljava/lang/String;"))
+                for ((index, part) in tag.alternatives.withIndex()) {
+                    ga.dup(); ga.push(index); emitTag(part); ga.arrayStore(Type.getType(String::class.java))
+                }
+                ga.invokeStatic(
+                    Type.getType(RuntimeTypeTags::class.java),
+                    Method("union", "([Ljava/lang/String;)Ljava/lang/String;")
+                )
             }
+
             is TagExpression.Join -> {
                 val builder = Type.getType(StringBuilder::class.java)
                 ga.newInstance(builder); ga.dup(); ga.invokeConstructor(builder, Method("<init>", "()V"))
-                for (part in tag.parts) { emitTag(part); ga.invokeVirtual(builder, Method("append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;")) }
+                for (part in tag.parts) {
+                    emitTag(part); ga.invokeVirtual(
+                        builder,
+                        Method("append", "(Ljava/lang/String;)Ljava/lang/StringBuilder;")
+                    )
+                }
                 ga.invokeVirtual(builder, Method("toString", "()Ljava/lang/String;"))
             }
         }
     }
+
     private fun emitTags(types: List<IxType>) {
         val ga = functionStack.peek().ga!!
         ga.push(types.size); ga.newArray(Type.getType(String::class.java))
-        for ((index, type) in types.withIndex()) { ga.dup(); ga.push(index); emitTag(TypeTags.expression(type)); ga.arrayStore(Type.getType(String::class.java)) }
+        for ((index, type) in types.withIndex()) {
+            ga.dup(); ga.push(index); emitTag(TypeTags.expression(type)); ga.arrayStore(Type.getType(String::class.java))
+        }
     }
+
     private fun box(type: IxType) {
         val ga = functionStack.peek().ga!!
-        if (type === BuiltInType.VOID) ga.getStatic(Type.getType(UnitValue::class.java), "INSTANCE", Type.getType(UnitValue::class.java))
+        if (type === BuiltInType.VOID) ga.getStatic(
+            Type.getType(UnitValue::class.java),
+            "INSTANCE",
+            Type.getType(UnitValue::class.java)
+        )
         else if (type is BuiltInType) type.doBoxing(ga)
     }
+
     private fun fromObject(type: IxType) {
         val ga = functionStack.peek().ga!!
         when (type) {
@@ -95,11 +119,13 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
             else -> ga.checkCast(Type.getType(type.descriptor))
         }
     }
+
     private fun functionDescriptor(type: DefType): String {
         if (type.glue && type.jvmDescriptor != null) return type.jvmDescriptor!!
         val descriptor = CollectionUtil.getMethodDescriptor(type.parameters, type.returnType)
         return if (type.generics.isEmpty() || type.glue) descriptor else descriptor.replace(")", "[Ljava/lang/String;)")
     }
+
     private fun emitAdt(type: AdtType, variant: AdtVariant, args: List<Expression>) {
         val ga = functionStack.peek().ga!!
         val runtime = Type.getType(AdtValue::class.java)
@@ -131,8 +157,10 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
                 val mapping = Coercions.unionMapping(to, from)
                 if (mapping.isNotEmpty()) {
                     ga.push(mapping)
-                    ga.invokeStatic(Type.getType(UnionCoercions::class.java),
-                        Method("convert", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"))
+                    ga.invokeStatic(
+                        Type.getType(UnionCoercions::class.java),
+                        Method("convert", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;")
+                    )
                 }
             } else {
                 val alternative = Coercions.unionTarget(to, from)
@@ -147,9 +175,14 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
     }
 
     override fun visitUnit(expression: UnitExpression): Optional<ClassWriter> {
-        functionStack.peek().ga!!.getStatic(Type.getType(UnitValue::class.java), "INSTANCE", Type.getType(UnitValue::class.java))
+        functionStack.peek().ga!!.getStatic(
+            Type.getType(UnitValue::class.java),
+            "INSTANCE",
+            Type.getType(UnitValue::class.java)
+        )
         return Optional.empty()
     }
+
     override fun visitTuple(expression: TupleExpression): Optional<ClassWriter> {
         val ga = functionStack.peek().ga!!
         val type = expression.realType as TupleType
@@ -162,11 +195,17 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
         ga.invokeConstructor(runtime, Method("<init>", "(Ljava/lang/String;[Ljava/lang/Object;)V"))
         return Optional.empty()
     }
+
     override fun visitTypeApplication(expression: TypeApplicationExpression): Optional<ClassWriter> {
         val type = expression.realType as AdtType
-        emitAdt(type, type.declaration.variants.first { it.name == expression.name.source.substringAfterLast("::") }, emptyList())
+        emitAdt(
+            type,
+            type.declaration.variants.first { it.name == expression.name.source.substringAfterLast("::") },
+            emptyList()
+        )
         return Optional.empty()
     }
+
     override fun visitUpdate(expression: UpdateExpression): Optional<ClassWriter> {
         val ga = functionStack.peek().ga!!
         val type = expression.realType as StructType
@@ -179,7 +218,8 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
             val expected = type.parameters.first { it.first == name.source }.second
             value.accept(this); coerce(value.realType, expected)
             if (field.second is GenericType) box(expected)
-            val local = ga.newLocal(Type.getType(field.second.descriptor)); ga.storeLocal(local); updates[name.source] = local
+            val local = ga.newLocal(Type.getType(field.second.descriptor)); ga.storeLocal(local); updates[name.source] =
+                local
         }
         ga.newInstance(Type.getType(raw.descriptor)); ga.dup()
         for ((name, field) in raw.parameters) {
@@ -191,26 +231,32 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
             }
         }
         if (raw.hasGenerics()) emitTag(TypeTags.expression(type))
-        val descriptor = raw.parameters.joinToString("") { it.second.descriptor!! } + if (raw.hasGenerics()) "Ljava/lang/String;" else ""
+        val descriptor =
+            raw.parameters.joinToString("") { it.second.descriptor!! } + if (raw.hasGenerics()) "Ljava/lang/String;" else ""
         ga.invokeConstructor(Type.getType(raw.descriptor), Method("<init>", "($descriptor)V"))
         return Optional.empty()
     }
+
     override fun visitBlockExpression(expression: BlockExpression): Optional<ClassWriter> {
         val previous = currentContext
         currentContext = expression.block.context
         expression.block.accept(this)
         if (expression.realType !== NeverType) {
-            if (expression.result == null) visitUnit(UnitExpression(expression.position!!)) else expression.result.accept(this)
+            if (expression.result == null) visitUnit(UnitExpression(expression.position!!)) else expression.result.accept(
+                this
+            )
         }
         currentContext = previous
         return Optional.empty()
     }
+
     override fun visitCaseExpression(expression: CaseExpression): Optional<ClassWriter> {
         val ga = functionStack.peek().ga!!
         val function = functionStack.peek()
         expression.subject.accept(this); box(expression.subject.realType)
         val subject = ga.newLocal(ObjectType); ga.storeLocal(subject)
-        val result = if (expression.realType === NeverType) -1 else ga.newLocal(Type.getType(expression.realType.descriptor))
+        val result =
+            if (expression.realType === NeverType) -1 else ga.newLocal(Type.getType(expression.realType.descriptor))
         val end = Label()
         val previousContext = currentContext
         val previousLocals = HashMap(function.localMap)
@@ -218,16 +264,26 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
             val next = Label()
             val plan = branch.plan!!
             ga.loadLocal(subject); ga.push(plan.encoded); emitTags(plan.tags)
-            ga.invokeStatic(Type.getType(MatchRuntime::class.java), Method("matches", "(Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/String;)Z"))
+            ga.invokeStatic(
+                Type.getType(MatchRuntime::class.java),
+                Method("matches", "(Ljava/lang/Object;Ljava/lang/String;[Ljava/lang/String;)Z")
+            )
             ga.ifZCmp(GeneratorAdapter.EQ, next)
             currentContext = branch.context
             for (binding in plan.bindings) {
                 ga.loadLocal(subject); ga.push(binding.path)
-                ga.invokeStatic(Type.getType(MatchRuntime::class.java), Method("extract", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"))
+                ga.invokeStatic(
+                    Type.getType(MatchRuntime::class.java),
+                    Method("extract", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;")
+                )
                 fromObject(binding.type)
-                val local = ga.newLocal(Type.getType(binding.type.descriptor)); ga.storeLocal(local); function.localMap[binding.name] = local
+                val local =
+                    ga.newLocal(Type.getType(binding.type.descriptor)); ga.storeLocal(local); function.localMap[binding.name] =
+                    local
             }
-            if (branch.guard != null) { branch.guard.accept(this); ga.ifZCmp(GeneratorAdapter.EQ, next) }
+            if (branch.guard != null) {
+                branch.guard.accept(this); ga.ifZCmp(GeneratorAdapter.EQ, next)
+            }
             branch.body.accept(this)
             if (branch.body.realType !== NeverType) {
                 coerce(branch.body.realType, expression.realType); ga.storeLocal(result); ga.goTo(end)
@@ -235,7 +291,10 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
             ga.mark(next)
             function.localMap.clear(); function.localMap.putAll(previousLocals)
         }
-        ga.throwException(Type.getType(IllegalStateException::class.java), "Unreachable: checked case has no matching branch")
+        ga.throwException(
+            Type.getType(IllegalStateException::class.java),
+            "Unreachable: checked case has no matching branch"
+        )
         ga.mark(end)
         if (result >= 0) ga.loadLocal(result)
         currentContext = previousContext
@@ -490,32 +549,54 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
             is DefType -> {
                 for ((index, parameter) in callee.parameters.withIndex()) {
                     val arg = expression.arguments[index]
-                    val substitutions = callee.generics.mapIndexed { i, name -> GenericType(name, callee.declarationId, i) }
-                        .associateWith { expression.specialization[it.key] ?: it }
+                    val substitutions =
+                        callee.generics.mapIndexed { i, name -> GenericType(name, callee.declarationId, i) }
+                            .associateWith { expression.specialization[it.key] ?: it }
                     val expected = TypeSubstitution.apply(parameter.second, substitutions)
                     arg.accept(this); coerce(arg.realType, expected)
                     if (parameter.second is GenericType) box(expected)
                 }
-                if (callee.hasGenerics() && (!callee.glue || callee.reifiedNative)) emitTags(callee.generics.map { expression.specialization.getValue(it) })
-                val owner = if (callee.glue) callee.owner!! else callee.external?.fullRelativePath ?: source.fullRelativePath
+                if (callee.hasGenerics() && (!callee.glue || callee.reifiedNative)) emitTags(callee.generics.map {
+                    expression.specialization.getValue(
+                        it
+                    )
+                })
+                val owner =
+                    if (callee.glue) callee.owner!! else callee.external?.fullRelativePath ?: source.fullRelativePath
                 val name = if (callee.glue) (if (callee.isPrefixed) "_" else "") + callee.name else "_" + callee.name
                 ga.invokeStatic(Type.getObjectType(owner), Method(name, functionDescriptor(callee)))
                 if (callee.returnType is GenericType) fromObject(expression.realType)
-                if (callee.returnType === BuiltInType.VOID || callee.returnType === UnitType) visitUnit(UnitExpression(expression.position!!))
-                if (callee.returnType === NeverType) { ga.visitInsn(Opcodes.ACONST_NULL); ga.throwException() }
+                if (callee.returnType === BuiltInType.VOID || callee.returnType === UnitType) visitUnit(
+                    UnitExpression(
+                        expression.position!!
+                    )
+                )
+                if (callee.returnType === NeverType) {
+                    ga.visitInsn(Opcodes.ACONST_NULL); ga.throwException()
+                }
             }
+
             is LambdaType -> {
                 expression.item.accept(this)
-                if (callee.parameters.size > 4) { ga.push(callee.parameters.size); ga.newArray(ObjectType) }
+                if (callee.parameters.size > 4) {
+                    ga.push(callee.parameters.size); ga.newArray(ObjectType)
+                }
                 for ((index, parameter) in callee.parameters.withIndex()) {
-                    if (callee.parameters.size > 4) { ga.dup(); ga.push(index) }
-                    val arg = expression.arguments[index]; arg.accept(this); coerce(arg.realType, parameter.second); box(parameter.second)
+                    if (callee.parameters.size > 4) {
+                        ga.dup(); ga.push(index)
+                    }
+                    val arg = expression.arguments[index]; arg.accept(this); coerce(
+                        arg.realType,
+                        parameter.second
+                    ); box(parameter.second)
                     if (callee.parameters.size > 4) ga.arrayStore(ObjectType)
                 }
                 ga.invokeInterface(Type.getType(callee.descriptor), Method("apply", callee.erasedApplyDescriptor()))
-                if (callee.returnType === BuiltInType.VOID || callee.returnType === UnitType) { ga.pop(); visitUnit(UnitExpression(expression.position!!)) }
-                else fromObject(expression.realType)
+                if (callee.returnType === BuiltInType.VOID || callee.returnType === UnitType) {
+                    ga.pop(); visitUnit(UnitExpression(expression.position!!))
+                } else fromObject(expression.realType)
             }
+
             is StructType -> {
                 val type = expression.realType as StructType
                 val raw = if (type is AppliedStructType) type.base else type
@@ -527,9 +608,11 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
                     if (parameter.second is GenericType) box(expected)
                 }
                 if (raw.hasGenerics()) emitTag(TypeTags.expression(type))
-                val descriptor = raw.parameters.joinToString("") { it.second.descriptor!! } + if (raw.hasGenerics()) "Ljava/lang/String;" else ""
+                val descriptor =
+                    raw.parameters.joinToString("") { it.second.descriptor!! } + if (raw.hasGenerics()) "Ljava/lang/String;" else ""
                 ga.invokeConstructor(Type.getType(raw.descriptor), Method("<init>", "($descriptor)V"))
             }
+
             else -> error("Unexpected checked callee ${callee.name}")
         }
         return Optional.empty()
@@ -604,7 +687,10 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
         // Evaluate the iterable once and keep a distinct iterator for every loop.
         statement.expression.accept(this)
         if (statement.expression.realType === BuiltInType.STRING) {
-            ga!!.invokeStatic(Type.getType(DataIterables::class.java), Method("characters", "(Ljava/lang/String;)Ljava/lang/Iterable;"))
+            ga!!.invokeStatic(
+                Type.getType(DataIterables::class.java),
+                Method("characters", "(Ljava/lang/String;)Ljava/lang/Iterable;")
+            )
             ga.invokeInterface(Type.getType(Iterable::class.java), Method("iterator", "()Ljava/util/Iterator;"))
         }
         if (statement.expression.realType is ListType) {
@@ -742,8 +828,10 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
             ga.invokeVirtual(Type.getType(String::class.java), Method("substring", "(II)Ljava/lang/String;"))
         } else {
             expression.right.accept(this)
-            ga.invokeStatic(Type.getType(com.kingmang.ixion.modules.Prelude::class.java),
-                Method("get", "(" + ListWrapperType!!.descriptor + "I)Lcom/kingmang/ixion/runtime/AdtValue;"))
+            ga.invokeStatic(
+                Type.getType(com.kingmang.ixion.modules.Prelude::class.java),
+                Method("get", "(" + ListWrapperType!!.descriptor + "I)Lcom/kingmang/ixion/runtime/AdtValue;")
+            )
         }
         return Optional.empty()
     }
@@ -916,12 +1004,14 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
         val unit = lambdaType.returnType === BuiltInType.VOID || lambdaType.returnType === UnitType
         val physicalResult = if (unit || variadic) BuiltInType.ANY else lambdaType.returnType
         val captureDescriptor = captures.joinToString("") { it.second.descriptor!! } + hidden
-        val formalDescriptor = if (variadic) "[Ljava/lang/Object;" else lambdaType.parameters.joinToString("") { it.second.descriptor!! }
+        val formalDescriptor =
+            if (variadic) "[Ljava/lang/Object;" else lambdaType.parameters.joinToString("") { it.second.descriptor!! }
         val descriptor = "($captureDescriptor$formalDescriptor)${physicalResult.descriptor}"
         val access = Opcodes.ACC_PRIVATE or Opcodes.ACC_STATIC or Opcodes.ACC_SYNTHETIC
         val method = cw.visitMethod(access, methodName, descriptor, null, null)
-        val physicalParameters = (captures + (if (generic.isEmpty()) emptyList() else listOf("__ixTypes" to ExternalType(Array<String>::class.java))) +
-            if (variadic) emptyList() else lambdaType.parameters).toMutableList()
+        val physicalParameters =
+            (captures + (if (generic.isEmpty()) emptyList() else listOf("__ixTypes" to ExternalType(Array<String>::class.java))) +
+                    if (variadic) emptyList() else lambdaType.parameters).toMutableList()
         val implementation = DefType(methodName, physicalParameters, generic)
         implementation.returnType = physicalResult
         implementation.bridgeVoidToObject = unit
@@ -934,7 +1024,9 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
         if (variadic) {
             val arrayIndex = captures.size + if (generic.isEmpty()) 0 else 1
             for ((index, parameter) in lambdaType.parameters.withIndex()) {
-                implementation.ga!!.loadArg(arrayIndex); implementation.ga!!.push(index); implementation.ga!!.arrayLoad(ObjectType)
+                implementation.ga!!.loadArg(arrayIndex); implementation.ga!!.push(index); implementation.ga!!.arrayLoad(
+                    ObjectType
+                )
                 fromObject(parameter.second)
                 val local = implementation.ga!!.newLocal(Type.getType(parameter.second.descriptor))
                 implementation.ga!!.storeLocal(local); implementation.localMap[parameter.first] = local
@@ -945,18 +1037,40 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
         currentContext = previous
         functionStack.pop()
         for ((name, type) in captures) {
-            val reference = IdentifierExpression(expression.position, com.kingmang.ixion.lexer.Token(TokenType.IDENTIFIER, expression.position!!.line, expression.position.col, name))
+            val reference = IdentifierExpression(
+                expression.position,
+                com.kingmang.ixion.lexer.Token(
+                    TokenType.IDENTIFIER,
+                    expression.position!!.line,
+                    expression.position.col,
+                    name
+                )
+            )
             reference.realType = type; reference.accept(this)
         }
         if (generic.isNotEmpty()) outer.ga!!.loadArg(tagArgument(outer))
-        val bootstrap = Handle(Opcodes.H_INVOKESTATIC, "java/lang/invoke/LambdaMetafactory", "metafactory",
-            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;", false)
+        val bootstrap = Handle(
+            Opcodes.H_INVOKESTATIC,
+            "java/lang/invoke/LambdaMetafactory",
+            "metafactory",
+            "(Ljava/lang/invoke/MethodHandles\$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;",
+            false
+        )
         val handle = Handle(Opcodes.H_INVOKESTATIC, owner, methodName, descriptor, false)
-        outer.ga!!.invokeDynamic("apply", "($captureDescriptor)${lambdaType.descriptor}", bootstrap,
+        outer.ga!!.invokeDynamic(
+            "apply", "($captureDescriptor)${lambdaType.descriptor}", bootstrap,
             Type.getMethodType(lambdaType.erasedApplyDescriptor()), handle,
-            Type.getMethodType(if (variadic) lambdaType.erasedApplyDescriptor() else lambdaInstantiationDescriptor(lambdaType)))
+            Type.getMethodType(
+                if (variadic) lambdaType.erasedApplyDescriptor() else lambdaInstantiationDescriptor(
+                    lambdaType
+                )
+            )
+        )
         emitTag(TypeTags.expression(lambdaType))
-        outer.ga!!.invokeStatic(Type.getType(FunctionTags::class.java), Method("register", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"))
+        outer.ga!!.invokeStatic(
+            Type.getType(FunctionTags::class.java),
+            Method("register", "(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;")
+        )
         outer.ga!!.checkCast(Type.getType(lambdaType.descriptor))
         return Optional.empty()
     }
@@ -1001,7 +1115,14 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
         val name = structType!!.name
         val innerName = source.fullRelativePath + "$" + name
 
-        innerCw.visit(CLASS_VERSION, Opcodes.ACC_PUBLIC or Opcodes.ACC_FINAL or Opcodes.ACC_SUPER, innerName, null, "java/lang/Object", arrayOf("com/kingmang/ixion/runtime/IxDataValue"))
+        innerCw.visit(
+            CLASS_VERSION,
+            Opcodes.ACC_PUBLIC or Opcodes.ACC_FINAL or Opcodes.ACC_SUPER,
+            innerName,
+            null,
+            "java/lang/Object",
+            arrayOf("com/kingmang/ixion/runtime/IxDataValue")
+        )
         val innerFlags = PublicStatic or Opcodes.ACC_FINAL
         cw.visitInnerClass(innerName, source.fullRelativePath, name, innerFlags)
         innerCw.visitInnerClass(innerName, source.fullRelativePath, name, innerFlags)
@@ -1019,7 +1140,13 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
             constructorDescriptor.append(descriptor)
         }
 
-        if (structType.hasGenerics()) innerCw.visitField(Opcodes.ACC_PRIVATE or Opcodes.ACC_FINAL, "__ixType", "Ljava/lang/String;", null, null).visitEnd()
+        if (structType.hasGenerics()) innerCw.visitField(
+            Opcodes.ACC_PRIVATE or Opcodes.ACC_FINAL,
+            "__ixType",
+            "Ljava/lang/String;",
+            null,
+            null
+        ).visitEnd()
         val tagDescriptor = if (structType.hasGenerics()) "Ljava/lang/String;" else ""
         var descriptor = "($constructorDescriptor$tagDescriptor)V"
         val mv = innerCw.visitMethod(Opcodes.ACC_PUBLIC, Init, descriptor, null, null)
@@ -1049,15 +1176,24 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
 
         val typeMethod = innerCw.visitMethod(Opcodes.ACC_PUBLIC, "ixType", "()Ljava/lang/String;", null, null)
         val typeGa = GeneratorAdapter(typeMethod, Opcodes.ACC_PUBLIC, "ixType", "()Ljava/lang/String;")
-        if (structType.hasGenerics()) { typeGa.loadThis(); typeGa.getField(Type.getObjectType(innerName), "__ixType", Type.getType(String::class.java)) }
-        else typeGa.push(TypeTags.constant(structType))
+        if (structType.hasGenerics()) {
+            typeGa.loadThis(); typeGa.getField(
+                Type.getObjectType(innerName),
+                "__ixType",
+                Type.getType(String::class.java)
+            )
+        } else typeGa.push(TypeTags.constant(structType))
         typeGa.returnValue(); typeGa.endMethod()
         val fieldMethod = innerCw.visitMethod(Opcodes.ACC_PUBLIC, "ixField", "(I)Ljava/lang/Object;", null, null)
         val fieldGa = GeneratorAdapter(fieldMethod, Opcodes.ACC_PUBLIC, "ixField", "(I)Ljava/lang/Object;")
         for ((index, field) in structType.parameters.withIndex()) {
             val next = Label()
             fieldGa.loadArg(0); fieldGa.push(index); fieldGa.ifICmp(GeneratorAdapter.NE, next)
-            fieldGa.loadThis(); fieldGa.getField(Type.getObjectType(innerName), field.first, Type.getType(field.second.descriptor))
+            fieldGa.loadThis(); fieldGa.getField(
+                Type.getObjectType(innerName),
+                field.first,
+                Type.getType(field.second.descriptor)
+            )
             if (field.second is BuiltInType) (field.second as BuiltInType).doBoxing(fieldGa)
             fieldGa.returnValue(); fieldGa.mark(next)
         }
@@ -1243,7 +1379,8 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
 
         private fun lambdaInstantiationDescriptor(lambdaType: LambdaType): String {
             val params = lambdaType.parameters.joinToString("") { boxedDescriptor(it.second) }
-            val returnDescriptor = if (lambdaType.returnType === UnitType) "Ljava/lang/Object;" else boxedDescriptor(lambdaType.returnType)
+            val returnDescriptor =
+                if (lambdaType.returnType === UnitType) "Ljava/lang/Object;" else boxedDescriptor(lambdaType.returnType)
             return "($params)$returnDescriptor"
         }
 

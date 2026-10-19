@@ -75,24 +75,34 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
                             type.parameters.forEach { check(it.second) }
                             check(type.returnType)
                         }
+
                         is StructType -> {
                             val owner = owners[type.declarationId.module]
                             if (owner != null && owner.exportedTypes[type.declarationId.name] != type) {
-                                TypeDeclarationException().send(api, file.file, outer,
-                                    "public signature $name exposes private type ${type.declarationId.module}::${type.name}")
+                                TypeDeclarationException().send(
+                                    api, file.file, outer,
+                                    "public signature $name exposes private type ${type.declarationId.module}::${type.name}"
+                                )
                             }
                             if (type is AppliedStructType) type.arguments.forEach(::check)
                             if (!nominal.add(type.declarationId)) return
                             type.parameters.forEach { check(it.second) }
                         }
+
                         is AdtType -> {
                             val owner = owners[type.declaration.id.module]
                             if (owner != null && owner.exportedTypes[type.declaration.id.name] !is AdtType)
-                                TypeDeclarationException().send(api, file.file, outer, "public signature $name exposes private type ${type.name}")
+                                TypeDeclarationException().send(
+                                    api,
+                                    file.file,
+                                    outer,
+                                    "public signature $name exposes private type ${type.name}"
+                                )
                             type.arguments.forEach(::check)
                             if (!nominal.add(type.declaration.id)) return
                             type.declaration.variants.forEach { v -> type.fields(v).forEach { check(it.second) } }
                         }
+
                         is AliasType -> check(type.body)
                         is TupleType -> type.elements.forEach(::check)
                         is ListType -> check(type.contentType)
@@ -110,21 +120,38 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
 
     private fun validateRecursion() {
         for (file in files) for (node in declarations.getValue(file).values) {
-            val name = when (node) { is StructStatement -> node.name.source; is EnumStatement -> node.name.source; else -> continue }
+            val name = when (node) {
+                is StructStatement -> node.name.source; is EnumStatement -> node.name.source; else -> continue
+            }
             val root = file.rootContext.getType(name)!!
-            val target = when (root) { is StructType -> root.declarationId; is AdtType -> root.declaration.id; else -> continue }
+            val target = when (root) {
+                is StructType -> root.declarationId; is AdtType -> root.declaration.id; else -> continue
+            }
             val seen = hashSetOf<Pair<DeclarationId, Boolean>>()
             fun walk(type: IxType, positive: Boolean) {
-                val id = when (type) { is StructType -> type.declarationId; is AdtType -> type.declaration.id; else -> null }
+                val id = when (type) {
+                    is StructType -> type.declarationId; is AdtType -> type.declaration.id; else -> null
+                }
                 if (id == target) {
-                    if (!positive) TypeDeclarationException().send(api, file.file, node, "negative recursive occurrence of $name")
+                    if (!positive) TypeDeclarationException().send(
+                        api,
+                        file.file,
+                        node,
+                        "negative recursive occurrence of $name"
+                    )
                     return
                 }
                 if (id != null && !seen.add(id to positive)) return
                 when (type) {
                     is StructType -> type.parameters.forEach { walk(it.second, positive) }
-                    is AdtType -> type.declaration.variants.forEach { variant -> type.fields(variant).forEach { walk(it.second, positive) } }
-                    is LambdaType -> { type.parameters.forEach { walk(it.second, !positive) }; walk(type.returnType, positive) }
+                    is AdtType -> type.declaration.variants.forEach { variant ->
+                        type.fields(variant).forEach { walk(it.second, positive) }
+                    }
+
+                    is LambdaType -> {
+                        type.parameters.forEach { walk(it.second, !positive) }; walk(type.returnType, positive)
+                    }
+
                     is ListType -> walk(type.contentType, positive)
                     is TupleType -> type.elements.forEach { walk(it, positive) }
                     is UnionType -> type.types.forEach { walk(it, positive) }
@@ -132,7 +159,9 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
             }
             when (root) {
                 is StructType -> root.parameters.forEach { walk(it.second, true) }
-                is AdtType -> root.declaration.variants.forEach { variant -> root.fields(variant).forEach { walk(it.second, true) } }
+                is AdtType -> root.declaration.variants.forEach { variant ->
+                    root.fields(variant).forEach { walk(it.second, true) }
+                }
             }
         }
     }
@@ -146,14 +175,23 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
             file.rootContext.addType(name, declaration.applied(params))
             registerConstructors(file, name, declaration)
         }
+
         val option = PreludeTypes.option
         file.rootContext.addType("Option", option.applied(option.parameters))
         registerConstructors(file, "Option", option)
-        install("Result", listOf("T", "E")) { p -> listOf(AdtVariant("Ok", listOf("value" to p[0])), AdtVariant("Err", listOf("error" to p[1]))) }
+        install("Result", listOf("T", "E")) { p ->
+            listOf(
+                AdtVariant("Ok", listOf("value" to p[0])),
+                AdtVariant("Err", listOf("error" to p[1]))
+            )
+        }
     }
 
     private fun registerConstructors(file: IxFile, name: String, declaration: AdtDeclaration) {
-        for (variant in declaration.variants) file.rootContext.addVariable("$name::${variant.name}", ConstructorType(declaration, variant))
+        for (variant in declaration.variants) file.rootContext.addVariable(
+            "$name::${variant.name}",
+            ConstructorType(declaration, variant)
+        )
     }
 
     private fun resolveEnum(file: IxFile, node: EnumStatement) {
@@ -162,7 +200,11 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
         checkFields(file, node, node.variants.map { it.name.source })
         for (variant in node.variants) {
             checkFields(file, node, variant.fields.map { it.name.source })
-            declaration.variants.add(AdtVariant(variant.name.source, variant.fields.map { it.name.source to resolve(file, it.type!!, parameters) }))
+            declaration.variants.add(
+                AdtVariant(
+                    variant.name.source,
+                    variant.fields.map { it.name.source to resolve(file, it.type!!, parameters) })
+            )
         }
     }
 
@@ -177,26 +219,41 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
                     val module = statement.stringLiteral.source
                     val qualifier = module.substringAfterLast('/')
                     if (!qualifiers.add(qualifier)) {
-                        TypeDeclarationException().send(api, file.file, statement, "ambiguous module qualifier $qualifier")
+                        TypeDeclarationException().send(
+                            api,
+                            file.file,
+                            statement,
+                            "ambiguous module qualifier $qualifier"
+                        )
                     }
                     val localModule = file.imports.values.filterNotNull().any { it.name == qualifier }
                     if (!localModule && Modules.modules.containsKey(module)) {
                         for (function in Modules.getExports(module).filterNotNull()) {
-                            file.rootContext.addVariableOrError(api, "$module::${function.name}", function, file.file, statement)
+                            file.rootContext.addVariableOrError(
+                                api,
+                                "$module::${function.name}",
+                                function,
+                                file.file,
+                                statement
+                            )
                         }
                     }
                 }
+
                 is StructStatement -> {
                     if (!claim(file, entries, statement.name.source, statement)) continue
                     val generics = statement.generics.orEmpty().map { it.source }.toMutableList()
                     checkParameters(file, statement, generics)
-                    val type = StructType(statement.name.source, arrayListOf(), generics,
-                        DeclarationId(file.fullRelativePath, statement.name.source, DeclarationKind.STRUCT))
+                    val type = StructType(
+                        statement.name.source, arrayListOf(), generics,
+                        DeclarationId(file.fullRelativePath, statement.name.source, DeclarationKind.STRUCT)
+                    )
                     type.qualifiedName = "${file.fullRelativePath}$${statement.name.source}"
                     type.parentName = file.fullRelativePath
                     file.rootContext.addType(statement.name.source, type)
                     file.rootContext.addVariableOrError(api, statement.name.source, type, file.file, statement)
                 }
+
                 is TypeAliasStatement -> claim(file, entries, statement.identifier.source, statement)
                 is EnumStatement -> {
                     if (!claim(file, entries, statement.name.source, statement)) continue
@@ -206,11 +263,14 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
                     val declaration = AdtDeclaration(id, names.mapIndexed { i, name -> GenericType(name, id, i) })
                     file.rootContext.addType(statement.name.source, declaration.applied(declaration.parameters))
                 }
+
                 is DefStatement -> {
                     // Values have their own namespace, including a structure's constructor.
-                    val function = DefType(statement.name.source, arrayListOf(),
+                    val function = DefType(
+                        statement.name.source, arrayListOf(),
                         statement.generics.orEmpty().map { it.source }.toMutableList(),
-                        DeclarationId(file.fullRelativePath, statement.name.source, DeclarationKind.FUNCTION))
+                        DeclarationId(file.fullRelativePath, statement.name.source, DeclarationKind.FUNCTION)
+                    )
                     checkParameters(file, statement, function.generics)
                     file.rootContext.addVariableOrError(api, statement.name.source, function, file.file, statement)
                     entries["def::${statement.name.source}"] = statement
@@ -220,7 +280,13 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
     }
 
     private fun claim(file: IxFile, entries: MutableMap<String, Statement>, name: String, node: Statement): Boolean {
-        if (name in entries || TypeUtils.getFromString(name) != null || name in setOf("unit", "never", "Option", "Result")) {
+        if (name in entries || TypeUtils.getFromString(name) != null || name in setOf(
+                "unit",
+                "never",
+                "Option",
+                "Result"
+            )
+        ) {
             TypeDeclarationException().send(api, file.file, node, "duplicate or reserved type $name")
             return false
         }
@@ -236,16 +302,20 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
 
     private fun resolveStruct(file: IxFile, node: StructStatement) {
         val type = file.rootContext.getType(node.name.source) as? StructType ?: return
-        val parameters = type.generics.mapIndexed { index, name -> name to GenericType(name, type.declarationId, index) }.toMap()
+        val parameters =
+            type.generics.mapIndexed { index, name -> name to GenericType(name, type.declarationId, index) }.toMap()
         checkFields(file, node, node.fields.map { it.name.source })
         type.parameters.addAll(node.fields.map { it.name.source to resolve(file, it.type!!, parameters) })
     }
 
     private fun resolveFunction(file: IxFile, node: DefStatement) {
         val function = file.rootContext.getVariableTyped<DefType>(node.name.source) ?: return
-        val parameters = function.generics.mapIndexed { index, name -> name to GenericType(name, function.declarationId, index) }.toMap()
+        val parameters =
+            function.generics.mapIndexed { index, name -> name to GenericType(name, function.declarationId, index) }
+                .toMap()
         checkFields(file, node, node.parameters.orEmpty().map { it.name.source })
-        function.parameters.addAll(node.parameters.orEmpty().map { it.name.source to resolve(file, it.type!!, parameters) })
+        function.parameters.addAll(
+            node.parameters.orEmpty().map { it.name.source to resolve(file, it.type!!, parameters) })
         function.returnType = node.returnType?.let { resolve(file, it, parameters) } ?: BuiltInType.VOID
     }
 

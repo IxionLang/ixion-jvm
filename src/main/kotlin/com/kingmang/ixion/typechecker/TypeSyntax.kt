@@ -15,15 +15,25 @@ object TypeSyntax {
                 val args = node.components.mapIndexed { i, t -> "p$i" to child(t) }.toMutableList()
                 LambdaType(args, child(node.result!!), interfaceFor(args.size))
             }
+
             TypeForm.NAME -> {
                 val name = buildString {
                     append(node.identifier!!.source)
                     var next = node.next.orElse(null)
-                    while (next != null) { append("::").append(next.identifier!!.source); next = next.next.orElse(null) }
+                    while (next != null) {
+                        append("::").append(next.identifier!!.source); next = next.next.orElse(null)
+                    }
                 }
-                val base = when (name) { "unit", "void" -> UnitType; "never" -> NeverType; else -> TypeUtils.getFromString(name) ?: lookup(name, node) }
+                val base = when (name) {
+                    "unit", "void" -> UnitType; "never" -> NeverType; else -> TypeUtils.getFromString(name) ?: lookup(
+                        name,
+                        node
+                    )
+                }
                 val args = node.arguments.map(::child)
-                val count = when (base) { is AdtType -> base.declaration.parameters.size; is StructType -> base.generics.size; is AliasType -> base.parameters.size; else -> 0 }
+                val count = when (base) {
+                    is AdtType -> base.declaration.parameters.size; is StructType -> base.generics.size; is AliasType -> base.parameters.size; else -> 0
+                }
                 if (count != args.size) {
                     error("Type $name expects $count arguments, got ${args.size}")
                     UnknownType(name)

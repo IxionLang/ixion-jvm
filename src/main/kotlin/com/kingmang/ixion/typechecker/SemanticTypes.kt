@@ -24,6 +24,7 @@ object SemanticTypes {
             BuiltInType.VOID -> PrimitiveType.UNIT
             BuiltInType.ANY -> PrimitiveType.ANY
         }
+
         is DefType -> FunctionType(type.parameters.map { of(it.second) }, of(type.returnType))
         is AppliedStructType -> AppliedType(type.declarationId, type.arguments.map(::of))
         is StructType -> AppliedType(type.declarationId)
@@ -35,6 +36,7 @@ object SemanticTypes {
         is MonomorphizedStruct -> AppliedType(type.struct.declarationId, type.struct.generics.map {
             type.resolved[it]?.let(::of) ?: UnresolvedType(it)
         })
+
         is ListType -> SemanticList(of(type.contentType))
         is UnionType -> SemanticUnion.of(type.types.map(::of))
         is LambdaType -> FunctionType(type.parameters.map { of(it.second) }, of(type.returnType))
@@ -43,6 +45,7 @@ object SemanticTypes {
             Any::class.java -> PrimitiveType.ANY
             else -> SemanticExternal(type.foundClass?.name ?: "<unresolved external>")
         }
+
         is UnknownType -> UnresolvedType(type.typeName)
         else -> error("Missing semantic type adapter for ${type.javaClass.name}")
     }

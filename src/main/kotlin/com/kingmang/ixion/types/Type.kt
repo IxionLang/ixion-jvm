@@ -23,16 +23,21 @@ class TypeParameter(val owner: DeclarationId, val index: Int, val name: String) 
 class AppliedType(val declaration: DeclarationId, arguments: List<Type> = emptyList()) : Type {
     val arguments: List<Type> = immutableList(arguments)
 
-    override fun equals(other: Any?) = other is AppliedType && declaration == other.declaration && arguments == other.arguments
+    override fun equals(other: Any?) =
+        other is AppliedType && declaration == other.declaration && arguments == other.arguments
+
     override fun hashCode() = 31 * declaration.hashCode() + arguments.hashCode()
     override fun toString() = "${declaration.module}::${declaration.name}" +
-        if (arguments.isEmpty()) "" else arguments.joinToString(", ", "[", "]")
+            if (arguments.isEmpty()) "" else arguments.joinToString(", ", "[", "]")
 }
 
 data class ListType(val element: Type) : Type
 
 class TupleType(elements: List<Type>) : Type {
-    init { require(elements.isNotEmpty()) { "Use unit for the empty product" } }
+    init {
+        require(elements.isNotEmpty()) { "Use unit for the empty product" }
+    }
+
     val elements: List<Type> = immutableList(elements)
 
     override fun equals(other: Any?) = other is TupleType && elements == other.elements

@@ -50,7 +50,11 @@ object TypeRelations {
         is AppliedType -> AppliedType(type.declaration, type.arguments.map { substitute(it, arguments) })
         is ListType -> ListType(substitute(type.element, arguments))
         is TupleType -> TupleType(type.elements.map { substitute(it, arguments) })
-        is FunctionType -> FunctionType(type.parameters.map { substitute(it, arguments) }, substitute(type.result, arguments))
+        is FunctionType -> FunctionType(
+            type.parameters.map { substitute(it, arguments) },
+            substitute(type.result, arguments)
+        )
+
         is UnionType -> UnionType.of(type.alternatives.map { substitute(it, arguments) })
         else -> type
     }

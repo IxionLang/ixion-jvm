@@ -15,10 +15,10 @@ object TypeUtils {
 
     fun convert(c: Class<*>?): Class<*>? {
         return when (c) {
-            Int::class.java     -> Int::class.javaPrimitiveType
-            Float::class.java   -> Float::class.javaPrimitiveType
+            Int::class.java -> Int::class.javaPrimitiveType
+            Float::class.java -> Float::class.javaPrimitiveType
             Boolean::class.java -> Boolean::class.javaPrimitiveType
-            else                -> null
+            else -> null
         }
     }
 
@@ -31,26 +31,26 @@ object TypeUtils {
     fun getFromToken(tokenType: TokenType): BuiltInType {
         return when (tokenType) {
             TokenType.TRUE, TokenType.FALSE -> BuiltInType.BOOLEAN
-            TokenType.STRING                -> BuiltInType.STRING
-            TokenType.CHAR                  -> BuiltInType.CHAR
-            TokenType.INT                   -> BuiltInType.INT
-            TokenType.FLOAT                 -> BuiltInType.FLOAT
-            TokenType.DOUBLE                -> BuiltInType.DOUBLE
-            else                            -> throw IllegalStateException("Unexpected value: $tokenType")
+            TokenType.STRING -> BuiltInType.STRING
+            TokenType.CHAR -> BuiltInType.CHAR
+            TokenType.INT -> BuiltInType.INT
+            TokenType.FLOAT -> BuiltInType.FLOAT
+            TokenType.DOUBLE -> BuiltInType.DOUBLE
+            else -> throw IllegalStateException("Unexpected value: $tokenType")
         }
     }
 
     fun getFromString(value: String): BuiltInType? {
         return when (value) {
-            "int"       -> BuiltInType.INT
-            "char"      -> BuiltInType.CHAR
-            "float"     -> BuiltInType.FLOAT
-            "double"    -> BuiltInType.DOUBLE
-            "bool"      -> BuiltInType.BOOLEAN
-            "string"    -> BuiltInType.STRING
-            "any"       -> BuiltInType.ANY
-            "void"      -> BuiltInType.VOID
-            else        -> null
+            "int" -> BuiltInType.INT
+            "char" -> BuiltInType.CHAR
+            "float" -> BuiltInType.FLOAT
+            "double" -> BuiltInType.DOUBLE
+            "bool" -> BuiltInType.BOOLEAN
+            "string" -> BuiltInType.STRING
+            "any" -> BuiltInType.ANY
+            "void" -> BuiltInType.VOID
+            else -> null
         }
     }
 }
