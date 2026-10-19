@@ -14,37 +14,50 @@ Docs: [Русский](docs/ru.md)
 > [!IMPORTANT]
 > Before installing the language, install JDK.
 
-greeting in Ixion:
+tree: 
 ```scala
 use <std>
 
-def main(){
-    var greeting = lambda(name : string) : string {
-        return "Hello, " + name
-    }
-    
-    std::print(greeting("Artyom"))
+type Tree[T] = enum {
+  Leaf(value: T),
+  Node(left: Tree[T], right: Tree[T]),
+}
+
+def mapTree[A, B](tree: Tree[A], f: (A) => B): Tree[B] {
+  return case tree {
+    Tree::Leaf(value) => Tree::Leaf(f(value)),
+    Tree::Node(left, right) => Tree::Node(mapTree(left, f), mapTree(right, f)),
+  }
+}
+
+def main() {
+  const tree = Tree::Node(Tree::Leaf(-1), Tree::Leaf(7))
+  std::println(mapTree(tree, lambda (n) { return n > 0 }))
 }
 ```
 
 
-pattern matching:
+Result:
 
 ```scala
 use <std>
 
-type number = int | float
-
-def main(){
-    print_type(10)
-    print_type(10.0f)
+def mapResult[A, B, E](result: Result[A, E], f: (A) => B): Result[B, E] {
+    return case result {
+        Result::Ok(value) => Result::Ok(f(value)),
+        Result::Err(error) => Result::Err(error),
+    }
 }
 
-def print_type(num : number){
-    case num {
-        int i => std::println("value " + i + " is integer")
-        float f => std::println("value " + f + " is float")
-    }
+def main() {
+    const success: Result[int, string] = Result::Ok(21)
+    const failure: Result[int, string] = Result::Err("offline")
+
+    std::println(mapResult(success, lambda (n) { return n >= 18 }))
+    // Ok(true)
+
+    std::println(mapResult(failure, lambda (n) { return n >= 18 }))
+    // Err(offline)
 }
 
 ```
