@@ -7,6 +7,9 @@ Multi-paradigm compiled programming language for the jvm platform.
 
 Русская документация: [руководство для начинающих](docs/ru.md)
 
+Спецификация Ixion Core 1.0: [Русский](spec/specification.ru.md) ·
+[English](spec/specification.en.md) · [Implementation status](spec/implementation-status.md).
+
 > [!IMPORTANT]
 > Before installing the language, install JDK.
 

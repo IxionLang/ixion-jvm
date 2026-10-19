@@ -1,0 +1,86 @@
+module              = { use_decl | declaration } EOF ;
+use_decl            = "use" "<" IDENT { "/" IDENT } ">" ;
+declaration         = [ "pub" ] ( type_decl | function_decl | const_decl ) ;
+
+type_decl           = "type" IDENT [ type_parameters ] "=" type_definition ;
+type_definition     = struct_definition | enum_definition | type_expr ;
+type_parameters     = "[" IDENT { "," IDENT } [ "," ] "]" ;
+struct_definition   = "struct" "{" [ fields ] "}" ;
+fields              = field { "," field } [ "," ] ;
+field               = IDENT ":" type_expr ;
+enum_definition     = "enum" "{" variant { "," variant } [ "," ] "}" ;
+variant             = IDENT [ "(" fields ")" ] ;
+function_decl       = "def" IDENT [ type_parameters ] "(" [ fields ] ")"
+                      [ ":" type_expr ] block ;
+const_decl          = "const" IDENT [ ":" type_expr ] "=" expression ;
+var_decl            = "var" IDENT [ ":" type_expr ] "=" expression ;
+
+type_expr           = function_type | union_type ;
+function_type       = "(" [ type_items ] ")" "=>" type_expr ;
+union_type          = postfix_type { "|" postfix_type } ;
+postfix_type        = type_atom { "[" "]" } ;
+type_atom           = type_name [ type_arguments ] | "never" | "(" ")"
+                    | "(" type_expr ")" | "(" type_expr "," [ type_items ] ")" ;
+type_name           = IDENT [ "::" IDENT ] ;
+type_arguments      = "[" type_items "]" ;
+type_items          = type_expr { "," type_expr } [ "," ] ;
+
+block               = "{" { statement } "}" ;
+statement           = const_decl | var_decl | assignment | return_stmt
+                    | if_stmt | while_stmt | for_stmt | block | expression ;
+assignment          = IDENT assign_op expression | IDENT ( "++" | "--" ) ;
+assign_op           = "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
+return_stmt         = "return" expression ;
+if_stmt             = "if" expression block [ "else" ( if_stmt | block ) ] ;
+while_stmt          = "while" expression block ;
+for_stmt            = "for" IDENT ":" expression block ;
+
+expression          = update_expr ;
+update_expr         = xor_expr { "with" "{" [ updates ] "}" } ;
+updates             = update { "," update } [ "," ] ;
+update              = IDENT "=" expression ;
+xor_expr            = or_expr { "^" or_expr } ;
+or_expr             = and_expr { "||" and_expr } ;
+and_expr            = comparison_expr { "&&" comparison_expr } ;
+comparison_expr     = sum_expr [ comparison_op sum_expr ] ;
+comparison_op       = "==" | "!=" | "<" | "<=" | ">" | ">=" | ".." ;
+sum_expr            = product_expr { ( "+" | "-" ) product_expr } ;
+product_expr        = power_expr { ( "*" | "/" | "%" ) power_expr } ;
+power_expr          = prefix_expr [ "**" power_expr ] ;
+prefix_expr         = ( "+" | "-" | "!" ) prefix_expr | postfix_expr ;
+postfix_expr        = primary_expr { call_suffix | index_suffix | field_suffix } ;
+call_suffix         = "(" [ expressions ] ")" ;
+index_suffix        = "[" expression "]" ;
+field_suffix        = "." IDENT ;
+expressions         = expression { "," expression } [ "," ] ;
+primary_expr        = scalar_literal | value_reference | lambda_expr | case_expr
+                    | list_expr | "(" expression ")" | tuple_expr ;
+scalar_literal      = INT_LIT | FLOAT_LIT | DOUBLE_LIT | CHAR_LIT | STRING_LIT
+                    | "true" | "false" | "(" ")" ;
+value_name          = IDENT [ "::" IDENT ] ;
+value_reference     = value_name [ type_arguments ] | variant_reference ;
+variant_reference   = type_name [ type_arguments ] "::" IDENT ;
+list_expr           = "[" [ expressions ] "]" ;
+tuple_expr          = "(" expression "," [ expressions ] ")" ;
+lambda_expr         = "lambda" "(" [ lambda_parameters ] ")"
+                      [ ":" type_expr ] block ;
+lambda_parameters   = lambda_parameter { "," lambda_parameter } [ "," ] ;
+lambda_parameter    = IDENT [ ":" type_expr ] ;
+
+case_expr           = "case" expression "{" [ branches ] "}" ;
+branches            = branch { "," branch } [ "," ] ;
+branch              = pattern [ "if" expression ] "=>" ( block | expression ) ;
+pattern             = "_" | scalar_literal | negative_literal | IDENT
+                    | constructor_pattern | struct_pattern | type_pattern
+                    | "(" pattern ")" | tuple_pattern | list_pattern ;
+negative_literal    = "-" ( INT_LIT | FLOAT_LIT | DOUBLE_LIT ) ;
+constructor_pattern = variant_reference [ "(" patterns ")" ] ;
+struct_pattern      = type_name [ type_arguments ] "{" [ field_patterns ] "}" ;
+field_patterns      = field_pattern { "," field_pattern } [ "," ] ;
+field_pattern       = IDENT ":" pattern ;
+type_pattern        = type_expr IDENT ;
+patterns            = pattern { "," pattern } [ "," ] ;
+tuple_pattern       = "(" pattern "," [ patterns ] ")" ;
+list_pattern        = "[" [ rest_pattern | list_pattern_items ] "]" ;
+list_pattern_items  = pattern { "," pattern } [ "," [ rest_pattern ] ] ;
+rest_pattern        = ".." ( IDENT | "_" ) [ "," ] ;
