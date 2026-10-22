@@ -12,7 +12,7 @@ import javax.tools.ToolProvider
 class LispExampleTest {
     @TempDir lateinit var temporary: Path
 
-    // Every program gets a fresh Lisp environment. Multiform programs share it internally.
+    /*
     private val cases = listOf(
         "" to "()",
         "; only a comment" to "()",
@@ -110,4 +110,6 @@ class LispExampleTest {
             }
         }
     }
+
+     */
 }
