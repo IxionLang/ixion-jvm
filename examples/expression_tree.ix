@@ -10,9 +10,23 @@ def eval(e : Expr): int {
     return case e {
         Expr::Number(value) => value,
         Expr::Add(a, b) => eval(a) + eval(b),
-        Expr::Mul(a, b) => eval(a) - eval(b),
+        Expr::Mul(a, b) => eval(a) * eval(b),
     }
 }
-def main(){
-    std::print(eval(Expr::Add(Expr::Number(10), Expr::Number(20))))
+
+def render(e: Expr): string {
+    return case e {
+        Expr::Number(value) => "" + value,
+        Expr::Add(a, b) => "(" + render(a) + " + " + render(b) + ")",
+        Expr::Mul(a, b) => "(" + render(a) + " * " + render(b) + ")",
+    }
+}
+
+def main() {
+    const expression = Expr::Mul(
+        Expr::Add(Expr::Number(2), Expr::Number(5)),
+        Expr::Number(6)
+    )
+    std::println(render(expression))
+    std::println(eval(expression))
 }
