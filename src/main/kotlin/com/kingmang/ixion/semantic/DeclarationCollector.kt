@@ -4,6 +4,7 @@ import com.kingmang.ixion.api.IxApi
 import com.kingmang.ixion.api.IxFile
 import com.kingmang.ixion.ast.*
 import com.kingmang.ixion.exception.IdentifierNotFoundException
+import com.kingmang.ixion.exception.RedeclarationException
 import com.kingmang.ixion.exception.TypeDeclarationException
 import com.kingmang.ixion.modules.Modules
 import com.kingmang.ixion.runtime.*
@@ -32,6 +33,19 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
                 }
             }
         }
+        for (file in files) {
+            for ((name, functions) in file.rootContext.localFunctions()) {
+                val seen = hashSetOf<List<com.kingmang.ixion.types.Type>>()
+                for (function in functions) {
+                    val signature = function.parameters.map { com.kingmang.ixion.typechecker.SemanticTypes.of(it.second) }
+                    if (!seen.add(signature)) {
+                        TypeDeclarationException().send(api, file.file, declarations.getValue(file)
+                            .values.filterIsInstance<DefStatement>().first { it.functionType === function },
+                            "duplicate function signature $name(${function.parameters.joinToString { it.second.name?.lowercase() ?: "?" }})")
+                    }
+                }
+            }
+        }
         files.forEach { file ->
             for ((_, node) in declarations.getValue(file)) if (node is EnumStatement) {
                 val type = file.rootContext.getType(node.name.source) as AdtType
@@ -56,6 +70,12 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
                         file.rootContext.addVariable("${imported.name}::$name", type)
                     }
                 }
+                for ((name, functions) in imported.exportedFunctions) {
+                    functions.forEach { function ->
+                        function.external = imported
+                        file.rootContext.addFunction("${imported.name}::$name", function)
+                    }
+                }
             }
         }
     }
@@ -65,7 +85,7 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
         for (file in files) {
             for (outer in file.statements.filterIsInstance<ExportStatement>()) {
                 val name = exportedName(outer.stmt) ?: continue
-                val type = file.exportedTypes[name] ?: file.exports[name] ?: continue
+                val type = file.exportedTypes[name] ?: file.exports[name]
                 val seen = hashSetOf<com.kingmang.ixion.types.Type>()
                 val nominal = hashSetOf<DeclarationId>()
                 fun check(type: IxType) {
@@ -113,7 +133,8 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
                         }
                     }
                 }
-                check(type)
+                type?.let(::check)
+                file.exportedFunctions[name].orEmpty().forEach(::check)
             }
         }
     }
@@ -228,6 +249,10 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
                     }
                     val localModule = file.imports.values.filterNotNull().any { it.name == qualifier }
                     if (!localModule && Modules.modules.containsKey(module)) {
+                        for ((name, type) in Modules.getTypes(module)) {
+                            file.rootContext.addType("$module::$name", type)
+                            if (type is AdtType) registerConstructors(file, "$module::$name", type.declaration)
+                        }
                         for (function in Modules.getExports(module).filterNotNull()) {
                             file.rootContext.addVariableOrError(
                                 api,
@@ -265,15 +290,19 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
                 }
 
                 is DefStatement -> {
-                    // Values have their own namespace, including a structure's constructor.
                     val function = DefType(
                         statement.name.source, arrayListOf(),
                         statement.generics.orEmpty().map { it.source }.toMutableList(),
                         DeclarationId(file.fullRelativePath, statement.name.source, DeclarationKind.FUNCTION)
                     )
+                    statement.functionType = function
                     checkParameters(file, statement, function.generics)
-                    file.rootContext.addVariableOrError(api, statement.name.source, function, file.file, statement)
-                    entries["def::${statement.name.source}"] = statement
+                    if (file.rootContext.hasLocalVariable(statement.name.source)) {
+                        RedeclarationException().send(api, file.file, statement, statement.name.source)
+                    } else {
+                        file.rootContext.addFunction(statement.name.source, function)
+                    }
+                    entries["def::${statement.name.source}::${entries.size}"] = statement
                 }
             }
         }
@@ -309,7 +338,7 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
     }
 
     private fun resolveFunction(file: IxFile, node: DefStatement) {
-        val function = file.rootContext.getVariableTyped<DefType>(node.name.source) ?: return
+        val function = node.functionType ?: return
         val parameters =
             function.generics.mapIndexed { index, name -> name to GenericType(name, function.declarationId, index) }
                 .toMap()
@@ -371,6 +400,7 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
 
     private fun publishExports(file: IxFile) {
         file.exports.clear()
+        file.exportedFunctions.clear()
         file.exportedTypes.clear()
         for (outer in file.statements.filterIsInstance<ExportStatement>()) {
             val name = exportedName(outer.stmt) ?: continue
@@ -387,6 +417,10 @@ class DeclarationCollector(private val api: IxApi, private val files: Collection
             }
             if (outer.stmt !is TypeAliasStatement) {
                 file.rootContext.getVariable(name)?.let { file.exports[name] = it }
+            }
+            if (outer.stmt is DefStatement) {
+                val functions = file.rootContext.localFunctions()[name].orEmpty()
+                if (functions.isNotEmpty()) file.exportedFunctions[name] = functions
             }
         }
     }

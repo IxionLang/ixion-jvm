@@ -12,6 +12,8 @@ object Modules {
         modules["http"] = HttpModule::class.java
         modules["async"] = AsyncModule::class.java
         modules["strings"] = StringModule::class.java
+        modules["http_server"] = HttpServerModule::class.java
+        modules["json"] = JsonModule::class.java
     }
 
     @JvmStatic
@@ -22,7 +24,7 @@ object Modules {
             val m = c.getMethods()
             for (method in m) {
                 var name = method.name
-                if (method.declaringClass == Any::class.java) {
+                if (method.declaringClass == Any::class.java || method.isSynthetic) {
                     continue
                 }
                 val parameters = getPairs(method)
@@ -39,6 +41,9 @@ object Modules {
                 funcType.returnType = if (module == "std" && name == "panic") com.kingmang.ixion.runtime.NeverType else mapJavaType(method.returnType)
 
                 if (module == "std") listSignature(funcType)
+                if (module == "http_server") HttpServerSignatures.apply(funcType)
+                if (module == "json") JsonTypes.signature(funcType)
+                if (module == "strings" && name == "split") funcType.returnType = ListType(BuiltInType.STRING)
                 funcType.glue = true
                 funcType.jvmDescriptor = org.objectweb.asm.Type.getMethodDescriptor(method)
                 funcType.owner = c.getName().replace('.', '/')
@@ -47,6 +52,9 @@ object Modules {
         }
         return result
     }
+
+    fun getTypes(module: String): Map<String, IxType> =
+        if (module == "json") mapOf("Value" to JsonTypes.value) else emptyMap()
 
     /** Explicit Ixion signatures; reflection supplies only the physical JVM ABI. */
     private fun listSignature(function: DefType) {

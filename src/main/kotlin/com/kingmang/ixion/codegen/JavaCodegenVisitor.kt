@@ -507,7 +507,10 @@ class JavaCodegenVisitor(private val ixApi: IxApi, private val source: IxFile) :
         val previousRenamed = HashMap(renamed)
         val previousDepth = caseDepth
         val outer = functionStack.peek()!!
-        val function = DefType("lambda$" + dataCounter++, type.parameters, outer.generics.toMutableList())
+        val lambdaId = dataCounter++
+        val function = DefType("lambda$" + lambdaId, type.parameters, outer.generics.toMutableList())
+        val argumentPrefix = "ixArgument${lambdaId}_"
+        val argumentArray = "ixArguments$lambdaId"
         function.returnType = type.returnType
         val iface = getJavaTypeName(type)
         print("((java.util.function.Supplier<$iface>) () -> {\n")
@@ -529,8 +532,8 @@ class JavaCodegenVisitor(private val ixApi: IxApi, private val source: IxFile) :
             renamed[capture.first] = name
         }
         indent(); print("return ($iface) com.kingmang.ixion.runtime.FunctionTags.register(($iface) (")
-        if (type.parameters.size > 4) print("Object[] ixArguments")
-        else print(type.parameters.indices.joinToString(", ") { "Object ixArgument$it" })
+        if (type.parameters.size > 4) print("Object[] $argumentArray")
+        else print(type.parameters.indices.joinToString(", ") { "Object $argumentPrefix$it" })
         print(") -> {\n"); indentLevel++
         currentContext = expression.body.context
         caseDepth = 0
@@ -538,7 +541,7 @@ class JavaCodegenVisitor(private val ixApi: IxApi, private val source: IxFile) :
         for ((index, parameter) in type.parameters.withIndex()) {
             val name = "ixParameter${dataCounter++}_$index"
             renamed[parameter.first] = name
-            val value = if (type.parameters.size > 4) "ixArguments[$index]" else "ixArgument$index"
+            val value = if (type.parameters.size > 4) "$argumentArray[$index]" else "$argumentPrefix$index"
             println(
                 "final " + getJavaTypeName(parameter.second) + " $name = " + objectCast(
                     parameter.second,
@@ -627,7 +630,7 @@ class JavaCodegenVisitor(private val ixApi: IxApi, private val source: IxFile) :
     }
 
     override fun visitFunctionStmt(statement: DefStatement): Optional<String> {
-        val function = currentContext!!.getVariableTyped<DefType>(statement.name.source)!!
+        val function = statement.functionType!!
         functionStack.push(function)
         val previous = currentContext
         val previousDepth = caseDepth

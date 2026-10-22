@@ -1,0 +1,32 @@
+pub type Header = struct { name: string, value: string }
+pub type QueryParam = struct { name: string, value: string }
+
+pub type Request = struct {
+    method: string,
+    path: string,
+    query: QueryParam[],
+    headers: Header[],
+    body: string,
+    params: QueryParam[],
+}
+
+pub type Response = struct {
+    status: int,
+    headers: Header[],
+    body: string,
+}
+
+pub type ServerConfig = struct {
+    host: string,
+    port: int,
+    maxBodyBytes: int,
+    workers: int,
+    queueCapacity: int,
+    shutdownSeconds: int,
+}
+
+pub type ServerError = enum { Failed(message: string) }
+
+pub def config(host: string, port: int): ServerConfig {
+    return ServerConfig(host, port, 1048576, 4, 64, 2)
+}

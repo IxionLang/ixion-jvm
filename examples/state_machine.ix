@@ -1,0 +1,36 @@
+use <std>
+
+type Player = enum { Stopped, Playing(track: string), Paused(track: string), }
+type Event = enum { Play(track: string), Pause, Resume, Stop, }
+
+def transition(state: Player, event: Event): Player {
+    return case event {
+        Event::Play(track) => Player::Playing(track),
+        Event::Stop => Player::Stopped,
+        Event::Pause => case state {
+            Player::Playing(track) => Player::Paused(track),
+            _ => state,
+        },
+        Event::Resume => case state {
+            Player::Paused(track) => Player::Playing(track),
+            _ => state,
+        },
+    }
+}
+
+def describe(state: Player): string {
+    return case state {
+        Player::Stopped => "Stopped",
+        Player::Playing(track) => "Playing: " + track,
+        Player::Paused(track) => "Paused: " + track,
+    }
+}
+
+def main() {
+    const events = [Event::Play("Midnight Drive"), Event::Pause, Event::Resume, Event::Stop]
+    var state: Player = Player::Stopped
+    for event : events {
+        state = transition(state, event)
+        std::println(describe(state))
+    }
+}

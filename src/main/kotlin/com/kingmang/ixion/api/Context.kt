@@ -9,6 +9,7 @@ import java.io.File
 
 class Context {
     private val variables = LinkedMap<String?, IxType?>()
+    private val functions = LinkedMap<String, MutableList<com.kingmang.ixion.runtime.DefType>>()
     private val types = LinkedMap<String, IxType>()
     private val mutability: MutableMap<String?, Mutability?> = HashMap()
 
@@ -20,8 +21,22 @@ class Context {
         mutability[name] = Mutability.IMMUTABLE
     }
 
+    fun addFunction(name: String, type: com.kingmang.ixion.runtime.DefType) {
+        functions.getOrPut(name) { arrayListOf() }.add(type)
+    }
+
+    fun getFunctions(name: String): List<com.kingmang.ixion.runtime.DefType> =
+        functions[name] ?: parent?.getFunctions(name).orEmpty()
+
+    fun getFunction(name: String): com.kingmang.ixion.runtime.DefType? =
+        getFunctions(name).singleOrNull()
+
+    fun hasLocalFunctions(name: String): Boolean = functions.containsKey(name)
+
+    fun localFunctions(): Map<String, List<com.kingmang.ixion.runtime.DefType>> = functions
+
     fun addVariableOrError(ixApi: IxApi, name: String, type: IxType?, file: File, node: Node) {
-        if (getVariable(name) != null) {
+        if (getVariable(name) != null || getFunctions(name).isNotEmpty()) {
             RedeclarationException().send(ixApi, file, node, name)
         } else {
             addVariable(name, type)
@@ -39,6 +54,7 @@ class Context {
     fun getVariable(name: String): IxType? {
         return when {
             variables.containsKey(name) -> variables[name]
+            functions[name]?.size == 1 -> functions[name]?.single()
             parent != null -> parent!!.getVariable(name)
             else -> null
         }

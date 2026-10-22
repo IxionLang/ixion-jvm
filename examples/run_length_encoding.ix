@@ -1,0 +1,26 @@
+use <std>
+
+type Run = struct { value: int, count: int }
+
+def collect(values: int[], current: Run): Run[] {
+    return case values {
+        [] => [current],
+        [next, ..rest] if next == current.value => collect(rest, current with { count = current.count + 1 }),
+        [next, ..rest] => std::concat([current], collect(rest, Run(next, 1))),
+    }
+}
+
+def encode(values: int[]): Run[] {
+    return case values {
+        [] => [],
+        [first, ..rest] => collect(rest, Run(first, 1)),
+    }
+}
+
+def main() {
+    const runs = encode([4, 4, 4, 2, 2, 7, 4, 4])
+    for run : runs {
+        std::println("" + run.value + " x " + run.count)
+    }
+    std::println(std::len(encode(int[])))
+}

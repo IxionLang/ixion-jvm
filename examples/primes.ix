@@ -1,0 +1,20 @@
+use <std>
+
+def sieve(values: int[]): int[] {
+    return case values {
+        [] => [],
+        [prime, ..rest] => std::concat([prime], sieve(std::filter(rest, lambda (n) {
+            return n % prime != 0
+        }))),
+    }
+}
+
+def main() {
+    var candidates: int[] = []
+    for n : std::range(2, 31) {
+        candidates = std::append(candidates, n)
+    }
+    const primes = sieve(candidates)
+    std::println(primes)
+    std::println(std::fold(primes, 0, lambda (sum, prime) { return sum + prime }))
+}

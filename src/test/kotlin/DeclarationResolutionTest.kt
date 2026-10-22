@@ -48,6 +48,29 @@ class DeclarationResolutionTest {
     }
 
     @Test
+    fun overloads_resolve_by_arity_and_argument_types_on_both_backends() {
+        assertBackends("""
+            use <std>
+            def c(): int { return 1 }
+            def c(a: int): int { return a + 1 }
+            def c(a: string): string { return a }
+            def main() {
+                std::println(c())
+                std::println(c(41))
+                std::println(c("ok"))
+            }
+        """, "1\n42\nok")
+    }
+
+    @Test
+    fun duplicate_overload_signatures_are_rejected() {
+        assertError("""
+            def c(a: int): int { return a }
+            def c(value: int): int { return value }
+        """, "duplicate function signature c(int)")
+    }
+
+    @Test
     fun aliases_resolve_forward_through_lists_and_flatten_nested_unions() {
         val (_, file) = analyze("""
             type Values = Item[]

@@ -1,0 +1,42 @@
+use <std>
+
+// A step budget bounds the computation even for an unexpected input.
+def collatz(start: int, budget: int): Result[int[], string] {
+    if start <= 0 {
+        return Result::Err("Start must be positive")
+    }
+    var value = start
+    var steps = 0
+    var path = [value]
+    while value != 1 && steps < budget {
+        if value % 2 == 0 {
+            value = value / 2
+        } else {
+            // Keep 3 * value + 1 inside the signed int range.
+            if value > 715827882 {
+                return Result::Err("Integer overflow avoided")
+            }
+            value = value * 3 + 1
+        }
+        path = std::append(path, value)
+        steps++
+    }
+    if value != 1 {
+        return Result::Err("Step budget exhausted")
+    }
+    return Result::Ok(path)
+}
+
+def show(result: Result[int[], string]) {
+    case result {
+        Result::Ok(path) => { std::println(path) },
+        Result::Err(message) => { std::println(message) },
+    }
+}
+
+def main() {
+    show(collatz(6, 20))
+    show(collatz(6, 2))
+    show(collatz(0, 20))
+    show(collatz(715827883, 20))
+}

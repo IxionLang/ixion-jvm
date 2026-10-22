@@ -1,0 +1,18 @@
+use <std>
+
+def sort(values: int[]): int[] {
+    return case values {
+        [] => [],
+        [pivot, ..rest] => std::concat(
+            std::append(sort(std::filter(rest, lambda (n) { return n < pivot })), pivot),
+            sort(std::filter(rest, lambda (n) { return n >= pivot }))
+        ),
+    }
+}
+
+def main() {
+    const values = [8, 3, 5, 3, -2, 9, 1]
+    std::println(sort(values))
+    std::println(values)
+    std::println(sort(int[]))
+}

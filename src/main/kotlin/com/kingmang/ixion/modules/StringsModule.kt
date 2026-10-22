@@ -5,6 +5,20 @@ package com.kingmang.ixion.modules
 object StringModule {
 
     @JvmStatic
+    fun split(s: String, delimiter: String): com.kingmang.ixion.runtime.CollectionUtil.IxListWrapper {
+        require(delimiter.isNotEmpty()) { "split delimiter must not be empty" }
+        return com.kingmang.ixion.runtime.CollectionUtil.IxListWrapper(
+            s.split(delimiter), "string"
+        )
+    }
+
+    @JvmStatic
+    fun startsWith(s: String, prefix: String): Boolean = s.startsWith(prefix)
+
+    @JvmStatic
+    fun substring(s: String, start: Int, end: Int): String = s.substring(start, end)
+
+    @JvmStatic
     fun toUpperCase(s: String): String = s.uppercase()
 
     @JvmStatic

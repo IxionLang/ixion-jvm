@@ -28,7 +28,7 @@ object TypeRelations {
     fun canWiden(expected: Type, actual: Type): Boolean {
         val from = numericOrder.indexOf(actual)
         val to = numericOrder.indexOf(expected)
-        return from >= 0 && to >= from
+        return from in 0..to
     }
 
     /** Exact matches win; two widening candidates are ambiguous, even if one is narrower. */

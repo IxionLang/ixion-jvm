@@ -318,12 +318,16 @@ data class IxApi(
                 val requestedUse = statement.stringLiteral.source
                 debug("\tFound module `" + requestedUse + "`")
 
-                val relative = FilenameUtils.getPath(requestedUse)
                 val n = FilenameUtils.getName(requestedUse)
-                val filePath =
-                    Path.of(source.projectRoot, source.relativePath, relative, n + IxionConstant.EXT).toString()
-                val normalizedPath = FilenameUtils.separatorsToUnix(Path.of(filePath).normalize().toString())
+                // Canonical imports are rooted at the project. Retain sibling-module
+                // lookup for existing programs using short local imports.
+                val root = Path.of(source.projectRoot).toAbsolutePath().normalize()
+                val rooted = root.resolve(requestedUse + IxionConstant.EXT).normalize()
+                val local = root.resolve(source.relativePath).resolve(requestedUse + IxionConstant.EXT).normalize()
+                val path = if (rooted.toFile().exists()) rooted else local
+                val normalizedPath = FilenameUtils.separatorsToUnix(path.toString())
                 if (File(normalizedPath).exists()) {
+                    val relative = root.relativize(path.parent).toString()
                     imports.add(Pair.with<String?, String?>(relative, normalizedPath))
                 } else if (!Modules.modules.containsKey(n)) {
                     ModuleNotFoundException().send(this, source.file, statement, n)
@@ -339,7 +343,7 @@ data class IxApi(
                 debug("triggered parse, no key exists `" + normalizedPath + "`")
                 val next: IxFile?
                 try {
-                    next = parse(projectRoot, Path.of(source.relativePath, relative).normalize().toString(), n)
+                    next = parse(projectRoot, relative, n)
                     source.addImport(normalizedPath, next)
                 } catch (e: FileNotFoundException) {
                     e.printStackTrace()

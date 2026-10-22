@@ -1,0 +1,22 @@
+use <std>
+
+// Prices are integer cents, so totals do not need floating-point rounding.
+type Item = struct { name: string, price: int, quantity: int }
+
+def total(items: Item[]): int {
+    return std::fold(items, 0, lambda (sum, item) {
+        return sum + item.price * item.quantity
+    })
+}
+
+def main() {
+    const cart = [Item("Notebook", 500, 2), Item("Pen", 150, 3), Item("Sticker", 100, 0)]
+    const available = std::filter(cart, lambda (item) { return item.quantity > 0 })
+    const discounted = std::map(available, lambda (item) {
+        return item with { price = item.price * 90 / 100 }
+    })
+    std::println(std::map(available, lambda (item) { return item.name }))
+    std::println("Total cents: " + total(cart))
+    std::println("Discounted cents: " + total(discounted))
+    std::println("Original cents: " + total(cart))
+}

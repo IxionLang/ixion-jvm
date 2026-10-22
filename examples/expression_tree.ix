@@ -1,0 +1,18 @@
+use <std>
+
+type Expr = enum {
+    Number(value : int),
+    Add(a : Expr, b : Expr),
+    Mul(a : Expr, b : Expr)
+}
+
+def eval(e : Expr): int {
+    return case e {
+        Expr::Number(value) => value,
+        Expr::Add(a, b) => eval(a) + eval(b),
+        Expr::Mul(a, b) => eval(a) - eval(b),
+    }
+}
+def main(){
+    std::print(eval(Expr::Add(Expr::Number(10), Expr::Number(20))))
+}

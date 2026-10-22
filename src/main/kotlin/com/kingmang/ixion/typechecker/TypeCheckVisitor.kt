@@ -178,7 +178,17 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
     }
 
     private fun appliedReference(expression: TypeApplicationExpression): IxType {
-        val base = currentContext.getVariable(expression.name.source) ?: fail(
+        val variable = currentContext.getVariable(expression.name.source)
+        val overloads = currentContext.getFunctions(expression.name.source)
+        val base = variable ?: overloads.singleOrNull() ?: if (overloads.isNotEmpty()) {
+            val arity = expression.types.size
+            val matching = overloads.filter { it.generics.size == arity }
+            if (matching.size == 1) matching.single() else fail(
+                expression,
+                if (matching.isEmpty()) "type.no_overload: ${expression.name.source}"
+                else "type.ambiguous_overload: ${expression.name.source}"
+            )
+        } else fail(
             expression,
             "name.unknown: ${expression.name.source}"
         )
@@ -474,10 +484,40 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
      */
     override fun visitCall(expression: CallExpression): Optional<IxType> {
         var callee = when (val item = expression.item) {
-            is IdentifierExpression -> currentContext.getVariable(item.identifier.source) ?: fail(
-                item,
-                "name.unknown: ${item.identifier.source}"
-            )
+            is IdentifierExpression -> {
+                val value = currentContext.getVariable(item.identifier.source)
+                if (value != null) value else {
+                    val candidates = currentContext.getFunctions(item.identifier.source)
+                    if (candidates.isEmpty()) fail(item, "name.unknown: ${item.identifier.source}")
+                    else if (candidates.size == 1) candidates.single()
+                    else {
+                        val actual = expression.arguments.map {
+                            if (it is LambdaExpression) UnknownType() else check(it)
+                        }
+                        val viable = candidates.filter { candidate ->
+                            if (candidate.parameters.size != actual.size) return@filter false
+                            val generic = candidate.generics.mapIndexed { i, name ->
+                                GenericType(name, candidate.declarationId, i)
+                            }
+                            val inferred = linkedMapOf<kotlin.String, IxType>()
+                            candidate.parameters.indices.forEach { i ->
+                                if (actual[i] !is UnknownType) infer(candidate.parameters[i].second, actual[i], generic, inferred)
+                            }
+                            candidate.parameters.indices.all { i ->
+                                actual[i] is UnknownType || typesMatch(
+                                    substitute(candidate.parameters[i].second, generic, inferred), actual[i]
+                                )
+                            }
+                        }
+                        if (viable.size != 1) fail(
+                            expression,
+                            if (viable.isEmpty()) "call.no_overload: ${item.identifier.source}"
+                            else "call.ambiguous_overload: ${item.identifier.source}"
+                        )
+                        viable.single()
+                    }
+                }
+            }
 
             is TypeApplicationExpression -> appliedReference(item)
             else -> check(item)
@@ -641,7 +681,7 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
      * @return Empty optional as function definitions don't produce values
      */
     override fun visitFunctionStmt(statement: DefStatement): Optional<IxType> {
-        val funcType = currentContext.getVariableTyped<DefType>(statement.name.source)
+        val funcType = statement.functionType
         if (funcType != null) {
             functionStack.add(funcType)
             val childEnvironment = statement.body!!.context
@@ -680,9 +720,12 @@ class TypeCheckVisitor(private val ixApi: IxApi, private val rootContext: Contex
      * @return Optional containing the type of the identifier
      */
     override fun visitIdentifierExpr(expression: IdentifierExpression): Optional<IxType> {
-        val type = currentContext.getVariable(expression.identifier.source) ?: fail(
+        val variable = currentContext.getVariable(expression.identifier.source)
+        val functions = currentContext.getFunctions(expression.identifier.source)
+        val type = variable ?: functions.singleOrNull() ?: fail(
             expression,
-            "name.unknown: ${expression.identifier.source}"
+            if (functions.isEmpty()) "name.unknown: ${expression.identifier.source}"
+            else "call.ambiguous_overload: ${expression.identifier.source}"
         )
         return if (type is ConstructorType) {
             if (type.variant.fields.isNotEmpty()) fail(expression, "constructor.requires_arguments: ${type.name}")

@@ -1,0 +1,33 @@
+use <std>
+use <http_server>
+use <types>
+
+// The transport ABI contains only Core data, independent of generated structure classes.
+type WireRequest = (string, string, (string, string)[], (string, string)[], string)
+type WireResponse = (int, (string, string)[], string)
+
+def decode(request: WireRequest): types::Request {
+    return case request {
+        (method, path, query, headers, body) => types::Request(
+            method, path,
+            std::map(query, lambda (pair) { return case pair { (name, value) => types::QueryParam(name, value), } }),
+            std::map(headers, lambda (pair) { return case pair { (name, value) => types::Header(name, value), } }),
+            body, []
+        ),
+    }
+}
+
+def encode(response: types::Response): WireResponse {
+    return (response.status, std::map(response.headers, lambda (header) { return (header.name, header.value) }), response.body)
+}
+
+pub def serve(config: types::ServerConfig, handler: (types::Request) => types::Response): Result[unit, types::ServerError] {
+    const result = http_server::serve(
+        config.host, config.port, config.maxBodyBytes, config.workers, config.queueCapacity, config.shutdownSeconds,
+        lambda (request) { return encode(handler(decode(request))) }
+    )
+    return case result {
+        Result::Ok(value) => Result::Ok(value),
+        Result::Err(message) => Result::Err(types::ServerError::Failed(message)),
+    }
+}

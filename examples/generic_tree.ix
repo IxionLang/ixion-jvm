@@ -1,0 +1,26 @@
+use <std>
+
+type Tree[T] = enum {
+    Leaf(value: T),
+    Branch(left: Tree[T], right: Tree[T]),
+}
+
+def mapTree[A, B](tree: Tree[A], transform: (A) => B): Tree[B] {
+    return case tree {
+        Tree::Leaf(value) => Tree::Leaf(transform(value)),
+        Tree::Branch(left, right) => Tree::Branch(mapTree(left, transform), mapTree(right, transform)),
+    }
+}
+
+def leaves[T](tree: Tree[T]): T[] {
+    return case tree {
+        Tree::Leaf(value) => [value],
+        Tree::Branch(left, right) => std::concat(leaves(left), leaves(right)),
+    }
+}
+
+def main() {
+    const tree = Tree::Branch(Tree::Leaf(3), Tree::Branch(Tree::Leaf(7), Tree::Leaf(12)))
+    std::println(leaves(tree))
+    std::println(leaves(mapTree(tree, lambda (n) { return n >= 7 })))
+}

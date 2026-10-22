@@ -1,0 +1,36 @@
+use <std>
+
+type Account = struct { owner: string, balance: int }
+type Transfer = struct { sender: Account, receiver: Account }
+
+def transfer(sender: Account, receiver: Account, amount: int): Result[Transfer, string] {
+    if amount <= 0 {
+        return Result::Err("Amount must be positive")
+    }
+    if amount > sender.balance {
+        return Result::Err("Insufficient funds")
+    }
+    return Result::Ok(Transfer(
+        sender with { balance = sender.balance - amount },
+        receiver with { balance = receiver.balance + amount }
+    ))
+}
+
+def report(result: Result[Transfer, string]) {
+    case result {
+        Result::Ok(accounts) => {
+            std::println(accounts.sender.owner + ": " + accounts.sender.balance)
+            std::println(accounts.receiver.owner + ": " + accounts.receiver.balance)
+        },
+        Result::Err(message) => { std::println("Rejected: " + message) },
+    }
+}
+
+def main() {
+    const alice = Account("Alice", 1000)
+    const bob = Account("Bob", 200)
+    report(transfer(alice, bob, 300))
+    report(transfer(alice, bob, 1500))
+    report(transfer(alice, bob, 0))
+    std::println("Original Alice: " + alice.balance)
+}

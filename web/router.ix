@@ -1,0 +1,120 @@
+use <std>
+use <strings>
+use <types>
+use <response>
+
+pub type Route = struct {
+    method: string,
+    path: string,
+    handler: (types::Request) => types::Response,
+}
+
+pub def route(method: string, path: string, handler: (types::Request) => types::Response): Route {
+    var names: string[] = []
+    for segment : strings::split(path, "/") {
+        if (strings::startsWith(segment, ":")) {
+            const name = strings::substring(segment, 1, std::len(segment))
+            if (strings::equals(name, "")) { std::panic("Empty route parameter name") }
+            for existing : names {
+                if (strings::equals(existing, name)) { std::panic("Duplicate route parameter name") }
+            }
+            names = std::append(names, name)
+        }
+    }
+    return Route(method, path, handler)
+}
+
+pub def param(request: types::Request, name: string): Option[string] {
+    for entry : request.params {
+        if (strings::equals(entry.name, name)) { return Option::Some(entry.value) }
+    }
+    return Option::None
+}
+
+// Segment counts and empty segments are significant; parameters match one nonempty segment.
+pub def matchPath(pattern: string, path: string): Option[types::QueryParam[]] {
+    const expected = strings::split(pattern, "/")
+    const actual = strings::split(path, "/")
+    if (std::len(expected) != std::len(actual)) { return Option::None }
+    var params: types::QueryParam[] = []
+    var index = 0
+    for segment : expected {
+        case std::get(actual, index) {
+            Option::Some(value) => {
+                if (strings::startsWith(segment, ":")) {
+                    if (strings::equals(value, "") || std::len(segment) == 1) { return Option::None }
+                    params = std::append(params, types::QueryParam(strings::substring(segment, 1, std::len(segment)), value))
+                } else {
+                    if (!strings::equals(segment, value)) { return Option::None }
+                }
+            },
+            Option::None => { return Option::None },
+        }
+        index = index + 1
+    }
+    return Option::Some(params)
+}
+
+def find(routes: Route[], request: types::Request, method: string): Option[types::Response] {
+    // Literal routes take precedence, regardless of declaration order.
+    for entry : routes {
+        if (strings::equals(entry.path, request.path) && strings::equals(entry.method, method)) {
+            // A literal ':' segment belongs to the parameter syntax, not an exact route.
+            const segments = strings::split(entry.path, "/")
+            const dynamic = std::filter(segments, lambda (segment) { return strings::startsWith(segment, ":") })
+            if (std::len(dynamic) == 0) {
+                return Option::Some(entry.handler(request with { params = [] }))
+            }
+        }
+    }
+    for entry : routes {
+        if (strings::equals(entry.method, method)) {
+            case matchPath(entry.path, request.path) {
+                Option::Some(params) => { return Option::Some(entry.handler(request with { params = params })) },
+                Option::None => {},
+            }
+        }
+    }
+    return Option::None
+}
+
+pub def dispatch(routes: Route[], request: types::Request): types::Response {
+    // Explicit HEAD routes take precedence over the GET fallback.
+    case find(routes, request, request.method) {
+        Option::Some(response) => { return response },
+        Option::None => {},
+    }
+    if (strings::equals(request.method, "HEAD")) {
+        case find(routes, request, "GET") {
+            Option::Some(response) => { return response },
+            Option::None => {},
+        }
+    }
+    var methods: string[] = []
+    for entry : routes {
+        case matchPath(entry.path, request.path) {
+          Option::Some(_) => {
+            methods = addMethod(methods, entry.method)
+            if (strings::equals(entry.method, "GET")) {
+                methods = addMethod(methods, "HEAD")
+            }
+          },
+          Option::None => {},
+        }
+    }
+    if (std::len(methods) > 0) {
+        const allowed = std::fold(methods, "", lambda (acc, method) {
+            if (strings::equals(acc, "")) { return method }
+            return acc + ", " + method
+        })
+        return types::Response(405, [types::Header("Content-Type", "text/plain; charset=UTF-8"), types::Header("Allow", allowed)], "Method Not Allowed")
+    }
+    return response::text(404, "Not Found")
+}
+
+def addMethod(methods: string[], method: string): string[] {
+    for existing : methods {
+        if (strings::equals(existing, method)) { return methods }
+    }
+    return std::append(methods, method)
+}

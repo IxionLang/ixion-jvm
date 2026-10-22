@@ -18,6 +18,7 @@ class IxFile(projectRoot: String, relativePath: String, name: String?) {
     val statements: MutableList<Statement>
     @JvmField
     val exports: LinkedMap<String?, IxType?> = LinkedMap<String?, IxType?>()
+    val exportedFunctions: MutableMap<String, List<com.kingmang.ixion.runtime.DefType>> = linkedMapOf()
     val exportedTypes: MutableMap<String, IxType> = linkedMapOf()
     @JvmField
     val rootContext: Context = Context()

@@ -1,0 +1,13 @@
+use <types>
+use <json>
+
+pub def text(status: int, body: string): types::Response {
+    return types::Response(status, [types::Header("Content-Type", "text/plain; charset=UTF-8")], body)
+}
+
+pub def json(status: int, value: json::Value): types::Response {
+    return case json::stringify(value) {
+        Result::Ok(body) => types::Response(status, [types::Header("Content-Type", "application/json")], body),
+        Result::Err(_) => text(500, "Internal Server Error"),
+    }
+}

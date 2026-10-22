@@ -735,7 +735,7 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
      * @return Пустой Optional
      */
     override fun visitFunctionStmt(statement: DefStatement): Optional<ClassWriter> {
-        val function = currentContext!!.getVariableTyped<DefType>(statement.name.source)!!
+        val function = statement.functionType!!
         functionStack.push(function)
         val descriptor = if (function.name == "main") "([Ljava/lang/String;)V" else functionDescriptor(function)
         val name = if (function.name == "main") "main" else "_" + function.name
@@ -949,7 +949,7 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
     }
 
     /**
-     * Генерирует байт-код для префиксных операций. В настоящее время поддерживает только унарный минус для числовых типов.
+     * Генерирует байт-код для унарного минуса и логического отрицания.
      * @param expression Префиксное выражение
      * @return Пустой Optional
      */
@@ -963,6 +963,7 @@ class CodegenVisitor(val api: IxApi, val rootContext: Context?, val source: IxFi
             ga!!.visitInsn(t.negOpcode)
             expression.realType = t
         }
+        if (expression.operator.type == TokenType.NOT) ga!!.not()
 
         return Optional.empty()
     }

@@ -270,7 +270,7 @@ class SemanticVisitor(val ixApi: IxApi, val rootContext: Context?, val source: I
             ImplementationException().send(ixApi, file, statement, "Nested function declarations are not supported.")
             return Optional.empty()
         }
-        val function = rootContext!!.getVariableTyped<DefType>(statement.name.source) ?: return Optional.empty()
+        val function = statement.functionType ?: return Optional.empty()
         val child = statement.body!!.context
         child.parent = rootContext
         function.generics.forEachIndexed { index, name ->

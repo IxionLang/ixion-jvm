@@ -1,0 +1,29 @@
+use <std>
+use <json>
+
+// Missing fields and fields of the wrong type both use the default.
+def greeting(config: json::Value): string {
+    return case json::get(config, "name") {
+        Option::Some(json::Value::String(name)) => "Hello, " + name + "!",
+        _ => "Hello, guest!",
+    }
+}
+
+def readConfig(text: string) {
+    case json::parse(text) {
+        Result::Ok(config) => { std::println(greeting(config)) },
+        Result::Err(_) => { std::println("Invalid JSON") },
+    }
+}
+
+def main() {
+    readConfig("{\u0022name\u0022:\u0022Ixion\u0022}")
+    readConfig("{}")
+    readConfig("{\u0022name\u0022:42}")
+    readConfig("{broken}")
+    const config = json::Value::Object([("name", json::Value::String("Ixion"))])
+    std::println(case json::stringify(config) {
+        Result::Ok(text) => text,
+        Result::Err(error) => error,
+    })
+}

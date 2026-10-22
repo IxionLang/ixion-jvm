@@ -69,7 +69,7 @@ class ConstantFoldingVisitor : Visitor<Any> {
             statement.returnType,
             if (statement.body == null) null else rewriteStatement(statement.body) as BlockStatement,
             statement.generics
-        )
+        ).also { it.functionType = statement.functionType }
     }
 
     override fun visitIf(statement: IfStatement): Any {

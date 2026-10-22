@@ -58,6 +58,8 @@ tasks.withType(KotlinCompile).configureEach {
 
 test {
     inputs.file("docs/ru.md")
+    inputs.files(fileTree("web") { include "**/*.ix" })
+    inputs.files(fileTree("examples") { include "**/*.ix" })
     useJUnitPlatform()
 }
 
